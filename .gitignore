@@ -47,6 +47,6 @@ Desktop.ini
 *.gz
 
 # If you ever generate large FITS test files locally
-*.fits
-*.fit
-*.fts
+#*.fits
+#*.fit
+#*.fts
