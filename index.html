@@ -1,0 +1,3129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FITS Studio · DwarfAstro — Browser FITS Processing</title>
+<style>
+:root{
+  --bg:#080808;--sur:#0d0d0d;--card:#161616;--bdr:#252525;
+  --acc:#F97316;--txt:#ffffff;--sub:#cccccc;--dim:#999999;
+  --mono:Menlo,Monaco,Consolas,'Courier New',monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:var(--sans);font-size:16px}
+body{background:var(--bg);color:var(--txt);display:flex;flex-direction:column}
+
+#hdr{padding:10px 20px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:20px;flex-shrink:0}
+.logo{font-family:var(--mono);font-size:13px;color:var(--acc);letter-spacing:.13em;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.logo::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--acc);box-shadow:0 0 7px var(--acc)}
+#meta{display:none;gap:16px;font-family:var(--mono);font-size:13px;color:var(--dim);flex-wrap:wrap}
+#meta span b{color:var(--sub);font-weight:400;margin-right:3px}
+
+#drop-screen{flex:1;display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:20px 0}
+#dz{border:2px dashed var(--bdr);border-radius:14px;padding:36px 40px;text-align:center;cursor:pointer;transition:.18s;background:rgba(249,115,22,.02)}
+#dz:hover,#dz.over{border-color:var(--acc);background:rgba(249,115,22,.06)}
+#dz .ic{font-size:44px;margin-bottom:14px}
+#fi{display:none}
+
+#load-screen{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.spin{width:30px;height:30px;border:2px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#lmsg{font-family:var(--mono);font-size:13px;color:var(--sub);letter-spacing:.08em;text-align:center;line-height:1.7;max-width:300px}
+#lbar{width:280px;height:3px;background:var(--bdr);border-radius:2px;overflow:hidden}
+#lfill{height:100%;background:var(--acc);border-radius:2px;width:0%;transition:width .22s}
+
+#app{display:none;flex:1;min-height:0;flex-direction:row}
+
+/* CANVAS LEFT */
+#cv-wrap{flex:1;position:relative;overflow:hidden;background:#030508;display:flex;align-items:center;justify-content:center;min-width:0;min-height:0}
+#gl{display:block;max-width:100%;max-height:100%}
+.ov{position:absolute;pointer-events:none;font-family:var(--mono);font-size:12px;letter-spacing:.11em;user-select:none}
+#lbl-a{top:13px;left:14px;color:rgba(255,255,255,.28)}
+#lbl-b{top:13px;right:14px;color:rgba(249,115,22,.55)}
+#lbl-tip{bottom:12px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.18);white-space:nowrap;padding:4px 12px;background:rgba(0,0,0,.45);border-radius:10px}
+#lbl-zoom{bottom:12px;right:14px;color:rgba(249,115,22,.7);display:none}
+
+/* FLOATING HISTOGRAM */
+#hist-float{
+  position:absolute;
+  left:16px;bottom:44px;
+  width:580px;height:300px;   /* fixed height breaks the resize feedback loop */
+  min-width:360px;min-height:180px;
+  max-width:1100px;max-height:700px;
+  background:rgba(8,8,8,.93);
+  border:1px solid var(--bdr);
+  border-radius:8px;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  box-shadow:0 8px 32px rgba(0,0,0,.6);
+  user-select:none;
+  z-index:10;
+  overflow:hidden;
+  resize:both;
+  display:flex;flex-direction:column; /* children stack vertically */
+}
+#hist-float.hidden{display:none}
+#hist-drag-handle{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;border-bottom:1px solid var(--bdr);
+  cursor:move;flex-shrink:0;
+}
+.hist-handle-left{display:flex;align-items:center;gap:10px}
+.hist-float-title{font-family:var(--mono);font-size:13px;color:var(--dim);letter-spacing:.08em}
+.hist-ch-row{display:flex;gap:4px}
+.hch{padding:5px 10px;background:transparent;border:1px solid var(--bdr);border-radius:3px;font-family:var(--mono);font-size:14px;color:var(--dim);cursor:pointer;letter-spacing:.04em;transition:.12s}
+.hch:hover{border-color:var(--sub)}
+.hch.on-L{border-color:#888;color:#aaa}
+.hch.on-R{border-color:#c05050;color:#d07070}
+.hch.on-G{border-color:#50a050;color:#70c070}
+.hch.on-B{border-color:#5070b0;color:#7090c0}
+#hist-close{background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;line-height:1;padding:0 2px}
+#hist-close:hover{color:var(--txt)}
+/* Canvas fills available height - JS measures parent and sets height */
+#hist-cv{width:100%;display:block;cursor:crosshair;flex:1;min-height:0}
+.hist-axis-labels{display:flex;justify-content:space-between;padding:4px 12px 7px;pointer-events:none;flex-shrink:0}
+.hal{font-family:var(--mono);font-size:13px;color:var(--dim)}
+
+/* PANEL RIGHT */
+#panel{width:390px;flex-shrink:0;background:var(--sur);border-left:1px solid var(--bdr);display:flex;flex-direction:column;min-height:0}
+#tab-bar{display:flex;border-bottom:1px solid var(--bdr);flex-shrink:0}
+.tab-btn{flex:1;padding:11px 6px;background:none;border:none;border-bottom:2px solid transparent;font-family:var(--mono);font-size:14px;letter-spacing:.08em;color:var(--dim);cursor:pointer;transition:.15s;text-align:center}
+.tab-btn:hover{color:var(--sub)}
+.tab-btn.on{color:var(--acc);border-bottom-color:var(--acc)}
+.tab-content{display:none;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden}
+.tab-content.on{display:block}
+.tab-content::-webkit-scrollbar{width:6px}
+.tab-content::-webkit-scrollbar-thumb{background:#3a4252;border-radius:3px}
+.pb{padding:14px 16px;border-bottom:1px solid var(--bdr);flex-shrink:0}
+.pl{font-family:var(--mono);font-size:18px;letter-spacing:.08em;color:var(--acc);text-transform:uppercase;margin-bottom:14px;font-weight:700}
+
+.ctrl{margin-bottom:14px}
+.ctrl:last-child{margin-bottom:0}
+.cr{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.cn{font-size:16px;color:var(--sub);font-weight:500}
+.cv{font-family:var(--mono);font-size:16px;color:var(--txt);background:var(--card);border:1px solid var(--bdr);border-radius:4px;padding:4px 10px;min-width:68px;text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;background:var(--bdr);border-radius:2px;cursor:pointer;outline:none;display:block}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--acc);cursor:pointer;box-shadow:0 0 5px rgba(249,115,22,.45)}
+.ch{font-size:13px;color:var(--dim);margin-top:5px;line-height:1.5}
+
+/* TARGET PRESETS */
+.preset-row{display:flex;gap:5px;margin-bottom:12px}
+.pre-btn{flex:1;padding:9px 4px;background:var(--card);border:1px solid var(--bdr);border-radius:5px;font-family:var(--mono);font-size:14px;color:var(--dim);cursor:pointer;text-align:center;letter-spacing:.04em;transition:.13s;line-height:1.3}
+.pre-btn:hover{border-color:var(--acc);color:var(--acc);background:rgba(249,115,22,.07)}
+.pre-btn span{display:block;font-size:13px;color:var(--sub);font-family:var(--sans);letter-spacing:0;margin-top:2px;font-weight:500}
+
+.stf-btn{width:100%;padding:11px;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.4);border-radius:5px;color:var(--acc);font-family:var(--mono);font-size:16px;letter-spacing:.05em;cursor:pointer;transition:.15s;margin-bottom:12px;display:block;text-align:center}
+.stf-btn:hover{background:rgba(249,115,22,.18);border-color:var(--acc)}
+
+/* AUTO PREVIEW */
+#preview-bar{display:none;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.4);border-radius:6px;margin-bottom:10px}
+#preview-bar.on{display:flex}
+#preview-label{font-family:var(--mono);font-size:14px;color:var(--acc);letter-spacing:.05em}
+#preview-exit{background:none;border:1px solid rgba(249,115,22,.4);border-radius:4px;color:var(--acc);font-family:var(--mono);font-size:14px;cursor:pointer;padding:5px 12px;transition:.12s}
+#preview-exit:hover{background:rgba(249,115,22,.2)}
+.mode-row{display:flex;gap:6px;margin-bottom:14px}
+.mde{flex:1;padding:10px 4px;background:var(--card);border:1px solid var(--bdr);border-radius:5px;font-family:var(--mono);font-size:16px;color:var(--dim);cursor:pointer;text-align:center;letter-spacing:.05em;transition:.12s}
+.mde:hover{border-color:var(--acc);color:var(--txt)}
+.mde.on{border-color:var(--acc);color:var(--acc);background:rgba(249,115,22,.09)}
+.sep{height:1px;background:var(--bdr);margin:12px 0}
+
+.pg{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px}
+.pb2{padding:9px 4px;background:var(--card);border:1px solid var(--bdr);border-radius:5px;font-family:var(--mono);font-size:14px;color:var(--dim);cursor:pointer;text-align:center;letter-spacing:.03em;transition:.12s}
+
+/* PLUS / MINUS BUTTONS */
+.pm-row{display:flex;align-items:center;gap:5px;margin-bottom:0}
+.pm-row input[type=range]{flex:1}
+.pm-btn{flex-shrink:0;width:26px;height:26px;background:var(--card);border:1px solid var(--bdr);border-radius:4px;color:var(--sub);font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.12s;font-family:var(--mono);padding:0}
+.pm-btn:hover{border-color:var(--acc);color:var(--acc);}
+.pm-btn:active{background:rgba(249,115,22,.15)}
+.pb2:hover{border-color:var(--acc);color:var(--txt)}
+.pb2.on{border-color:var(--acc);color:var(--acc);background:rgba(249,115,22,.08)}
+
+.btn{width:100%;padding:12px;border-radius:5px;font-family:var(--mono);font-size:16px;letter-spacing:.05em;cursor:pointer;transition:.15s;margin-bottom:6px;display:block;text-align:center;border:1px solid}
+.btn-acc{background:rgba(249,115,22,.1);border-color:rgba(249,115,22,.3);color:var(--acc)}
+.btn-acc:hover{background:rgba(249,115,22,.2);border-color:var(--acc)}
+.btn-sec{background:rgba(249,115,22,.06);border-color:rgba(249,115,22,.2);color:rgba(249,115,22,.7)}
+.btn-sec:hover{background:rgba(249,115,22,.12);border-color:rgba(249,115,22,.5);color:var(--acc)}
+.btn-mute{background:transparent;border-color:var(--bdr);color:var(--dim)}
+.btn-mute:hover{border-color:var(--sub);color:var(--sub)}
+
+.rc{color:#d07070}.gc{color:#70c070}.bc{color:#7090c0}
+
+/* BACKGROUND TAB */
+#sample-cv{position:absolute;top:0;left:0;pointer-events:none;z-index:5}
+.algo-row{display:flex;gap:5px;margin-bottom:12px}
+.algo-btn{flex:1;padding:9px 4px;background:var(--card);border:1px solid var(--bdr);border-radius:5px;font-family:var(--mono);font-size:14px;color:var(--dim);cursor:pointer;text-align:center;letter-spacing:.04em;transition:.13s}
+.algo-btn:hover{border-color:var(--acc);color:var(--acc)}
+.algo-btn.on{border-color:var(--acc);color:var(--acc);background:rgba(249,115,22,.09)}
+.bg-status{font-family:var(--mono);font-size:13px;color:var(--dim);padding:8px 0;border-radius:4px;text-align:center;letter-spacing:.04em}
+.bg-status.ok{color:#50c878}
+.bg-status.warn{color:#f97316}
+.bg-status.err{color:#f87171}
+.bg-apply{width:100%;padding:12px;background:rgba(80,200,120,.12);border:1px solid rgba(80,200,120,.4);border-radius:6px;color:#50c878;font-family:var(--mono);font-size:16px;letter-spacing:.06em;cursor:pointer;transition:.15s;margin-bottom:6px;display:block;text-align:center}
+.bg-apply:hover{background:rgba(80,200,120,.22);border-color:#50c878}
+.bg-apply:disabled{opacity:.35;cursor:not-allowed}
+.bg-undo{width:100%;padding:10px;background:transparent;border:1px solid var(--bdr);border-radius:5px;color:var(--dim);font-family:var(--mono);font-size:14px;letter-spacing:.05em;cursor:pointer;transition:.15s;display:block;text-align:center}
+.bg-undo:hover{border-color:var(--acc);color:var(--acc)}
+.bg-undo:disabled{opacity:.3;cursor:not-allowed}
+#bg-str-lbl{font-family:var(--mono);font-size:16px;color:var(--acc)}
+
+/* APPLY + HISTORY */
+/* Apply animation bar */
+#apply-anim{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  z-index:20;text-align:center;pointer-events:none}
+#apply-anim.on{display:block}
+#apply-anim-bar{width:280px;height:3px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden;margin-top:10px}
+#apply-anim-fill{height:100%;width:0%;background:var(--acc);border-radius:2px;transition:width .3s}
+#apply-anim-label{font-family:var(--mono);font-size:14px;color:var(--acc);letter-spacing:.07em}
+
+#apply-btn{width:100%;padding:13px;background:rgba(249,115,22,.18);border:2px solid var(--acc);border-radius:6px;color:var(--acc);font-family:var(--mono);font-size:16px;letter-spacing:.07em;cursor:pointer;transition:.15s;margin-bottom:10px;display:block;text-align:center;font-weight:700}
+#apply-btn:hover{background:rgba(249,115,22,.3)}
+#apply-btn:disabled{opacity:.35;cursor:not-allowed}
+#pass-counter{font-family:var(--mono);font-size:13px;color:var(--dim);text-align:center;margin-bottom:12px;letter-spacing:.06em}
+#hist-log{max-height:160px;overflow-y:auto;border:1px solid var(--bdr);border-radius:5px;background:var(--card);margin-top:8px}
+#hist-log::-webkit-scrollbar{width:3px}
+#hist-log::-webkit-scrollbar-thumb{background:var(--bdr)}
+.hlog-entry{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid rgba(37,37,37,.4);cursor:pointer;transition:.1s}
+.hlog-entry:last-child{border-bottom:none}
+.hlog-entry:hover{background:rgba(249,115,22,.06)}
+.hlog-entry.active{background:rgba(249,115,22,.1)}
+.hlog-num{font-family:var(--mono);font-size:13px;color:var(--acc);flex-shrink:0;width:26px}
+.hlog-mode{font-family:var(--mono);font-size:13px;color:var(--dim);flex-shrink:0;width:44px;letter-spacing:.04em}
+.hlog-params{font-family:var(--mono);font-size:13px;color:var(--sub);flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.hlog-undo{background:none;border:1px solid var(--bdr);border-radius:3px;color:var(--dim);font-size:13px;cursor:pointer;padding:4px 8px;flex-shrink:0}
+.hlog-undo:hover{border-color:var(--acc);color:var(--acc)}
+
+/* INFO TAB */
+.verdict-block{background:var(--card);border:1px solid var(--bdr);border-radius:6px;padding:12px 14px;margin-bottom:14px}
+.verdict-title{font-family:var(--mono);font-size:13px;letter-spacing:.08em;color:var(--sub);margin-bottom:9px}
+.vcheck{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px}
+.vcheck:last-child{margin-bottom:0}
+.vdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.vdot.pass{background:var(--acc)}
+.vdot.fail{background:#f87171}
+.info-tbl{width:100%;border-collapse:collapse;font-size:14px}
+.info-tbl td{padding:5px 8px;border-bottom:1px solid rgba(37,37,37,.5);vertical-align:top}
+.info-tbl td:first-child{font-family:var(--mono);font-size:13px;color:var(--dim);width:38%;white-space:nowrap}
+.info-tbl td:last-child{color:var(--txt);font-family:var(--mono);font-size:14px}
+.kw-tbl{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px}
+.kw-tbl th{text-align:left;padding:5px 8px;color:var(--dim);border-bottom:1px solid var(--bdr);font-weight:400;font-size:12px;letter-spacing:.06em}
+.kw-tbl td{padding:4px 8px;border-bottom:1px solid rgba(37,37,37,.4);vertical-align:top}
+.kw-tbl tr:hover td{background:rgba(249,115,22,.04)}
+.kw-key{color:var(--acc);width:90px}
+.kw-val{color:var(--txt);width:120px}
+.kw-com{color:var(--dim);font-size:12px}
+
+/* GUIDE TAB */
+.guide-step{padding:14px 16px;border-bottom:1px solid var(--bdr)}
+.step-num{font-family:var(--mono);font-size:13px;color:var(--acc);letter-spacing:.12em;margin-bottom:5px}
+.step-title{font-size:16px;font-weight:600;color:var(--txt);margin-bottom:8px}
+.step-body{font-size:14px;color:var(--sub);line-height:1.65;margin-bottom:8px}
+.step-body code{font-family:var(--mono);font-size:11px;color:var(--acc);background:rgba(249,115,22,.1);padding:1px 5px;border-radius:3px}
+.step-note{background:var(--card);border-left:3px solid var(--acc);border-radius:0 4px 4px 0;padding:8px 12px;font-size:13px;color:var(--dim);line-height:1.5}
+
+/* LINEAR TAB — collapsible steps */
+.lin-step-hdr{cursor:pointer;user-select:none}
+.lin-step-hdr:hover .lin-step-title{color:var(--acc)}
+.lin-chevron{font-size:12px;color:var(--dim);flex-shrink:0;transition:transform .2s;display:inline-block}
+.lin-step-body{padding:16px;border-top:1px solid var(--bdr)}
+.lin-step-body.collapsed{display:none}
+
+/* LINEAR TAB — step system */
+.lin-step{border:1px solid var(--bdr);border-radius:8px;margin-bottom:14px;overflow:hidden}
+.lin-step-hdr{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);cursor:default}
+.lin-step-num{width:28px;height:28px;border-radius:50%;border:2px solid var(--bdr);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:14px;color:var(--dim);flex-shrink:0;font-weight:700;transition:.2s}
+.lin-step-num.done{border-color:#50c878;color:#50c878;background:rgba(80,200,120,.12)}
+.lin-step-num.active{border-color:var(--acc);color:var(--acc);background:rgba(249,115,22,.1)}
+.lin-step-title{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--txt);letter-spacing:.03em;flex:1}
+.lin-step-tag{font-family:var(--mono);font-size:13px;padding:3px 9px;border-radius:4px;flex-shrink:0}
+.lin-step-tag.not-run{background:var(--bg);border:1px solid var(--bdr);color:var(--dim)}
+.lin-step-tag.running{background:rgba(249,115,22,.15);border:1px solid var(--acc);color:var(--acc)}
+.lin-step-tag.done{background:rgba(80,200,120,.12);border:1px solid rgba(80,200,120,.4);color:#50c878}
+.lin-step-tag.optional{background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.3);color:#7ac8f0}
+.lin-step-tag.warn{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:#fbbf24}
+/* lin-step-body defined above with collapsible styles */
+.lin-step-body.locked{opacity:.38;pointer-events:none}
+.lin-divider{border:none;border-top:2px solid var(--bdr);margin:6px 0 18px 0}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.stat-cell{background:var(--card);border:1px solid var(--bdr);border-radius:5px;padding:8px 10px}
+.stat-label{font-family:var(--mono);font-size:12px;color:var(--dim);margin-bottom:3px}
+.stat-val{font-family:var(--mono);font-size:16px;color:var(--txt)}
+.neutral-row{display:flex;gap:8px;margin-top:8px}
+.neutral-cell{flex:1;background:var(--card);border:1px solid var(--bdr);border-radius:5px;padding:8px;text-align:center}
+.neutral-ch{font-family:var(--mono);font-size:12px;color:var(--dim);margin-bottom:2px}
+.neutral-val{font-family:var(--mono);font-size:16px}
+.go-stretch{width:100%;padding:14px;background:rgba(80,200,120,.15);border:2px solid #50c878;border-radius:8px;color:#50c878;font-family:var(--mono);font-size:16px;letter-spacing:.07em;cursor:pointer;transition:.15s;display:block;text-align:center;font-weight:700;margin-top:4px}
+.go-stretch:hover{background:rgba(80,200,120,.28)}
+.go-stretch:disabled{opacity:.3;cursor:not-allowed}
+</style>
+</head>
+<body>
+
+<div id="hdr">
+  <div class="logo">FITS STUDIO <span style="color:var(--dim);font-size:11px;letter-spacing:.08em">by DwarfAstro</span></div>
+  <div id="meta">
+    <span><b>OBJ</b><span id="m-obj">—</span></span>
+    <span><b>INT</b><span id="m-int">—</span></span>
+    <span><b>DATE</b><span id="m-date">—</span></span>
+    <span><b>GAIN</b><span id="m-gain">—</span></span>
+    <span><b>TEMP</b><span id="m-temp">—</span></span>
+  </div>
+</div>
+
+<!-- DROP -->
+<div id="drop-screen">
+<div style="display:flex;flex-direction:column;align-items:center;width:100%;max-width:860px;padding:32px 24px;gap:32px">
+
+  <!-- Wordmark -->
+  <div style="text-align:center">
+    <div style="font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.22em;text-transform:uppercase;margin-bottom:12px">DwarfAstro.com</div>
+    <div style="font-size:42px;font-weight:800;color:var(--txt);letter-spacing:-.02em;line-height:1;margin-bottom:10px">FITS Studio</div>
+    <div style="font-family:var(--mono);font-size:13px;color:var(--acc);letter-spacing:.12em;margin-bottom:18px">BROWSER-BASED FITS PROCESSING FOR STACKED ASTROPHOTOGRAPHY</div>
+    <div style="font-size:17px;color:var(--sub);line-height:1.75;max-width:600px;margin:0 auto">Process, stretch, and explore stacked FITS files directly in your browser. Background extraction, channel neutralization, and GHS stretching — no installation, no cloud, no account.</div>
+  </div>
+
+  <!-- Drop zone + sample -->
+  <div style="width:100%;max-width:580px;display:flex;flex-direction:column;gap:12px">
+    <div id="dz" onclick="document.getElementById('fi').click()" style="width:100%">
+      <div class="ic">🔭</div>
+      <div style="font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--txt);margin-bottom:10px">DROP YOUR FITS FILE HERE</div>
+      <div style="font-size:15px;color:var(--sub);line-height:1.8">or click to browse &nbsp;·&nbsp; <code>stacked-16_*.fits</code></div>
+      <input type="file" id="fi" accept=".fits,.fit,.fts">
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="flex:1;height:1px;background:var(--bdr)"></div>
+      <div style="font-family:var(--mono);font-size:12px;color:var(--dim);letter-spacing:.1em">OR</div>
+      <div style="flex:1;height:1px;background:var(--bdr)"></div>
+    </div>
+    <button onclick="loadSampleFile()" style="width:100%;padding:14px;background:var(--card);border:1px solid var(--bdr);border-radius:8px;color:var(--sub);font-family:var(--mono);font-size:14px;letter-spacing:.07em;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;gap:10px" onmouseover="this.style.borderColor='var(--acc)';this.style.color='var(--acc)'" onmouseout="this.style.borderColor='var(--bdr)';this.style.color='var(--sub)'">
+      <span style="font-size:18px">🌌</span>
+      <span>LOAD SAMPLE FILE &nbsp;—&nbsp; M42 Orion Nebula (Dwarf 3 stack)</span>
+    </button>
+    <div id="sample-status" style="font-family:var(--mono);font-size:13px;color:var(--dim);text-align:center;min-height:20px"></div>
+  </div>
+
+  <!-- Story + features -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%">
+
+    <div style="background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:20px;grid-column:1/-1">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--acc);letter-spacing:.16em;margin-bottom:12px">ABOUT THIS TOOL</div>
+      <div style="font-size:16px;color:var(--sub);line-height:1.8">I built FITS Studio to learn how to stretch astrophotography images. I wanted something that delivers results comparable to Siril without the learning curve of professional software. I'm not a developer — just a Dwarf 3 owner who enjoys deep-sky imaging from a Bortle 6 backyard in New England. The tool is Dwarf 3 specific for now and is designed around the linear stacked FITS files the scope produces after a session. It does not stack frames — it takes the stack the Dwarf 3 already made and gives you a proper processing pipeline to bring out the detail.</div>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:20px">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--acc);letter-spacing:.16em;margin-bottom:14px">WHAT IT DOES</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;gap:10px;align-items:flex-start"><span style="color:var(--green);font-size:16px;flex-shrink:0">✦</span><span style="font-size:15px;color:var(--sub);line-height:1.6">Background extraction with POLY or TPS-RBF gradient models</span></div>
+        <div style="display:flex;gap:10px;align-items:flex-start"><span style="color:var(--green);font-size:16px;flex-shrink:0">✦</span><span style="font-size:15px;color:var(--sub);line-height:1.6">Automatic channel neutralization to remove LP colour cast</span></div>
+        <div style="display:flex;gap:10px;align-items:flex-start"><span style="color:var(--green);font-size:16px;flex-shrink:0">✦</span><span style="font-size:15px;color:var(--sub);line-height:1.6">GHS, Asinh, and MTF stretching with multi-pass history</span></div>
+        <div style="display:flex;gap:10px;align-items:flex-start"><span style="color:var(--green);font-size:16px;flex-shrink:0">✦</span><span style="font-size:15px;color:var(--sub);line-height:1.6">White balance, 8 palettes, full-resolution PNG export</span></div>
+        <div style="display:flex;gap:10px;align-items:flex-start"><span style="color:var(--green);font-size:16px;flex-shrink:0">✦</span><span style="font-size:15px;color:var(--sub);line-height:1.6">GPU-accelerated via WebGL2 · runs at full 8.4 MP resolution</span></div>
+      </div>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:20px">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--acc);letter-spacing:.16em;margin-bottom:14px">WHAT IT NEEDS</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;gap:10px;align-items:flex-start"><span style="color:var(--acc);font-size:16px;flex-shrink:0">◈</span><span style="font-size:15px;color:var(--sub);line-height:1.6">DwarfLab Dwarf 3 (IMX678 sensor, 3-plane RGB FITS)</span></div>
+        <div style="display:flex;gap:10px;align-items:flex-start"><span style="color:var(--acc);font-size:16px;flex-shrink:0">◈</span><span style="font-size:15px;color:var(--sub);line-height:1.6">File: <code style="font-size:13px;color:var(--acc)">stacked-16_*.fits</code> from a completed Mega Stack session</span></div>
+        <div style="display:flex;gap:10px;align-items:flex-start"><span style="color:var(--acc);font-size:16px;flex-shrink:0">◈</span><span style="font-size:15px;color:var(--sub);line-height:1.6">Chrome or Firefox on desktop (WebGL2 required)</span></div>
+        <div style="display:flex;gap:10px;align-items:flex-start"><span style="color:var(--acc);font-size:16px;flex-shrink:0">◈</span><span style="font-size:15px;color:var(--sub);line-height:1.6">No installation · no account · nothing uploaded anywhere</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="font-size:13px;color:var(--dim);text-align:center;line-height:1.8">
+    FITS Studio v4.0 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
+  </div>
+</div>
+</div>
+
+<div id="load-screen">
+  <div class="spin"></div>
+  <div id="lmsg">Starting…</div>
+  <div id="lbar"><div id="lfill"></div></div>
+</div>
+
+<div id="app">
+  <div id="cv-wrap">
+    <canvas id="gl"></canvas>
+    <canvas id="sample-cv"></canvas>
+    <div id="apply-anim">
+      <div id="apply-anim-label">APPLYING STRETCH…</div>
+      <div id="apply-anim-bar"><div id="apply-anim-fill"></div></div>
+    </div>
+    <canvas id="grad-vis-cv" style="position:absolute;top:0;left:0;pointer-events:none;z-index:4;display:none;opacity:.82;border-radius:4px"></canvas>
+    <div class="ov" id="lbl-tip">SCROLL TO ZOOM  ·  DRAG TO PAN</div>
+    <div class="ov" id="lbl-zoom"></div>
+
+    <!-- FLOATING HISTOGRAM -->
+    <div id="hist-float" class="hidden">
+      <div id="hist-drag-handle">
+        <div class="hist-handle-left">
+          <span class="hist-float-title">HISTOGRAM · NORMALISED · LOG Y</span>
+          <div class="hist-ch-row">
+            <button class="hch on-L" onclick="setHistCh('L',this)">LUM</button>
+            <button class="hch" onclick="setHistCh('R',this)">RED</button>
+            <button class="hch" onclick="setHistCh('G',this)">GRN</button>
+            <button class="hch" onclick="setHistCh('B',this)">BLU</button>
+          </div>
+        </div>
+        <button id="hist-close" onclick="document.getElementById('hist-float').classList.toggle('hidden')" title="Hide">✕</button>
+      </div>
+      <canvas id="hist-cv"></canvas>
+      <div class="hist-axis-labels">
+        <span class="hal">← 0  (ADU 0)</span>
+        <span class="hal" style="color:var(--sub)">drag markers · click sets BP</span>
+        <span class="hal">(ADU 65535)  1.0 →</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="panel">
+    <div id="tab-bar">
+      <button class="tab-btn" id="tb-info" onclick="showTab('info')">FITS INFO</button>
+      <button class="tab-btn" id="tb-bg" onclick="showTab('bg')">LINEAR</button>
+      <button class="tab-btn on" id="tb-proc" onclick="showTab('proc')">STRETCH</button>
+      <button class="tab-btn" id="tb-guide" onclick="showTab('guide')">GUIDE</button>
+    </div>
+
+    <div class="tab-content" id="tab-info"></div>
+
+    <div class="tab-content" id="tab-bg" style="padding:12px">
+
+      <button class="stf-btn" style="margin-bottom:12px" onclick="document.getElementById('hist-float').classList.toggle('hidden');if(!document.getElementById('hist-float').classList.contains('hidden'))drawHist()">HISTOGRAM</button>
+
+      <!-- STEP 1 -->
+      <div class="lin-step" id="lin-s1">
+        <div class="lin-step-hdr" onclick="toggleStep(1)">
+          <div class="lin-step-num" id="lin-s1-num">1</div>
+          <div class="lin-step-title">Background Extraction</div>
+          <div class="lin-step-tag not-run" id="lin-s1-tag">Not applied</div>
+          <span class="lin-chevron" id="lin-s1-chev">▼</span>
+        </div>
+        <div class="lin-step-body" id="lin-s1-body">
+
+          <!-- 1a: Algorithm + Grid -->
+          <div style="background:var(--bg);border:1px solid var(--bdr);border-radius:6px;padding:14px;margin-bottom:10px">
+            <div style="font-family:var(--mono);font-size:14px;color:var(--acc);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Algorithm</div>
+            <div class="algo-row">
+              <button class="algo-btn" id="ba-p1" onclick="setBGAlgo('poly1',this)">POLY-1<br><span style="font-size:13px;color:var(--dim)">Linear</span></button>
+              <button class="algo-btn on" id="ba-p2" onclick="setBGAlgo('poly2',this)">POLY-2<br><span style="font-size:13px;color:var(--dim)">Quadratic</span></button>
+              <button class="algo-btn" id="ba-p3" onclick="setBGAlgo('poly3',this)">POLY-3<br><span style="font-size:13px;color:var(--dim)">Cubic</span></button>
+              <button class="algo-btn" id="ba-tps" onclick="setBGAlgo('tps',this)">TPS-RBF<br><span style="font-size:13px;color:var(--dim)">Spline</span></button>
+            </div>
+            <div class="ch" style="margin-top:8px">POLY-2 handles most Bortle 6 gradients. TPS-RBF for complex multi-source sky glow.</div>
+          </div>
+
+          <!-- 1b: Sample Grid -->
+          <div style="background:var(--bg);border:1px solid var(--bdr);border-radius:6px;padding:14px;margin-bottom:10px">
+            <div style="font-family:var(--mono);font-size:14px;color:var(--acc);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Sample Grid</div>
+            <div class="ctrl" style="margin-bottom:10px">
+              <div class="cr"><span class="cn">Rejection Tolerance</span><span class="cv" id="v-bgtol">1.0</span></div>
+              <input type="range" id="i-bgtol" min="5" max="30" value="10" oninput="onBGTol(this.value)">
+              <div class="ch">Lower = stricter star rejection. 1.0 is a good default.</div>
+            </div>
+            <div style="display:flex;gap:6px;margin-bottom:12px">
+              <button class="algo-btn" id="bg-grid-sm" onclick="setBGGrid(6,4,this)">6×4<br><span style="font-size:13px">24 boxes</span></button>
+              <button class="algo-btn on" id="bg-grid-md" onclick="setBGGrid(8,6,this)">8×6<br><span style="font-size:13px">48 boxes</span></button>
+              <button class="algo-btn" id="bg-grid-lg" onclick="setBGGrid(10,8,this)">10×8<br><span style="font-size:13px">80 boxes</span></button>
+            </div>
+            <button class="btn btn-acc" onclick="generateBGSamples()" style="margin-bottom:8px">GENERATE SAMPLE GRID</button>
+            <button class="algo-btn" id="bg-gamma-btn" onclick="toggleBGGamma(this)" style="width:100%;padding:10px;margin-bottom:8px">GAMMA VIEW</button>
+            <div class="ch">Green circles = accepted. Red = rejected. Click to toggle. Scroll to zoom · drag to pan.</div>
+          </div>
+
+          <!-- 1c: Calculate -->
+          <div style="background:var(--bg);border:1px solid var(--bdr);border-radius:6px;padding:14px;margin-bottom:10px">
+            <div style="font-family:var(--mono);font-size:14px;color:var(--acc);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Calculate Model</div>
+            <button class="btn btn-acc" id="bg-calc-btn" onclick="calculateBGModel()" disabled style="margin-bottom:8px">CALCULATE &amp; PREVIEW</button>
+            <div id="bg-status" class="bg-status" style="margin-bottom:6px">Generate sample grid first</div>
+            <div id="bg-grad-row" style="display:none">
+              <button class="algo-btn on" id="bg-grad-btn" onclick="toggleGradVis(this)" style="width:100%;padding:10px;margin-top:6px">HIDE GRADIENT</button>
+            </div>
+          </div>
+
+          <!-- 1d: Apply -->
+          <div style="background:var(--bg);border:1px solid var(--bdr);border-radius:6px;padding:14px">
+            <div style="font-family:var(--mono);font-size:14px;color:var(--acc);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Strength &amp; Apply</div>
+            <div class="ctrl" style="margin-bottom:12px">
+              <div class="cr"><span class="cn">Strength</span><span id="bg-str-lbl" class="cv">100%</span></div>
+              <input type="range" id="i-bgstr" min="0" max="100" value="100" oninput="onBGStr(this.value)">
+              <div class="ch">Real-time preview. Reduce if edges over-darken.</div>
+            </div>
+            <button class="bg-apply" id="bg-apply-btn" onclick="applyBGCorrection()" disabled>APPLY CORRECTION</button>
+            <button class="bg-undo" id="bg-undo-btn" onclick="undoBGCorrection()" disabled style="margin-top:6px">UNDO</button>
+            <div class="ch" style="margin-top:10px">Apply bakes the correction and runs channel neutralization automatically.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="lin-step" id="lin-s2">
+        <div class="lin-step-hdr" onclick="toggleStep(2)">
+          <div class="lin-step-num" id="lin-s2-num">2</div>
+          <div class="lin-step-title">Channel Neutralization</div>
+          <div class="lin-step-tag not-run" id="lin-s2-tag">Automatic</div>
+          <span class="lin-chevron" id="lin-s2-chev">▶</span>
+        </div>
+        <div class="lin-step-body collapsed" id="lin-s2-body">
+          <div class="ch" style="margin-bottom:10px">Runs automatically as part of Apply — no action needed from you.</div>
+          <div class="ch" style="margin-bottom:10px">After gradient subtraction the three channels often have different residual sky levels — light pollution tints red and green unevenly, and the polynomial fit can leave small per-channel biases. Left uncorrected this shows as a brownish or greenish background cast. Neutralization samples the accepted background regions and subtracts the per-channel offset so R, G, B share the same sky floor before any stretch. A colour cast baked into linear data is very difficult to remove after GHS or Asinh amplifies it.</div>
+          <div class="neutral-row" id="neutral-display" style="display:none">
+            <div class="neutral-cell"><div class="neutral-ch">R offset</div><div class="neutral-val rc" id="neu-r">—</div></div>
+            <div class="neutral-cell"><div class="neutral-ch">G offset</div><div class="neutral-val gc" id="neu-g">—</div></div>
+            <div class="neutral-cell"><div class="neutral-ch">B offset</div><div class="neutral-val bc" id="neu-b">—</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="lin-step" id="lin-s3">
+        <div class="lin-step-hdr" onclick="toggleStep(3)">
+          <div class="lin-step-num" id="lin-s3-num">3</div>
+          <div class="lin-step-title">Statistics Refresh</div>
+          <div class="lin-step-tag not-run" id="lin-s3-tag">Automatic</div>
+          <span class="lin-chevron" id="lin-s3-chev">▶</span>
+        </div>
+        <div class="lin-step-body collapsed" id="lin-s3-body">
+          <div class="ch" style="margin-bottom:10px">Runs automatically after neutralization — no action needed from you.</div>
+          <div class="ch" style="margin-bottom:10px">The histogram peak, noise cluster edge, and per-channel sky medians all shift after background correction and neutralization. If the STRETCH tab used pre-correction statistics, BP and SP would be placed against the wrong sky level and the first stretch pass would be miscalibrated. Statistics Refresh discards all pre-correction numbers and recomputes from the corrected linear arrays. The values below are exactly what the STRETCH tab receives.</div>
+          <div class="stat-grid" id="stat-display" style="display:none">
+            <div class="stat-cell"><div class="stat-label">Sky peak</div><div class="stat-val" id="stat-peak">—</div></div>
+            <div class="stat-cell"><div class="stat-label">Cluster edge</div><div class="stat-val" id="stat-edge">—</div></div>
+            <div class="stat-cell"><div class="stat-label">Sky median R</div><div class="stat-val rc" id="stat-mr">—</div></div>
+            <div class="stat-cell"><div class="stat-label">Sky median G</div><div class="stat-val gc" id="stat-mg">—</div></div>
+            <div class="stat-cell"><div class="stat-label">Sky median B</div><div class="stat-val bc" id="stat-mb">—</div></div>
+            <div class="stat-cell"><div class="stat-label">SP position</div><div class="stat-val" id="stat-sp">—</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4 -->
+      <div class="lin-step" id="lin-s4">
+        <div class="lin-step-hdr" onclick="toggleStep(4)">
+          <div class="lin-step-num" id="lin-s4-num">4</div>
+          <div class="lin-step-title">Gentle Linear Denoise</div>
+          <div class="lin-step-tag optional" id="lin-s4-tag">Optional</div>
+          <span class="lin-chevron" id="lin-s4-chev">▶</span>
+        </div>
+        <div class="lin-step-body collapsed" id="lin-s4-body">
+          <div class="ch" style="margin-bottom:12px">Gentle luminance-only denoise on the corrected linear image. Reduces background noise before stretching while preserving colour balance. Hue and saturation are unchanged. Skip this and go straight to STRETCH if your stack is deep.</div>
+          <div class="ctrl" style="margin-bottom:12px">
+            <div class="cr"><span class="cn">Strength</span><span class="cv" id="v-dn-str">0%</span></div>
+            <input type="range" id="i-dn-str" min="0" max="100" value="0" oninput="onDNStr(this.value)">
+            <div class="ch">Start at 20–40% for linear data. 0% = no effect.</div>
+          </div>
+          <button class="bg-apply" id="dn-apply-btn" onclick="applyLinearDenoise()" disabled>APPLY DENOISE</button>
+          <button class="bg-undo" id="dn-undo-btn" onclick="undoLinearDenoise()" disabled>UNDO</button>
+          <div class="ch" id="dn-status" style="margin-top:8px;text-align:center;color:var(--dim)">Apply background correction first</div>
+        </div>
+      </div>
+
+      <!-- STEP 5 -->
+      <div class="lin-step" id="lin-s5">
+        <div class="lin-step-hdr" onclick="toggleStep(5)">
+          <div class="lin-step-num" id="lin-s5-num">5</div>
+          <div class="lin-step-title">Ready for Stretch</div>
+          <div class="lin-step-tag not-run" id="lin-s5-tag">Waiting</div>
+          <span class="lin-chevron" id="lin-s5-chev">▶</span>
+        </div>
+        <div class="lin-step-body collapsed" id="lin-s5-body">
+          <div id="lin-pipeline-summary" class="ch" style="margin-bottom:14px">Complete Step 1 to proceed.</div>
+          <button class="go-stretch" id="go-stretch-btn" onclick="showTab('proc')" disabled>GO TO STRETCH →</button>
+        </div>
+      </div>
+
+      <div style="height:16px"></div>
+    </div>
+
+    <div class="tab-content on" id="tab-proc">
+
+      <div class="pb">
+        <div class="pl">Stretch</div>
+        <!-- Auto Preview bar — shown when preview is active -->
+        <div id="preview-bar">
+          <span id="preview-label">⚡ AUTO PREVIEW ACTIVE</span>
+          <button id="preview-exit" onclick="exitPreview()">EXIT PREVIEW</button>
+        </div>
+
+        <div style="display:flex;gap:6px;margin-bottom:12px">
+          <button class="stf-btn" style="margin-bottom:0;flex:1" onclick="doAutoSTF()">AUTO STRETCH</button>
+          <button class="stf-btn" style="margin-bottom:0;flex:1;background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.3);color:#7ac8f0" onclick="doAutoPreview()" title="Preview Auto Stretch without committing. Sliders update to show values. Press EXIT PREVIEW or move any slider to return to manual.">PREVIEW STF</button>
+        </div>
+        <div class="mode-row">
+          <button class="mde" id="m-mtf" onclick="setMode(0,this)">MTF</button>
+          <button class="mde" id="m-ash" onclick="setMode(1,this)">ASINH</button>
+          <button class="mde on" id="m-ghs" onclick="setMode(2,this)">GHS</button>
+        </div>
+
+        <!-- Target presets — GHS only, hidden in MTF/Asinh -->
+        <div class="preset-row" id="ghs-presets">
+          <button class="pre-btn" onclick="applyPreset('nebula')">NEBULA<span>Orion · Rosette</span></button>
+          <button class="pre-btn" onclick="applyPreset('galaxy')">GALAXY<span>M31 · M81</span></button>
+          <button class="pre-btn" onclick="applyPreset('faint')">FAINT<span>M78 · IFN</span></button>
+        </div>
+
+        <div class="ctrl" style="margin-bottom:10px">
+          <button class="stf-btn" style="margin-bottom:0" onclick="document.getElementById('hist-float').classList.toggle('hidden')">HISTOGRAM</button>
+        </div>
+
+        <div class="ctrl">
+          <div class="cr"><span class="cn">Background Clip</span><span class="cv" id="v-bp">0.000</span></div>
+          <div class="pm-row"><button class="pm-btn" onclick="stepSlider('bp',-1)">−</button><input type="range" id="i-bp" min="0" max="600" value="0" oninput="onBP(this.value)"><button class="pm-btn" onclick="stepSlider('bp',1)">+</button></div>
+          <div class="ch">Drag the orange marker on the histogram. Raise until background turns clean black.</div>
+        </div>
+        <div id="c-mtf">
+          <div class="ctrl">
+            <div class="cr"><span class="cn">Midtone (m)</span><span class="cv" id="v-mt">0.490</span></div>
+            <div class="pm-row"><button class="pm-btn" onclick="stepSlider('mt',-1)">−</button><input type="range" id="i-mt" min="0" max="480" value="0" oninput="onMT(this.value)"><button class="pm-btn" onclick="stepSlider('mt',1)">+</button></div>
+            <div class="ch">Left = no stretch (m=0.490). Right = very aggressive (m=0.010).</div>
+          </div>
+          <div class="ctrl">
+            <div class="cr"><span class="cn">White Point</span><span class="cv" id="v-mwp">1.000</span></div>
+            <div class="pm-row"><button class="pm-btn" onclick="stepSlider('mwp',-1)">−</button><input type="range" id="i-mwp" min="100" max="1000" value="1000" oninput="onMWP(this.value)"><button class="pm-btn" onclick="stepSlider('mwp',1)">+</button></div>
+            <div class="ch">Drag the red histogram marker. Clips highlights. Right = no clipping.</div>
+          </div>
+        </div>
+        <div id="c-ash" style="display:none">
+          <div class="ctrl">
+            <div class="cr"><span class="cn">Stretch D</span><span class="cv" id="v-ash">0.00</span></div>
+            <div class="pm-row"><button class="pm-btn" onclick="stepSlider('ash',-1)">−</button><input type="range" id="i-ash" min="0" max="200" value="0" oninput="onAsh(this.value)"><button class="pm-btn" onclick="stepSlider('ash',1)">+</button></div>
+            <div class="ch">Logarithmic. Left = no stretch. Right = very aggressive.</div>
+          </div>
+          <button onclick="doApply()" style="width:100%;padding:8px 0;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.5);border-radius:5px;color:var(--acc);font-family:var(--mono);font-size:10px;letter-spacing:.1em;cursor:pointer;margin-bottom:12px;transition:.15s" onmouseover="this.style.background='rgba(249,115,22,.28)'" onmouseout="this.style.background='rgba(249,115,22,.15)'">⊕  APPLY THIS PASS</button>
+        </div>
+        <div id="c-ghs" style="display:none">
+          <div class="ctrl">
+            <div class="cr"><span class="cn">Stretch Point SP</span><span class="cv" id="v-gsp">0.005</span></div>
+            <div class="pm-row"><button class="pm-btn" onclick="stepSlider('gsp',-1)">−</button><input type="range" id="i-gsp" min="1" max="500" value="5" oninput="onGSP(this.value)"><button class="pm-btn" onclick="stepSlider('gsp',1)">+</button></div>
+            <div class="ch">Place just left of where the histogram data begins to rise. Green marker shows recommended position. Drag the blue marker on the histogram.</div>
+          </div>
+          <div class="ctrl">
+            <div class="cr"><span class="cn">Stretch D</span><span class="cv" id="v-gd">0.00</span></div>
+            <div class="pm-row"><button class="pm-btn" onclick="stepSlider('gd',-1)">−</button><input type="range" id="i-gd" min="0" max="200" value="0" oninput="onGD(this.value)"><button class="pm-btn" onclick="stepSlider('gd',1)">+</button></div>
+            <div class="ch">Overall stretch strength. Increase until you can see your target. Stop before stars bloat.</div>
+          </div>
+          <button onclick="doApply()" style="width:100%;padding:8px 0;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.5);border-radius:5px;color:var(--acc);font-family:var(--mono);font-size:10px;letter-spacing:.1em;cursor:pointer;margin-bottom:12px;transition:.15s" onmouseover="this.style.background='rgba(249,115,22,.28)'" onmouseout="this.style.background='rgba(249,115,22,.15)'">⊕  APPLY THIS PASS</button>
+          <div class="ctrl">
+            <div class="cr"><span class="cn">Local Intensity b</span><span class="cv" id="v-gb">0.0</span></div>
+            <div class="pm-row"><button class="pm-btn" onclick="stepSlider('gb',-1)">−</button><input type="range" id="i-gb" min="-50" max="150" value="0" oninput="onGB(this.value)"><button class="pm-btn" onclick="stepSlider('gb',1)">+</button></div>
+            <div class="ch">Negative = log/Asinh behaviour. 0 = pure GHS. 1–6 = contrast focused at SP. 8–15 = very concentrated at SP for initial linear stretches.</div>
+          </div>
+          <div class="ctrl">
+            <div class="cr"><span class="cn">Lower Protection LP</span><span class="cv" id="v-glp">0.000</span></div>
+            <div class="pm-row"><button class="pm-btn" onclick="stepSlider('glp',-1)">−</button><input type="range" id="i-glp" min="0" max="500" value="0" oninput="onGLP(this.value)"><button class="pm-btn" onclick="stepSlider('glp',1)">+</button></div>
+            <div class="ch">Pixels below LP are returned toward identity — preserves deep shadow detail. Drag green LP marker on histogram. Keep LP ≤ SP.</div>
+          </div>
+          <div class="ctrl">
+            <div class="cr"><span class="cn">Highlight Protection HP</span><span class="cv" id="v-ghp">1.000</span></div>
+            <div class="pm-row"><button class="pm-btn" onclick="stepSlider('ghp',-1)">−</button><input type="range" id="i-ghp" min="0" max="1000" value="1000" oninput="onGHP(this.value)"><button class="pm-btn" onclick="stepSlider('ghp',1)">+</button></div>
+            <div class="ch">Pixels above HP are returned toward identity — protects galaxy cores and star colours. Drag yellow HP marker on histogram. Lower = more protection.</div>
+          </div>
+        </div>
+        <div class="sep"></div>
+        <div class="ctrl">
+          <div class="cr"><span class="cn">Highlights</span><span class="cv" id="v-ht">0.00</span></div>
+          <div class="pm-row"><button class="pm-btn" onclick="stepSlider('ht',-1)">−</button><input type="range" id="i-ht" min="0" max="100" value="0" oninput="onHT(this.value)"><button class="pm-btn" onclick="stepSlider('ht',1)">+</button></div>
+          <div class="ch">Power-law compression above midpoint. Reduces blown star cores only.</div>
+        </div>
+        <div class="ctrl">
+          <div class="cr"><span class="cn">Star Roll-off</span><span class="cv" id="v-rl">0.00</span></div>
+          <div class="pm-row"><button class="pm-btn" onclick="stepSlider('rl',-1)">−</button><input type="range" id="i-rl" min="0" max="200" value="0" oninput="onRL(this.value)"><button class="pm-btn" onclick="stepSlider('rl',1)">+</button></div>
+          <div class="ch">Smooth asymptotic cap. Final star shape control after Highlights.</div>
+        </div>
+      </div>
+
+      <div class="pb">
+        <div class="pl">White Balance</div>
+        <div class="ctrl">
+          <div class="cr"><span class="cn rc">Red</span><span class="cv" id="v-wr">1.00</span></div>
+          <div class="pm-row"><button class="pm-btn" onclick="stepSlider('wr',-1)">−</button><input type="range" id="i-wr" min="10" max="400" value="100" oninput="onWB()"><button class="pm-btn" onclick="stepSlider('wr',1)">+</button></div>
+        </div>
+        <div class="ctrl">
+          <div class="cr"><span class="cn gc">Green</span><span class="cv" id="v-wg">1.00</span></div>
+          <div class="pm-row"><button class="pm-btn" onclick="stepSlider('wg',-1)">−</button><input type="range" id="i-wg" min="10" max="400" value="100" oninput="onWB()"><button class="pm-btn" onclick="stepSlider('wg',1)">+</button></div>
+        </div>
+        <div class="ctrl">
+          <div class="cr"><span class="cn bc">Blue</span><span class="cv" id="v-wb">1.00</span></div>
+          <div class="pm-row"><button class="pm-btn" onclick="stepSlider('wb',-1)">−</button><input type="range" id="i-wb" min="10" max="400" value="100" oninput="onWB()"><button class="pm-btn" onclick="stepSlider('wb',1)">+</button></div>
+          <div class="ch">Adjust R and B until white stars look neutral.</div>
+        </div>
+      </div>
+
+      <div class="pb">
+        <div class="pl">Colour Palette</div>
+        <div class="pg">
+          <button class="pb2 on" onclick="setPal(0,this)">NATURAL</button>
+          <button class="pb2" onclick="setPal(1,this)">HUBBLE</button>
+          <button class="pb2" onclick="setPal(2,this)">COOL</button>
+          <button class="pb2" onclick="setPal(3,this)">MONO</button>
+          <button class="pb2" onclick="setPal(4,this)">VIRIDIS</button>
+          <button class="pb2" onclick="setPal(5,this)">HEAT</button>
+          <button class="pb2" onclick="setPal(6,this)">GREEN+</button>
+          <button class="pb2" onclick="setPal(7,this)">NEGATIVE</button>
+        </div>
+      </div>
+
+      <div class="pb">
+        <div class="pl">Multi-Pass Stretch</div>
+        <button id="apply-btn" onclick="doApply()">⊕  APPLY STRETCH  —  BAKE &amp; CONTINUE</button>
+        <div id="pass-counter">PASS 0 OF 0</div>
+        <div id="hist-log"></div>
+        <div class="ch" style="margin-top:8px">Bakes current stretch into pixel data and resets sliders to identity. Click any pass in the log to undo back to that point.</div>
+      </div>
+
+      <div class="pb">
+        <div class="pl">Export &amp; View</div>
+        <button class="btn btn-acc" id="exp-btn" onclick="doExport()">EXPORT FULL RES PNG</button>
+        <button class="btn btn-mute" onclick="resetZoom()">RESET ZOOM  (double-click image)</button>
+        <button class="btn btn-mute" onclick="resetAll()">← LOAD ANOTHER FILE</button>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-guide">
+      <div class="guide-step">
+        <div class="step-num">01 — GETTING THE FILE FROM YOUR DWARF 3</div>
+        <div class="step-title">Retrieve the stacked FITS file via USB-C</div>
+        <div class="step-body">Connect your Dwarf 3 to a laptop or desktop using the USB-C cable supplied. Power on, wait for the device to mount as a storage drive. Navigate to <code>/Astronomy/</code> and open the session folder <code>DWARF_RAW_TELE_{target}_EXP_{n}_GAIN_{n}_{timestamp}</code>. Copy <code>stacked-16_*.fits</code> to your computer.</div>
+        <div class="step-note">The stacked-16 file is the internally calibrated stack. Individual sub-frames are not needed.</div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">02 — THE RAW SIDE (LEFT OF SPLIT)</div>
+        <div class="step-title">What you are seeing on the left is real colour, gamma lifted</div>
+        <div class="step-body">The split-screen left side applies <code>pow(channel, 0.28)</code> to each RGB channel independently. This is a strong gamma lift — it takes the nearly-black linear data and makes it visible. The colours you see are real: the actual R, G, B values from the three FITS data planes. Nothing is processed or stretched. It is dim and low-contrast by nature because linear data contains almost no contrast.</div>
+        <div class="step-note">Drag the split to the right to compare before and after. The left side does not change when you move sliders — it always shows the raw data.</div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">03 — THE HISTOGRAM</div>
+        <div class="step-title">Drag, resize, and read the floating histogram</div>
+        <div class="step-body">The histogram floats over the image and can be dragged by its title bar. X axis: 0 = sky background, 1 = brightest stars. Y axis: logarithmic bin count. The tall peak near 0 is normal — most pixels are sky. The tail to the right contains nebulosity and stars. Switch channels (LUM, RED, GRN, BLU) to check colour balance. Three draggable vertical markers: orange = Background Clip, red = White Point (MTF), blue dashed = Stretch Point (GHS). Click anywhere on the histogram to set BP directly.</div>
+        <div class="step-note">Colour imbalance shows as one channel's histogram peak sitting at a different position from the others. Use white balance to align them.</div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">04 — AUTO STRETCH</div>
+        <div class="step-title">One click to a usable starting point</div>
+        <div class="step-body">Press AUTO STRETCH at the top of the PROCESS tab. Computes median and MAD from the luminance channel. Sets Background Clip to median − 2.5×MAD and solves for the stretch parameter so the background maps to approximately 20% output brightness — the same target PixInsight AutoSTF uses.</div>
+        <div class="step-note">Switch stretch mode before pressing Auto Stretch — it solves for the correct parameters for whichever mode is active.</div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">05 — MTF MODE</div>
+        <div class="step-title">Midtone Transfer Function — three-point curve</div>
+        <div class="step-body">Three independent controls: Background Clip (clips below sky), White Point (clips above and renormalises), and Midtone m (applies T(x)=(m−1)x/((2m−1)x−m)). At m=0.490 the curve is identity. Lower m = more aggressive contrast. This is the same algorithm as PixInsight's HistogramTransformation. Use the red histogram marker to set White Point and the orange marker for Background Clip.</div>
+        <div class="step-note">MTF is the recommended starting mode for most Dwarf 3 images.</div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">06 — ASINH MODE</div>
+        <div class="step-title">Inverse hyperbolic sine — smooth highlight compression</div>
+        <div class="step-body">Applies asinh(D×x)/asinh(D). Logarithmic D slider. At low D nearly linear. At high D very aggressive in shadows, smooth in highlights. Better star colour preservation than MTF at equivalent stretch levels because highlights are compressed smoothly rather than clipped.</div>
+        <div class="step-note">No White Point in Asinh mode. Use the Highlights and Star Roll-off sliders to manage bright stars.</div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">07 — GHS MODE</div>
+        <div class="step-title">Generalised Hyperbolic Stretch — Siril's method</div>
+        <div class="step-body">Stretches around a pivot point SP. Shadow side: Möbius pre-warp (B) boosts faint detail before asinh stretch, with LP fade near zero. Highlight side: log compression with HP fade. Set SP to background median — use Auto Stretch or drag the blue histogram marker. Start with B=0 and D at a moderate value.</div>
+        <div class="step-note">D and SP are the primary controls. B, LP, HP are refinements once the basic stretch looks right.</div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">08 — WHITE BALANCE</div>
+        <div class="step-title">Correct colour after stretching</div>
+        <div class="step-body">Inspect white stars in the processed side. If they appear orange, lower Red or raise Blue. If blue, raise Red. Green is the reference channel and is usually left at 1.00. Check the histogram channel selector — a balanced image shows all three channel curves overlapping closely.</div>
+        <div class="step-note">Apply white balance before selecting a palette. An uncalibrated image will look unpredictable in HUBBLE or COOL mode.</div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">09 — EXPORT</div>
+        <div class="step-title">Export at native 3856 × 2180 resolution</div>
+        <div class="step-body">Press EXPORT FULL RES PNG. Renders at native Dwarf 3 resolution without the split overlay. Filename is built from the OBJECT and DATE-OBS header fields. Zoom and pan do not affect the export — always exports the full frame.</div>
+        <div class="step-note">The PNG contains all current stretch, white balance, and palette settings baked in. It is ready to share or open in Affinity Photo or Photoshop for further work.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// FITS PARSER
+// ═══════════════════════════════════════════════════════════════════
+function parseHeader(buf){
+  const bytes=new Uint8Array(buf),kw={},cards=[];
+  let pos=0,done=false;
+  while(pos+80<=bytes.length&&!done){
+    let card='';
+    for(let i=0;i<80;i++) card+=String.fromCharCode(bytes[pos+i]);
+    const key=card.substring(0,8).trimEnd();
+    if(key==='END'){done=true;cards.push({key,val:'',comment:''});}
+    else if(card[8]==='='){
+      const rest=card.substring(10);
+      let val='',comment='';
+      if(rest.trimStart().startsWith("'")){
+        const s=rest.indexOf("'")+1;let e=s;
+        while(e<rest.length&&rest[e]!=="'")e++;
+        val=rest.substring(s,e).trimEnd();
+        const sl=rest.indexOf('/',e+1);
+        if(sl>=0)comment=rest.substring(sl+1).trim();
+      }else{
+        const parts=rest.split('/');val=parts[0].trim();
+        if(parts[1])comment=parts[1].trim();
+      }
+      kw[key]=val;cards.push({key,val,comment});
+    }else if(key==='COMMENT'||key==='HISTORY'){
+      cards.push({key,val:'',comment:card.substring(8).trim()});
+    }
+    pos+=80;
+  }
+  return{kw,cards,dataStart:Math.ceil(pos/2880)*2880};
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SHADERS
+// ═══════════════════════════════════════════════════════════════════
+const VS=`#version 300 es
+in vec2 a;out vec2 uv;
+void main(){uv=a*.5+.5;gl_Position=vec4(a,0,1);}`;
+
+const FS=`#version 300 es
+precision highp float;
+in vec2 uv;out vec4 o;
+uniform sampler2D tR,tG,tB,tGradR,tGradG,tGradB;
+uniform float bp,mwp,mmt,aD,gD,gB,gSP,gLP,gHP,ht,rl,wR,wG,wB,zoom,bgStr,bgGamma,bgMedR,bgMedG,bgMedB,bgGradActive;
+uniform vec2 view;
+uniform int mode,pal;
+
+/* Viridis colormap — perceptually uniform, blue→teal→green→yellow */
+vec3 palViridis(vec3 c){
+  float t=dot(c,vec3(.299,.587,.114));
+  vec3 a=mix(vec3(.267,.005,.329),vec3(.128,.566,.551),smoothstep(0.,.5,t));
+  vec3 b=mix(vec3(.128,.566,.551),vec3(.993,.906,.144),smoothstep(.5,1.,t));
+  return clamp(mix(a,b,step(.5,t)),0.,1.);
+}
+/* Heat — black→red→orange→yellow→white */
+vec3 palHeat(vec3 c){
+  float t=dot(c,vec3(.299,.587,.114));
+  float r=clamp(t*3.,0.,1.);
+  float g=clamp(t*3.-1.,0.,1.);
+  float b=clamp(t*3.-2.,0.,1.);
+  return vec3(r,g,b);
+}
+/* Green+ — boosts green channel, useful for Ha-dominated Bortle 6 data */
+vec3 palGreenPlus(vec3 c){
+  float l=dot(c,vec3(.299,.587,.114));
+  return clamp(vec3(c.r*.7+l*.25,c.g*1.25+l*.1,c.b*.7+l*.2),0.,1.);
+}
+
+float mtf(float x){
+  float r=clamp((x-bp)/max(mwp-bp,1e-4),0.,1.);
+  if(mmt>=.489)return r;
+  return(mmt-1.)*r/((2.*mmt-1.)*r-mmt);
+}
+float ash(float x){
+  float s=max(x-bp,0.)/max(1.-bp,1e-4);
+  if(aD<.001)return s;
+  return asinh(aD*s)/asinh(aD);
+}
+float ghs(float x){
+  float xc=max(x-bp,0.)/max(1.-bp,1e-4);
+  if(gD<.001)return xc;
+  float sp=clamp(gSP,1e-5,1.-1e-5);
+  float lp=clamp(gLP,0.,sp);
+  float hp=clamp(gHP,sp,1.);
+  float D=gD;
+  float b=gB;
+  float stretched;
+  if(xc<=sp){
+    float xn=sp>0.?xc/sp:0.;
+    float xb;
+    if(b>0.001){xb=xn*(1.+b)/(1.+b*xn);}
+    else if(b<-0.001){float nb=-b;xb=log(1.+nb*xn)/max(log(1.+nb),1e-6);}
+    else{xb=xn;}
+    float sn=asinh(D*xb)/max(asinh(D),1e-6);
+    float lpN=sp>0.?lp/sp:0.;
+    if(xn<lpN&&lpN>0.001){float t=xn/lpN;sn=mix(xn,sn,t);}
+    stretched=clamp(sn,0.,1.)*sp;
+  }else{
+    float xn=(xc-sp)/max(1.-sp,1e-5);
+    float sn=log(1.+D*xn)/max(log(1.+D),1e-6);
+    float hpN=(hp-sp)/max(1.-sp,1e-5);
+    if(xn>hpN&&hpN<0.999){float t=(xn-hpN)/max(1.-hpN,1e-5);sn=mix(sn,xn,t);}
+    stretched=sp+clamp(sn,0.,1.)*max(1.-sp,0.);
+  }
+  return clamp(stretched,0.,1.);
+}
+float highlights(float x){
+  if(ht<.001||x<=.5)return x;
+  return .5+pow((x-.5)/.5,1.+ht*3.)*.5;
+}
+float rolloff(float x){return rl<1e-4?x:x/(1.+rl*x);}
+vec3 palHubble(vec3 c){float l=dot(c,vec3(.3,.59,.11));return clamp(vec3(l*1.1+c.r*.44,l*.88+c.g*.14,l*.46+c.b*.05),0.,1.);}
+vec3 palCool(vec3 c){float l=dot(c,vec3(.3,.59,.11));return clamp(vec3(l*.46+c.r*.07,l*.72+c.g*.20,l*1.3+c.b*.43),0.,1.);}
+
+void main(){
+  vec2 img=(uv-.5)/zoom+view;
+  img=clamp(img,0.,1.);
+  vec2 f=vec2(img.x,1.-img.y);
+  /* Background gradient subtraction — real-time preview */
+  float r=max(texture(tR,f).r - texture(tGradR,f).r*bgStr, 0.);
+  float g=max(texture(tG,f).r - texture(tGradG,f).r*bgStr, 0.);
+  float b=max(texture(tB,f).r - texture(tGradB,f).r*bgStr, 0.);
+  /* BG gamma preview — non-zero only when user is in BG tab with preview on */
+  if(bgGamma>0.01){
+    /* PREVIEW ONLY — reads texture pixels, never mutates linear working arrays.
+       bgGradActive=1 means a gradient model has been calculated and uploaded.
+       In that case the corrected sky is already near 0 — subtracting the
+       pre-correction bgMed (~0.22) would clamp all signal to 0. Skip it.
+       When no model is active, subtract bgMed to push raw sky to 0 before
+       gamma lift so structure is visible against a dark background. */
+    float useM=bgGradActive>0.5?0.:1.;
+    float rg=clamp(r-bgMedR*useM,0.,1.)/max(1.-bgMedR*useM,0.01);
+    float gg=clamp(g-bgMedG*useM,0.,1.)/max(1.-bgMedG*useM,0.01);
+    float bg2=clamp(b-bgMedB*useM,0.,1.)/max(1.-bgMedB*useM,0.01);
+    o=vec4(pow(rg,bgGamma),pow(gg,bgGamma),pow(bg2,bgGamma),1.);return;
+  }
+  r*=wR;g*=wG;b*=wB;
+  float sr,sg,sb;
+  if(mode==0){sr=mtf(r);sg=mtf(g);sb=mtf(b);}
+  else if(mode==1){sr=ash(r);sg=ash(g);sb=ash(b);}
+  else{sr=ghs(r);sg=ghs(g);sb=ghs(b);}
+  sr=highlights(sr);sg=highlights(sg);sb=highlights(sb);
+  vec3 col=clamp(vec3(rolloff(sr),rolloff(sg),rolloff(sb)),0.,1.);
+  if(pal==1)col=palHubble(col);
+  else if(pal==2)col=palCool(col);
+  else if(pal==3){float l=dot(col,vec3(.299,.587,.114));col=vec3(l);}
+  else if(pal==4)col=palViridis(col);
+  else if(pal==5)col=palHeat(col);
+  else if(pal==6)col=palGreenPlus(col);
+  else if(pal==7)col=vec3(1.)-col;
+  o=vec4(col,1.);
+}`;
+
+// ═══════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════
+const P={bp:0,mwp:1.0,mmt:.490,aD:0,gD:0,gB:0,gSP:.005,gLP:0,gHP:1.0,ht:0,rl:0,wR:1,wG:1,wB:1,pal:0,mode:2};
+const Z={level:1,cx:.5,cy:.5};
+let NW=0,NH=0,gl,prog,locs={},tR,tG,tB;
+let hSampR=[],hSampG=[],hSampB=[],hSampL=[];
+let histCh='L',histDrag=null,histPeakVal=0,histFootVal=0,histSpikeEdgeVal=0;
+
+// ── BACKGROUND EXTRACTION STATE ────────────────────────────────────
+const BG_GRAD_W=256,BG_GRAD_H=144; // gradient texture resolution
+let bgDsW=0,bgDsH=0;               // downsampled channel dimensions
+let bgDsR,bgDsG,bgDsB;             // downsampled float arrays (1/8 res)
+let bgSamples=[];                   // [{x,y,medR,medG,medB,accepted}]
+let bgModel=null;                   // fitted model object
+let tGradR=null,tGradG=null,tGradB=null; // gradient GPU textures
+let bgStrength=1.0;
+let bgGammaVal=0;
+let bgMedR=0,bgMedG=0,bgMedB=0;
+let bgNeutralDR=0,bgNeutralDG=0,bgNeutralDB=0;
+let denoiseStrength=0;
+let denoiseApplied=false;
+let denoiseSnapshot=null;
+let bgAlgo='poly2';                 // default poly2 — handles LP + vignetting
+let bgTolerance=1.0;                // MAD rejection tolerance
+let bgGridCols=8,bgGridRows=6;      // sample grid dimensions
+let bgApplied=false;                // gradient baked into data
+let bgSnapshot=null;                // {plR,plG,plB} before bake
+
+// ── APPLY + HISTORY ──────────────────────────────────────────────────
+// History stores parameter snapshots and the float arrays at each pass.
+// We keep the ORIGINAL raw float arrays and replay all passes from scratch
+// on undo — no per-pass pixel storage, so memory is bounded.
+let historyStack=[];   // [{params, sampR, sampG, sampB, sampL, peakVal, footVal}]
+let historyOrigR=null,historyOrigG=null,historyOrigB=null; // original 0-1/65535 arrays
+let currentPass=0;
+
+// ═══════════════════════════════════════════════════════════════════
+// WEBGL
+// ═══════════════════════════════════════════════════════════════════
+function mkS(t,s){const sh=gl.createShader(t);gl.shaderSource(sh,s);gl.compileShader(sh);
+  if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(sh));return sh;}
+
+function initGL(){
+  const cv=document.getElementById('gl');
+  gl=cv.getContext('webgl2');
+  if(!gl){alert('WebGL2 required — use Chrome or Firefox on desktop.');return false;}
+  gl.getExtension('OES_texture_float_linear');
+  const p=gl.createProgram();
+  gl.attachShader(p,mkS(gl.VERTEX_SHADER,VS));
+  gl.attachShader(p,mkS(gl.FRAGMENT_SHADER,FS));
+  gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
+  prog=p;
+  ['tR','tG','tB','tGradR','tGradG','tGradB','bp','mwp','mmt','aD','gD','gB','gSP','gLP','gHP',
+   'ht','rl','wR','wG','wB','zoom','bgStr','bgGamma','bgMedR','bgMedG','bgMedB','bgGradActive','view','mode','pal'].forEach(n=>{
+    locs[n]=gl.getUniformLocation(p,n);});
+  locs.a=gl.getAttribLocation(p,'a');
+  const buf=gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(locs.a);
+  gl.vertexAttribPointer(locs.a,2,gl.FLOAT,false,0,0);
+  return true;
+}
+function mkTex(data,w,h){
+  const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.R32F,w,h,0,gl.RED,gl.FLOAT,data);
+  [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T].forEach(p=>gl.texParameteri(gl.TEXTURE_2D,p,gl.CLAMP_TO_EDGE));
+  [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER].forEach(p=>gl.texParameteri(gl.TEXTURE_2D,p,gl.LINEAR));
+  return t;
+}
+function render(){
+  if(!gl||!tR)return;
+  const cv=document.getElementById('gl');
+  gl.viewport(0,0,cv.width,cv.height);
+  gl.useProgram(prog);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tR);gl.uniform1i(locs.tR,0);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,tG);gl.uniform1i(locs.tG,1);
+  gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,tB);gl.uniform1i(locs.tB,2);
+  gl.uniform1f(locs.bp,P.bp);gl.uniform1f(locs.mwp,P.mwp);gl.uniform1f(locs.mmt,P.mmt);
+  gl.uniform1f(locs.aD,P.aD);gl.uniform1f(locs.gD,P.gD);gl.uniform1f(locs.gB,P.gB);
+  gl.uniform1f(locs.gSP,P.gSP);gl.uniform1f(locs.gLP,P.gLP);gl.uniform1f(locs.gHP,P.gHP);
+  gl.uniform1f(locs.ht,P.ht);gl.uniform1f(locs.rl,P.rl);
+  gl.uniform1f(locs.wR,P.wR);gl.uniform1f(locs.wG,P.wG);gl.uniform1f(locs.wB,P.wB);
+  gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,tGradR||tR);gl.uniform1i(locs.tGradR,3);
+  gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,tGradG||tG);gl.uniform1i(locs.tGradG,4);
+  gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,tGradB||tB);gl.uniform1i(locs.tGradB,5);
+  gl.uniform1f(locs.zoom,Z.level);
+  gl.uniform1f(locs.bgStr,(bgApplied||!tGradR)?0:bgStrength);
+  gl.uniform1f(locs.bgGamma,bgGammaVal);
+  gl.uniform1f(locs.bgMedR,bgMedR);gl.uniform1f(locs.bgMedG,bgMedG);gl.uniform1f(locs.bgMedB,bgMedB);
+  gl.uniform1f(locs.bgGradActive,bgModel?1.0:0.0);
+  gl.uniform2f(locs.view,Z.cx,Z.cy);
+  gl.uniform1i(locs.mode,P.mode);gl.uniform1i(locs.pal,P.pal);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+  if(bgSamples.length) drawSampleOverlay();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════════════
+function readPlane(dv,off,n,bz){
+  const out=new Float32Array(n);
+  for(let i=0;i<n;i++) out[i]=dv.getInt16(off+i*2,false)+bz;
+  return out;
+}
+function readPlaneF32(dv,off,n){
+  // FITS float32 is big-endian IEEE 754
+  const out=new Float32Array(n);
+  for(let i=0;i<n;i++) out[i]=dv.getFloat32(off+i*4,false);
+  return out;
+}
+function pct(arr,...ps){
+  const step=Math.max(1,Math.floor(arr.length/80000)),s=[];
+  for(let i=0;i<arr.length;i+=step) s.push(arr[i]);
+  s.sort((a,b)=>a-b);
+  return ps.map(p=>s[Math.max(0,Math.min(s.length-1,Math.floor(p*s.length)))]);
+}
+function normInPlace(arr,lo,hi){const r=hi-lo||1;for(let i=0;i<arr.length;i++) arr[i]=(arr[i]-lo)/r;}
+function sToD(v){return v===0?0:0.1*Math.pow(5000,v/200);}
+function dFmt(d){return d<0.01?'0.00':d<10?d.toFixed(2):d<100?d.toFixed(1):Math.round(d).toString();}
+function dToSlider(d){return d<0.01?0:Math.max(0,Math.min(200,Math.round(200*Math.log(d/0.1)/Math.log(5000))));}
+
+// Histogram X-axis range — defined here so loadFITS can use them for peak detection
+const HLO=-0.05,HHI=1.6;
+// ═══════════════════════════════════════════════════════════════════
+// LOAD
+// ═══════════════════════════════════════════════════════════════════
+const raf=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+function setLoad(m,p){document.getElementById('lmsg').textContent=m;document.getElementById('lfill').style.width=p+'%';}
+function secToHM(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h>0?`${h}h ${m}m`:`${m}m`;}
+
+async function loadFITS(buf){
+  document.getElementById('drop-screen').style.display='none';
+  document.getElementById('load-screen').style.display='flex';
+  await raf();
+  setLoad('Parsing FITS header…',6);await raf();
+
+  const{kw,cards,dataStart}=parseHeader(buf);
+  const naxis1=parseInt(kw.NAXIS1||0),naxis2=parseInt(kw.NAXIS2||0);
+  const naxis3=parseInt(kw.NAXIS3||1),bitpix=parseInt(kw.BITPIX||16);
+  const bzero=parseFloat(kw.BZERO||32768),exptime=parseFloat(kw.EXPTIME||0);
+  const obj=(kw.OBJECT||'—').trim(),date=(kw['DATE-OBS']||'—').substring(0,10);
+  const gain=kw.GAIN||'—',temp=kw['DET-TEMP']||'—';
+
+  if(naxis3!==3){alert(`NAXIS3=${naxis3}. Expected 3 (RGB). Load the original stacked-16_*.fits.`);resetAll();return;}
+  if(bitpix!==16&&bitpix!==-32){alert(`BITPIX=${bitpix}. Supported formats: 16 (Dwarf 3 native) and -32 (32-bit float).`);resetAll();return;}
+
+  const isFloat=(bitpix===-32);
+  NW=naxis1;NH=naxis2;
+  const ps=naxis1*naxis2,mb=(ps*(isFloat?4:2)/1e6).toFixed(0);
+
+  ['obj','int','date','gain','temp'].forEach((id,i)=>{
+    document.getElementById('m-'+id).textContent=
+      [obj,exptime>0?secToHM(exptime):'—',date,gain,temp!=='—'?temp+'°C':'—'][i];
+  });
+  document.getElementById('meta').style.display='flex';
+
+  const dv=new DataView(buf,dataStart);
+  setLoad(`Reading R plane (${mb} MB)…`,18);await raf();
+  const plR=isFloat?readPlaneF32(dv,0,ps):readPlane(dv,0,ps,bzero);
+  setLoad(`Reading G plane (${mb} MB)…`,34);await raf();
+  const plG=isFloat?readPlaneF32(dv,ps*4,ps):readPlane(dv,ps*2,ps,bzero);
+  setLoad(`Reading B plane (${mb} MB)…`,50);await raf();
+  const plB=isFloat?readPlaneF32(dv,ps*8,ps):readPlane(dv,ps*4,ps,bzero);
+
+  setLoad('Scaling to display range, building histogram…',64);await raf();
+
+  // Percentile stats for Auto STF and info display
+  const[rLo,rHi]=pct(plR,.010,.995);
+  const[gLo,gHi]=pct(plG,.010,.995);
+  const[bLo,bHi]=pct(plB,.010,.995);
+
+  if(isFloat){
+    // Float FITS: data already linear, normalize per-channel to P1%–P99.5%
+    // (float files from Siril/PixInsight are typically already 0–1 but may vary)
+    normInPlace(plR,rLo,rHi);
+    normInPlace(plG,gLo,gHi);
+    normInPlace(plB,bLo,bHi);
+  } else {
+    // Int16 FITS (Dwarf 3 native): normalize to full 16-bit range — image is
+    // black until user applies stretch, matching PixInsight / Siril behaviour.
+    normInPlace(plR,0,65535);
+    normInPlace(plG,0,65535);
+    normInPlace(plB,0,65535);
+  }
+
+  const hs=Math.max(1,Math.floor(plG.length/8000));
+  hSampR=[];hSampG=[];hSampB=[];hSampL=[];
+  for(let i=0;i<plG.length;i+=hs){
+    hSampR.push(plR[i]);hSampG.push(plG[i]);hSampB.push(plB[i]);
+    hSampL.push((plR[i]+plG[i]+plB[i])/3);
+  }
+  [hSampR,hSampG,hSampB,hSampL].forEach(a=>a.sort((a,b)=>a-b));
+
+  // Compute histogram peak and foot positions
+  {
+    const nb=300,range=HHI-HLO,bins=new Array(nb).fill(0);
+    for(const v of hSampL){const b=Math.floor((v-HLO)/range*nb);if(b>=0&&b<nb)bins[b]++;}
+    // Peak = modal bin
+    let peakBin=0;
+    for(let i=1;i<nb;i++) if(bins[i]>bins[peakBin]) peakBin=i;
+    histPeakVal=HLO+(peakBin+0.5)/nb*range;
+    // Foot = first bin where count exceeds 0.5% of peak count (first significant rise)
+    // Search starting from left edge up to the peak
+    const threshold=bins[peakBin]*0.005;
+    let footBin=0;
+    for(let i=0;i<peakBin;i++){if(bins[i]>=threshold){footBin=Math.max(0,i-1);break;}}
+    histFootVal=Math.max(0,HLO+(footBin+0.5)/nb*range);
+  }
+
+  const medNorm=hSampG[Math.floor(hSampG.length/2)];
+
+  // All sliders to identity. SP defaults to histogram foot — just left of where data begins.
+  P.bp=0;P.mwp=1.0;P.mmt=.490;P.aD=0;
+  P.gD=0;P.gB=0;
+  P.gSP=Math.max(.001,Math.min(.5,histFootVal));
+  P.gLP=0;P.gHP=1.0;
+  P.ht=0;P.rl=0;P.wR=1;P.wG=1;P.wB=1;P.mode=2;
+  // Sync SP slider
+  const spSliderVal=Math.min(500,Math.max(1,Math.round(P.gSP*1000)));
+  syncSlider('i-gsp',spSliderVal,'v-gsp',P.gSP.toFixed(3));
+  // Sync HP slider to 1.0
+  syncSlider('i-ghp',1000,'v-ghp','1.000');
+
+  buildInfoTab(kw,cards,{gLo,gHi,medNorm,naxis1,naxis2,naxis3,bitpix,bzero,exptime,obj,date,gain,temp});
+
+  // Show GHS controls, hide others
+  document.getElementById('c-mtf').style.display='none';
+  document.getElementById('c-ash').style.display='none';
+  document.getElementById('c-ghs').style.display='';
+  document.querySelectorAll('.mde').forEach((b,i)=>b.classList.toggle('on',i===2));
+
+  setLoad('Uploading to GPU…',80);await raf();
+  if(!initGL())return;
+  // Store originals for history replay
+  historyOrigR=new Float32Array(plR);
+  historyOrigG=new Float32Array(plG);
+  historyOrigB=new Float32Array(plB);
+  historyStack=[];
+  currentPass=0;
+  tR=mkTex(plR,naxis1,naxis2);
+  tG=mkTex(plG,naxis1,naxis2);
+  tB=mkTex(plB,naxis1,naxis2);
+  // Build 1/8 downsampled arrays for background sample analysis
+  buildBGDownsampled(plR,plG,plB,naxis1,naxis2);
+  // Init zero gradient textures (subtract nothing until model is fitted)
+  initGradTextures();
+  bgSamples=[];bgModel=null;bgApplied=false;bgSnapshot=null;bgStrength=1.0;bgGammaVal=0;bgMedR=0;bgMedG=0;bgMedB=0;
+  bgNeutralDR=0;bgNeutralDG=0;bgNeutralDB=0;
+  denoiseStrength=0;denoiseApplied=false;denoiseSnapshot=null;
+  const dnStr=document.getElementById('i-dn-str');if(dnStr)dnStr.value=0;
+  const dnLbl=document.getElementById('v-dn-str');if(dnLbl)dnLbl.textContent='0%';
+  initLinearSteps();
+  gradVisActive=false;
+  const gvb=document.getElementById('bg-gamma-btn');if(gvb){gvb.classList.remove('on');gvb.textContent='GAMMA VIEW';}
+  const gvv=document.getElementById('grad-vis-cv');if(gvv)gvv.style.display='none';
+  const calcBtn=document.getElementById('bg-calc-btn');if(calcBtn)calcBtn.disabled=true;
+  const gradRow=document.getElementById('bg-grad-row');if(gradRow)gradRow.style.display='none';
+  document.getElementById('bg-status').textContent='Ready — click GENERATE SAMPLE GRID';
+  document.getElementById('bg-calc-btn').disabled=true;
+  document.getElementById('bg-grad-row').style.display='none';
+  document.getElementById('bg-status').className='bg-status';
+  document.getElementById('bg-apply-btn').disabled=true;
+  document.getElementById('bg-undo-btn').disabled=true;
+  document.getElementById('i-bgstr').value=100;
+  document.getElementById('bg-str-lbl').textContent='100%';
+
+  setLoad('Rendering…',96);await raf();
+  document.getElementById('load-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  showTab('info');
+  initLinearSteps();
+  await raf();
+  sizeCanvas();drawHist();render();
+  updatePassUI();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INFO TAB
+// ═══════════════════════════════════════════════════════════════════
+function buildInfoTab(kw,cards,st){
+  const{gLo,gHi,medNorm,naxis1,naxis2,naxis3,bitpix,bzero,exptime}=st;
+  const origin=(kw['ORIGIN']||kw['TELESCOP']||kw['INSTRUME']||'').toUpperCase();
+  const v=[
+    {label:'ORIGIN contains DWARFLAB',pass:origin.includes('DWARF')},
+    {label:'NAXIS3 = 3 (RGB planes)',pass:parseInt(kw.NAXIS3||0)===3},
+    {label:'BITPIX = 16 or −32 (supported)',pass:parseInt(kw.BITPIX||0)===16||parseInt(kw.BITPIX||0)===-32},
+    {label:'BZERO = 32768 (std offset)',pass:parseFloat(kw.BZERO||0)===32768},
+  ];
+  const allPass=v.every(x=>x.pass);
+  const kvRow=(l,val)=>`<tr><td>${l}</td><td>${val||'—'}</td></tr>`;
+  document.getElementById('tab-info').innerHTML=`
+    <div style="padding:14px 16px;border-bottom:1px solid var(--bdr)">
+      <div class="pl" style="margin-bottom:11px">DWARF 3 VERIFICATION</div>
+      <div class="verdict-block">
+        <div class="verdict-title">${allPass?'ALL CHECKS PASSED':'SOME CHECKS FAILED'}</div>
+        ${v.map(x=>`<div class="vcheck"><div class="vdot ${x.pass?'pass':'fail'}"></div><span style="font-size:13px;color:${x.pass?'var(--txt)':'#f87171'}">${x.label}</span></div>`).join('')}
+      </div>
+    </div>
+    <div style="padding:14px 16px;border-bottom:1px solid var(--bdr)">
+      <div class="pl">Session Metadata</div>
+      <table class="info-tbl">
+        ${kvRow('Object',kw.OBJECT)}
+        ${kvRow('Date Observed',(kw['DATE-OBS']||'').substring(0,19))}
+        ${kvRow('Integration',st.exptime>0?secToHM(st.exptime)+' ('+Math.round(st.exptime)+'s)':'—')}
+        ${kvRow('Gain',kw.GAIN)}
+        ${kvRow('Detector Temp',kw['DET-TEMP']?kw['DET-TEMP']+'°C':'—')}
+        ${kvRow('RA / DEC',kw.RA&&kw.DEC?`${parseFloat(kw.RA).toFixed(4)}° / ${parseFloat(kw.DEC).toFixed(4)}°`:'—')}
+        ${kvRow('EQ Mode',kw.EQMODE==='1'?'Active (field rotation compensated)':'Alt-Az')}
+        ${kvRow('Firmware',kw.FIRMWARE)}
+        ${kvRow('Origin',kw.ORIGIN)}
+      </table>
+    </div>
+    <div style="padding:14px 16px;border-bottom:1px solid var(--bdr)">
+      <div class="pl">Image Structure</div>
+      <table class="info-tbl">
+        ${kvRow('Dimensions',`${st.naxis1} × ${st.naxis2} px`)}
+        ${kvRow('Megapixels',(st.naxis1*st.naxis2/1e6).toFixed(1)+' MP')}
+        ${kvRow('Data Planes',`${st.naxis3} (${st.naxis3===3?'RGB — no debayer needed':'Bayer mosaic'})`)}
+        ${kvRow('Bit Depth',`BITPIX=${st.bitpix}`)}
+        ${kvRow('BZERO / BSCALE',`${kw.BZERO||'—'} / ${kw.BSCALE||'1'}`)}
+        ${kvRow('Camera',kw.CAMERA)}
+        ${kvRow('Is Megastack',kw.RESTACK==='1'?'Yes':'No (single session)')}
+      </table>
+    </div>
+    <div style="padding:14px 16px;border-bottom:1px solid var(--bdr)">
+      <div class="pl">Pixel Statistics (G Channel)</div>
+      <table class="info-tbl">
+        ${kvRow('Sky ADU (P1%)',Math.round(gLo).toLocaleString())}
+        ${kvRow('Peak ADU (P99.5%)',Math.round(gHi).toLocaleString())}
+        ${kvRow('Dynamic Range Used',((gHi-gLo)/65535*100).toFixed(1)+'% of full 16-bit scale')}
+        ${kvRow('Norm. Median (G)',medNorm.toFixed(6)+' of 1.0')}
+      </table>
+    </div>
+    <div style="padding:14px 16px">
+      <div class="pl">Full FITS Header (${cards.length} cards)</div>
+      <div style="overflow-x:auto;max-height:300px;overflow-y:auto;border:1px solid var(--bdr);border-radius:5px">
+        <table class="kw-tbl">
+          <thead><tr><th>KEYWORD</th><th>VALUE</th><th>COMMENT</th></tr></thead>
+          <tbody>${cards.map(c=>`<tr><td class="kw-key">${c.key}</td><td class="kw-val">${c.val}</td><td class="kw-com">${c.comment}</td></tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CANVAS SIZING
+// ═══════════════════════════════════════════════════════════════════
+function sizeCanvas(){
+  const wrap=document.getElementById('cv-wrap'),cv=document.getElementById('gl');
+  const ww=wrap.clientWidth,wh=wrap.clientHeight;
+  if(!ww||!wh)return;
+  const ar=NW/NH;
+  let cw,ch;
+  if(ww/wh>ar){ch=wh;cw=Math.round(wh*ar);}
+  else{cw=ww;ch=Math.round(ww/ar);}
+  // Render at physical pixel resolution to avoid blur on HiDPI/Retina displays
+  const dpr=window.devicePixelRatio||1;
+  cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr);
+  cv.style.width=cw+'px';cv.style.height=ch+'px';
+}
+new ResizeObserver(()=>{if(gl&&tR){sizeCanvas();render();if(bgSamples.length)drawSampleOverlay();}}).observe(document.getElementById('cv-wrap'));
+
+// ═══════════════════════════════════════════════════════════════════
+// HISTOGRAM — floating, line style, draggable panel
+// ═══════════════════════════════════════════════════════════════════
+function hValToX(val,W){return(val-HLO)/(HHI-HLO)*W;}
+function hXToVal(px,W){return HLO+px/W*(HHI-HLO);}
+
+// JS-side GHS evaluation for transform curve overlay
+function ghsJS(xc){
+  if(P.gD<.001)return xc;
+  const sp=Math.max(P.gSP,1e-5),lp=Math.min(P.gLP,sp),hp=Math.max(P.gHP,sp);
+  const D=P.gD,b=P.gB;
+  let s;
+  if(xc<=sp){
+    const xn=sp>0?xc/sp:0;
+    let xb;
+    if(b>0.001){xb=xn*(1+b)/(1+b*xn);}
+    else if(b<-0.001){const nb=-b;xb=Math.log(1+nb*xn)/Math.max(Math.log(1+nb),1e-9);}
+    else xb=xn;
+    let sn=Math.asinh(D*xb)/Math.max(Math.asinh(D),1e-9);
+    const lpN=sp>0?lp/sp:0;
+    if(xn<lpN&&lpN>0.001)sn=xn/lpN*sn+(1-xn/lpN)*xn;
+    s=Math.max(0,Math.min(1,sn))*sp;
+  } else {
+    const xn=(xc-sp)/Math.max(1-sp,1e-9);
+    let sn=Math.log(1+D*xn)/Math.max(Math.log(1+D),1e-9);
+    const hpN=(hp-sp)/Math.max(1-sp,1e-9);
+    if(xn>hpN&&hpN<0.999){const t=(xn-hpN)/Math.max(1-hpN,1e-9);sn=sn*(1-t)+xn*t;}
+    s=sp+Math.max(0,Math.min(1,sn))*Math.max(1-sp,0);
+  }
+  return Math.max(0,Math.min(1,s));
+}
+
+function drawHist(){
+  const cv=document.getElementById('hist-cv');
+  const dpr=window.devicePixelRatio||1;
+  // Canvas fills panel via flex — read its own layout dimensions.
+  // Do NOT write cv.style.height: that would change layout and trigger
+  // ResizeObserver → drawHist loop causing the panel to grow upward.
+  const W=cv.offsetWidth||580;
+  const H=cv.offsetHeight||200;
+  cv.width=W*dpr;
+  cv.height=H*dpr;
+  const ctx=cv.getContext('2d');
+  ctx.scale(dpr,dpr);
+
+  const samp=histCh==='R'?hSampR:histCh==='G'?hSampG:histCh==='B'?hSampB:hSampL;
+  ctx.fillStyle='#080808';ctx.fillRect(0,0,W,H);
+  if(!samp||!samp.length)return;
+
+  const nb=140,bins=new Array(nb).fill(0),range=HHI-HLO;
+  for(const v of samp){
+    const b=Math.floor((v-HLO)/range*nb);
+    if(b>=0&&b<nb)bins[b]++;
+  }
+  const mx=Math.max(...bins,1);
+
+  // Grid
+  ctx.strokeStyle='rgba(37,37,37,.6)';ctx.lineWidth=1;
+  [.25,.5,.75].forEach(f=>{ctx.beginPath();ctx.moveTo(0,H*(1-f));ctx.lineTo(W,H*(1-f));ctx.stroke();});
+
+  // ADU=0 and ADU=65535 reference lines
+  const zx=Math.round(hValToX(0,W));
+  ctx.strokeStyle='rgba(249,115,22,.15)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(zx,0);ctx.lineTo(zx,H);ctx.stroke();
+  ctx.strokeStyle='rgba(153,153,153,.1)';
+  ctx.beginPath();ctx.moveTo(Math.round(hValToX(1,W)),0);ctx.lineTo(Math.round(hValToX(1,W)),H);ctx.stroke();
+
+  // Build polyline
+  const lineColors={L:'rgba(200,200,200,1)',R:'rgba(220,80,80,1)',G:'rgba(60,190,80,1)',B:'rgba(70,130,220,1)'};
+  const fillColors={L:'rgba(200,200,200,.1)',R:'rgba(220,80,80,.1)',G:'rgba(60,190,80,.1)',B:'rgba(70,130,220,.1)'};
+  const bpX=hValToX(P.bp,W);
+  const pts=[];
+  for(let i=0;i<nb;i++){
+    const x=(i+0.5)/nb*W;
+    const h=bins[i]>0?(Math.log(bins[i]+1)/Math.log(mx+1))*(H-6):0;
+    pts.push({x,y:H-h});
+  }
+  // Fill left (clipped)
+  ctx.beginPath();ctx.moveTo(0,H);
+  for(const p of pts){if(p.x>bpX)break;ctx.lineTo(p.x,p.y);}
+  ctx.lineTo(Math.min(bpX,W),H);ctx.closePath();
+  ctx.fillStyle='rgba(50,50,50,.15)';ctx.fill();
+  // Fill right
+  ctx.beginPath();ctx.moveTo(Math.max(bpX,0),H);
+  let st=false;
+  for(const p of pts){if(p.x<bpX)continue;if(!st){ctx.lineTo(p.x,p.y);st=true;}else ctx.lineTo(p.x,p.y);}
+  ctx.lineTo(W,H);ctx.closePath();
+  ctx.fillStyle=fillColors[histCh];ctx.fill();
+  // Line
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);
+  ctx.strokeStyle=lineColors[histCh];ctx.lineWidth=1.5;ctx.lineJoin='round';ctx.stroke();
+
+  // ── TRANSFORM CURVE (GHS mode) ──────────────────────────────────
+  // X axis = input value, mapped to screen X.
+  // Y axis = output value from GHS, mapped to screen Y (inverted: 0=bottom, 1=top).
+  // Identity line (45°) = no change. Curve above identity = brightening.
+  if(P.mode===2&&P.gD>0.001){
+    const steps=W;
+    // Identity diagonal
+    ctx.beginPath();
+    ctx.moveTo(hValToX(P.bp,W),H); // starts at BP (clipped = 0 output)
+    ctx.lineTo(hValToX(1,W),H-H*1); // ends at (1,1)
+    ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);
+    ctx.stroke();ctx.setLineDash([]);
+    // GHS curve
+    ctx.beginPath();
+    let first=true;
+    for(let px=0;px<steps;px++){
+      const xInput=hXToVal(px,W);
+      if(xInput<0||xInput>1.5)continue;
+      // Apply BP clip first (same as shader)
+      const xc=Math.max(xInput-P.bp,0)/Math.max(1-P.bp,1e-4);
+      const yOut=ghsJS(xc);
+      const screenX=px;
+      const screenY=H-yOut*H;
+      if(first){ctx.moveTo(screenX,screenY);first=false;}
+      else ctx.lineTo(screenX,screenY);
+    }
+    ctx.strokeStyle='rgba(249,200,80,.75)';ctx.lineWidth=1.5;ctx.lineJoin='round';ctx.stroke();
+  }
+
+  // ── CLUSTER EDGE marker — shown whenever histSpikeEdgeVal is set ──
+  // This is the right edge of the sky noise cluster after background
+  // correction. The user can drag BP here for a more aggressive clip.
+  if(histSpikeEdgeVal>0.001){
+    const cex=hValToX(histSpikeEdgeVal,W);
+    if(cex>0&&cex<W){
+      ctx.save();
+      ctx.strokeStyle='rgba(249,180,60,.5)';ctx.lineWidth=1;ctx.setLineDash([3,5]);
+      ctx.beginPath();ctx.moveTo(cex,0);ctx.lineTo(cex,H);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='rgba(249,180,60,.65)';
+      ctx.font='9px Menlo,Monaco,monospace';
+      const cl='cluster edge';
+      ctx.fillText(cl,cex+3>W-80?cex-82:cex+3,H-6);
+      ctx.restore();
+    }
+  }
+
+  // ── FOOT MARKER (GHS mode — SP placement guide) ──────────────────
+  if(P.mode===2&&histFootVal>HLO){
+    const fx=hValToX(histFootVal,W);
+    if(fx>0&&fx<W){
+      ctx.save();
+      ctx.strokeStyle='rgba(80,220,120,.45)';ctx.lineWidth=1;ctx.setLineDash([2,6]);
+      ctx.beginPath();ctx.moveTo(fx,0);ctx.lineTo(fx,H);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='rgba(80,220,120,.6)';
+      ctx.font='9px Menlo,Monaco,monospace';
+      ctx.fillText('foot',fx+3>W-40?fx-38:fx+3,H-18);
+      ctx.restore();
+    }
+  }
+
+  // ── MARKERS ─────────────────────────────────────────────────────
+  // BP — orange
+  drawMarker(ctx,bpX,H,'#F97316',false,'BP:'+P.bp.toFixed(3),W);
+  // MTF white point — red
+  if(P.mode===0) drawMarker(ctx,hValToX(P.mwp,W),H,'#d07070',false,'WP:'+P.mwp.toFixed(3),W);
+  // GHS markers
+  if(P.mode===2){
+    // LP — green (only if > 0)
+    if(P.gLP>0.0005) drawMarker(ctx,hValToX(P.gLP,W),H,'#50c870',false,'LP:'+P.gLP.toFixed(3),W);
+    // SP — blue dashed (primary GHS control)
+    drawMarker(ctx,hValToX(P.gSP,W),H,'#7090d0',true,'SP:'+P.gSP.toFixed(3),W);
+    // HP — yellow (only if < 1)
+    if(P.gHP<0.9995) drawMarker(ctx,hValToX(P.gHP,W),H,'#d0b040',false,'HP:'+P.gHP.toFixed(3),W);
+  }
+}
+
+function drawMarker(ctx,x,H,color,dashed,label,W){
+  if(x<0||x>W)return;
+  ctx.save();
+  ctx.strokeStyle=color;ctx.lineWidth=1.5;
+  if(dashed)ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle=color;
+  ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x-5,9);ctx.lineTo(x+5,9);ctx.closePath();ctx.fill();
+  ctx.font='9px Menlo,Monaco,monospace';
+  ctx.fillStyle=color;
+  const lx=x+6>W-72?x-74:x+6;
+  ctx.fillText(label,lx,20);
+  ctx.restore();
+}
+
+// Histogram mouse interaction — supports BP, WP (MTF), SP/LP/HP (GHS)
+const histCv=document.getElementById('hist-cv');
+histCv.addEventListener('mousedown',e=>{
+  const r=histCv.getBoundingClientRect();
+  const W=histCv.offsetWidth;
+  const pxN=(e.clientX-r.left)/r.width*W;
+  // Build list of active draggable markers
+  const mkrs=[{name:'bp',val:P.bp}];
+  if(P.mode===0) mkrs.push({name:'wp',val:P.mwp});
+  if(P.mode===2){
+    if(P.gLP>0.0005) mkrs.push({name:'lp',val:P.gLP});
+    mkrs.push({name:'sp',val:P.gSP});
+    if(P.gHP<0.9995) mkrs.push({name:'hp',val:P.gHP});
+  }
+  for(const m of mkrs){
+    if(Math.abs(pxN-hValToX(m.val,W))<14){histDrag=m.name;return;}
+  }
+  // No marker hit — click sets BP
+  const val=Math.max(0,Math.min(.8,hXToVal(pxN,W)));
+  P.bp=val;syncSlider('i-bp',Math.round(val*1000),'v-bp',val.toFixed(3));
+  drawHist();render();
+});
+document.addEventListener('mousemove',e=>{
+  if(!histDrag)return;
+  const r=histCv.getBoundingClientRect();
+  const W=histCv.offsetWidth;
+  const pxN=(e.clientX-r.left)/r.width*W;
+  const val=Math.max(0,Math.min(1,hXToVal(pxN,W)));
+  if(histDrag==='bp'){
+    P.bp=Math.min(val,.6);syncSlider('i-bp',Math.round(P.bp*1000),'v-bp',P.bp.toFixed(3));
+  } else if(histDrag==='wp'){
+    P.mwp=Math.max(P.bp+.01,Math.min(1,val));syncSlider('i-mwp',Math.round(P.mwp*1000),'v-mwp',P.mwp.toFixed(3));
+  } else if(histDrag==='sp'){
+    P.gSP=Math.max(.001,Math.min(.5,val));syncSlider('i-gsp',Math.round(P.gSP*1000),'v-gsp',P.gSP.toFixed(3));
+  } else if(histDrag==='lp'){
+    P.gLP=Math.max(0,Math.min(P.gSP,val));syncSlider('i-glp',Math.round(P.gLP*1000),'v-glp',P.gLP.toFixed(3));
+  } else if(histDrag==='hp'){
+    P.gHP=Math.max(P.gSP,Math.min(1,val));syncSlider('i-ghp',Math.round(P.gHP*1000),'v-ghp',P.gHP.toFixed(3));
+  }
+  drawHist();render();
+});
+document.addEventListener('mouseup',()=>histDrag=null);
+
+function setHistCh(ch,btn){
+  histCh=ch;
+  document.querySelectorAll('.hch').forEach(b=>{b.className='hch';});
+  btn.className='hch on-'+ch;
+  drawHist();
+}
+
+// ── FLOATING PANEL DRAG ───────────────────────────────────────────
+;(function(){
+  const panel=document.getElementById('hist-float');
+  const handle=document.getElementById('hist-drag-handle');
+  let dragging=false,ox=0,oy=0,sx=0,sy=0;
+  handle.addEventListener('mousedown',e=>{
+    if(e.target.id==='hist-close')return;
+    dragging=true;
+    const r=panel.getBoundingClientRect();
+    ox=e.clientX-r.left; oy=e.clientY-r.top;
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove',e=>{
+    if(!dragging)return;
+    const wrap=document.getElementById('cv-wrap').getBoundingClientRect();
+    let nx=e.clientX-wrap.left-ox;
+    let ny=e.clientY-wrap.top-oy;
+    const pw=panel.offsetWidth,ph=panel.offsetHeight;
+    nx=Math.max(0,Math.min(wrap.width-pw,nx));
+    ny=Math.max(0,Math.min(wrap.height-ph,ny));
+    panel.style.left=nx+'px';
+    panel.style.top=ny+'px';
+    panel.style.bottom='auto';
+  });
+  document.addEventListener('mouseup',()=>dragging=false);
+})();
+
+// Resize observer on histogram panel — redraws canvas when user resizes
+new ResizeObserver(()=>{ if(hSampL.length) drawHist(); }).observe(document.getElementById('hist-float'));
+
+// ═══════════════════════════════════════════════════════════════════
+// CONTROLS
+// ═══════════════════════════════════════════════════════════════════
+function syncSlider(sid,val,did,txt){
+  const e=document.getElementById(sid);if(e)e.value=val;
+  const d=document.getElementById(did);if(d)d.textContent=txt;
+}
+
+// Plus/minus fine-tune for each slider
+// 'key' maps to the slider id suffix and determines step behaviour
+function stepSlider(key,dir){
+  const cfg={
+    bp: {min:0,max:.6,step:.001,fn:v=>{P.bp=v;syncSlider('i-bp',Math.round(v*1000),'v-bp',v.toFixed(3));drawHist();render();}},
+    mt: {min:.010,max:.490,step:.002,fn:v=>{P.mmt=v;syncSlider('i-mt',Math.max(0,Math.min(480,Math.round((0.490-v)*(480/0.480)))),'v-mt',v.toFixed(3));render();}},
+    mwp:{min:.05,max:1,step:.005,fn:v=>{P.mwp=v;syncSlider('i-mwp',Math.round(v*1000),'v-mwp',v.toFixed(3));drawHist();render();}},
+    ash:{logScale:true,fn:v=>{P.aD=v;syncSlider('i-ash',dToSlider(v),'v-ash',dFmt(v));render();}},
+    gsp:{min:.001,max:.5,step:.001,fn:v=>{P.gSP=v;syncSlider('i-gsp',Math.round(v*1000),'v-gsp',v.toFixed(3));drawHist();render();}},
+    gd: {logScale:true,fn:v=>{P.gD=v;syncSlider('i-gd',dToSlider(v),'v-gd',dFmt(v));render();}},
+    gb: {min:-5,max:15,step:.1,fn:v=>{P.gB=v;syncSlider('i-gb',Math.round(v*10),'v-gb',v.toFixed(1));render();}},
+    glp:{min:0,max:.5,step:.001,fn:v=>{P.gLP=v;syncSlider('i-glp',Math.round(v*1000),'v-glp',v.toFixed(3));drawHist();render();}},
+    ghp:{min:0,max:1,step:.005,fn:v=>{P.gHP=v;syncSlider('i-ghp',Math.round(v*1000),'v-ghp',v.toFixed(3));drawHist();render();}},
+    ht: {min:0,max:1,step:.01,fn:v=>{P.ht=v;syncSlider('i-ht',Math.round(v*100),'v-ht',v.toFixed(2));render();}},
+    rl: {min:0,max:2,step:.01,fn:v=>{P.rl=v;syncSlider('i-rl',Math.round(v*100),'v-rl',v.toFixed(2));render();}},
+    wr: {min:.1,max:4,step:.02,fn:v=>{P.wR=v;syncSlider('i-wr',Math.round(v*100),'v-wr',v.toFixed(2));render();}},
+    wg: {min:.1,max:4,step:.02,fn:v=>{P.wG=v;syncSlider('i-wg',Math.round(v*100),'v-wg',v.toFixed(2));render();}},
+    wb: {min:.1,max:4,step:.02,fn:v=>{P.wB=v;syncSlider('i-wb',Math.round(v*100),'v-wb',v.toFixed(2));render();}},
+  };
+  const c=cfg[key];if(!c)return;
+  if(c.logScale){
+    // Log-scale sliders: multiply/divide by factor
+    const cur={ash:P.aD,gd:P.gD}[key]||0;
+    const nv=dir>0?Math.max(.1,cur)*1.15:Math.max(.1,cur)/1.15;
+    c.fn(Math.max(.001,nv));
+  } else {
+    const pv={bp:P.bp,mt:P.mmt,mwp:P.mwp,gsp:P.gSP,gb:P.gB,glp:P.gLP,ghp:P.gHP,ht:P.ht,rl:P.rl,wr:P.wR,wg:P.wG,wb:P.wB}[key]??0;
+    c.fn(Math.max(c.min,Math.min(c.max,Math.round((pv+dir*c.step)*10000)/10000)));
+  }
+}
+function setMode(m,btn){
+  P.mode=m;
+  document.querySelectorAll('.mde').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('c-mtf').style.display=m===0?'':'none';
+  document.getElementById('c-ash').style.display=m===1?'':'none';
+  document.getElementById('c-ghs').style.display=m===2?'':'none';
+  document.getElementById('ghs-presets').style.display=m===2?'':'none';
+  drawHist();render();
+}
+// ── TARGET PRESETS ───────────────────────────────────────────────
+function applyPreset(type){
+  if(!hSampL.length)return;
+  // All presets use GHS mode and set SP to histogram foot
+  const sp=Math.max(.001,Math.min(.4,histFootVal));
+  // Switch to GHS if not already
+  if(P.mode!==2){
+    P.mode=2;
+    document.querySelectorAll('.mde').forEach((b,i)=>b.classList.toggle('on',i===2));
+    document.getElementById('c-mtf').style.display='none';
+    document.getElementById('c-ash').style.display='none';
+    document.getElementById('c-ghs').style.display='';
+  }
+  if(type==='nebula'){
+    // Bright emission nebulae: high b concentrates stretch at foot, D moderate
+    // Good for Orion, Rosette, Lagoon — strong signal, just need to lift background
+    P.gSP=sp; P.gB=12; P.gD=sToD(60); P.gLP=0; P.gHP=1.0;
+    syncSlider('i-gsp',Math.round(sp*1000),'v-gsp',sp.toFixed(3));
+    syncSlider('i-gb',120,'v-gb','12.0');
+    syncSlider('i-gd',60,'v-gd',dFmt(P.gD));
+    syncSlider('i-glp',0,'v-glp','0.000');
+    syncSlider('i-ghp',1000,'v-ghp','1.000');
+  } else if(type==='galaxy'){
+    // Galaxies: lower b spreads stretch across broad brightness range
+    // HP at 0.65 protects bright core; SP at foot lifts outer disk
+    P.gSP=sp; P.gB=3; P.gD=sToD(50); P.gLP=0; P.gHP=0.65;
+    syncSlider('i-gsp',Math.round(sp*1000),'v-gsp',sp.toFixed(3));
+    syncSlider('i-gb',30,'v-gb','3.0');
+    syncSlider('i-gd',50,'v-gd',dFmt(P.gD));
+    syncSlider('i-glp',0,'v-glp','0.000');
+    syncSlider('i-ghp',650,'v-ghp','0.650');
+  } else if(type==='faint'){
+    // Faint/IFN targets: conservative D for first pass, very high b focuses on foot
+    // Expect to run multiple passes — each stretches a small amount further
+    P.gSP=sp; P.gB=15; P.gD=sToD(35); P.gLP=0; P.gHP=1.0;
+    syncSlider('i-gsp',Math.round(sp*1000),'v-gsp',sp.toFixed(3));
+    syncSlider('i-gb',150,'v-gb','15.0');
+    syncSlider('i-gd',35,'v-gd',dFmt(P.gD));
+    syncSlider('i-glp',0,'v-glp','0.000');
+    syncSlider('i-ghp',1000,'v-ghp','1.000');
+  }
+  drawHist();render();
+}
+
+function onBP(v){exitPreviewIfActive();P.bp=v/1000;document.getElementById('v-bp').textContent=P.bp.toFixed(3);drawHist();render();}
+function onMT(v){exitPreviewIfActive();P.mmt=0.490-v*(0.480/480);document.getElementById('v-mt').textContent=P.mmt.toFixed(3);render();}
+function onMWP(v){exitPreviewIfActive();P.mwp=v/1000;document.getElementById('v-mwp').textContent=P.mwp.toFixed(3);drawHist();render();}
+function onAsh(v){exitPreviewIfActive();P.aD=sToD(parseFloat(v));document.getElementById('v-ash').textContent=dFmt(P.aD);render();}
+function onGSP(v){exitPreviewIfActive();P.gSP=v/1000;document.getElementById('v-gsp').textContent=P.gSP.toFixed(3);drawHist();render();}
+function onGD(v){exitPreviewIfActive();P.gD=sToD(parseFloat(v));document.getElementById('v-gd').textContent=dFmt(P.gD);render();}
+function onGB(v){exitPreviewIfActive();P.gB=parseFloat(v)/10;document.getElementById('v-gb').textContent=P.gB.toFixed(1);render();}
+function onGLP(v){exitPreviewIfActive();P.gLP=parseFloat(v)/1000;document.getElementById('v-glp').textContent=P.gLP.toFixed(3);drawHist();render();}
+function onGHP(v){exitPreviewIfActive();P.gHP=parseFloat(v)/1000;document.getElementById('v-ghp').textContent=P.gHP.toFixed(3);drawHist();render();}
+function onHT(v){exitPreviewIfActive();P.ht=v/100;document.getElementById('v-ht').textContent=P.ht.toFixed(2);render();}
+function onRL(v){exitPreviewIfActive();P.rl=v/100;document.getElementById('v-rl').textContent=P.rl.toFixed(2);render();}
+function onWB(){exitPreviewIfActive();
+  P.wR=document.getElementById('i-wr').value/100;
+  P.wG=document.getElementById('i-wg').value/100;
+  P.wB=document.getElementById('i-wb').value/100;
+  ['r','g','b'].forEach((c,i)=>document.getElementById('v-w'+c).textContent=[P.wR,P.wG,P.wB][i].toFixed(2));
+  render();
+}
+function setPal(i,btn){P.pal=i;document.querySelectorAll('.pb2').forEach(b=>b.classList.remove('on'));btn.classList.add('on');render();}
+
+// ── AUTO STF ─────────────────────────────────────────────────────
+function doAutoSTF(){
+  const samp=hSampL;if(!samp||!samp.length)return;
+  const n=samp.length,med=samp[Math.floor(n/2)];
+  const devs=samp.map(v=>Math.abs(v-med));devs.sort((a,b)=>a-b);
+  const mad=devs[Math.floor(devs.length/2)];
+
+  // Conservative BP clip: 1.5×MAD keeps more faint signal intact.
+  // At 2.5×MAD, megastack data with tight MAD clips too deep.
+  P.bp=Math.max(0,Math.min(.45,med-1.5*mad));
+  syncSlider('i-bp',Math.round(P.bp*1000),'v-bp',P.bp.toFixed(3));
+
+  // Target background at 15% rather than 20% — leaves more dynamic range
+  // for the faint signal and avoids over-brightening on high-SNR stacks.
+  const mNorm=Math.max((med-P.bp)/Math.max(1-P.bp,1e-4),0.001),tgt=0.15;
+
+  if(P.mode===0){
+    const m=mNorm*(1-tgt)/(mNorm+tgt-2*mNorm*tgt);
+    P.mmt=Math.max(.010,Math.min(.489,m));P.mwp=1.0;
+    syncSlider('i-mt',Math.max(0,Math.min(480,Math.round((0.490-P.mmt)*(480/0.480)))),'v-mt',P.mmt.toFixed(3));
+    syncSlider('i-mwp',1000,'v-mwp','1.000');
+  }else if(P.mode===1){
+    let lo=0.1,hi=2000,D=10;
+    for(let i=0;i<80;i++){D=(lo+hi)/2;(Math.asinh(D*mNorm)/Math.asinh(D)<tgt)?lo=D:hi=D;}
+    P.aD=D;syncSlider('i-ash',dToSlider(D),'v-ash',dFmt(D));
+  }else{
+    // GHS: SP at histogram foot (not median) for initial linear stretch.
+    // D solved to bring background to target brightness.
+    P.gSP=Math.max(.001,Math.min(.4,histFootVal>0?histFootVal:mNorm));
+    P.gB=0;
+    const tn=Math.min(.99,tgt/Math.max(P.gSP,.001));
+    let lo=0.1,hi=2000,D=50;
+    if(tn<1){for(let i=0;i<80;i++){D=(lo+hi)/2;(Math.asinh(D*.5)/Math.asinh(D)<tn)?lo=D:hi=D;}P.gD=D;}
+    else P.gD=100;
+    syncSlider('i-gsp',Math.min(500,Math.round(P.gSP*1000)),'v-gsp',P.gSP.toFixed(3));
+    syncSlider('i-gb',0,'v-gb','0.0');
+    syncSlider('i-gd',dToSlider(P.gD),'v-gd',dFmt(P.gD));
+  }
+  drawHist();render();
+}
+
+// ── AUTO PREVIEW ─────────────────────────────────────────────────
+// Stores manual slider state so we can restore it on EXIT
+let previewActive=false;
+let previewSnapshot=null;
+
+function doAutoPreview(){
+  if(!hSampL.length) return;
+  // Save current manual state
+  previewSnapshot=snapParams();
+  previewActive=true;
+  document.getElementById('preview-bar').classList.add('on');
+  // Compute and apply Auto STF visually only — same as doAutoSTF
+  // but flagged so any slider move exits preview first
+  doAutoSTF();
+  drawHist();render();
+}
+
+function exitPreview(){
+  if(!previewSnapshot) return;
+  previewActive=false;
+  document.getElementById('preview-bar').classList.remove('on');
+  // Restore manual state
+  const p=previewSnapshot;
+  P.bp=p.bp;P.mwp=p.mwp;P.mmt=p.mmt;P.aD=p.aD;
+  P.gD=p.gD;P.gB=p.gB;P.gSP=p.gSP;P.gLP=p.gLP;P.gHP=p.gHP;
+  P.ht=p.ht;P.rl=p.rl;P.wR=p.wR;P.wG=p.wG;P.wB=p.wB;
+  // Sync sliders
+  syncSlider('i-bp',Math.round(p.bp*1000),'v-bp',p.bp.toFixed(3));
+  syncSlider('i-mt',Math.max(0,Math.min(480,Math.round((0.490-p.mmt)*(480/0.480)))),'v-mt',p.mmt.toFixed(3));
+  syncSlider('i-mwp',Math.round(p.mwp*1000),'v-mwp',p.mwp.toFixed(3));
+  syncSlider('i-ash',dToSlider(p.aD),'v-ash',dFmt(p.aD));
+  syncSlider('i-gd',dToSlider(p.gD),'v-gd',dFmt(p.gD));
+  syncSlider('i-gb',Math.round(p.gB*10),'v-gb',p.gB.toFixed(1));
+  syncSlider('i-gsp',Math.round(p.gSP*1000),'v-gsp',p.gSP.toFixed(3));
+  syncSlider('i-glp',Math.round(p.gLP*1000),'v-glp',p.gLP.toFixed(3));
+  syncSlider('i-ghp',Math.round(p.gHP*1000),'v-ghp',p.gHP.toFixed(3));
+  syncSlider('i-ht',Math.round(p.ht*100),'v-ht',p.ht.toFixed(2));
+  syncSlider('i-rl',Math.round(p.rl*100),'v-rl',p.rl.toFixed(2));
+  ['r','g','b'].forEach((ch,i)=>{
+    const v=[p.wR,p.wG,p.wB][i];
+    syncSlider('i-w'+ch,Math.round(v*100),'v-w'+ch,v.toFixed(2));
+  });
+  previewSnapshot=null;
+  drawHist();render();
+}
+
+// Any manual slider interaction exits preview automatically
+function exitPreviewIfActive(){
+  if(previewActive) exitPreview();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════════════════
+function showTab(id){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('tab-'+id).classList.add('on');
+  document.getElementById('tb-'+id).classList.add('on');
+  if(id==='proc'){
+    // Leaving BG tab — turn off auto-gamma
+    bgGammaVal=0;
+    const gb=document.getElementById('bg-gamma-btn');
+    if(gb){gb.classList.remove('on');gb.textContent='GAMMA VIEW';}
+    requestAnimationFrame(()=>drawHist());
+  }
+  if(id==='bg'){
+    // Entering BG tab — auto-activate gamma lift so image is visible
+    bgGammaVal=0.28;
+    // Compute sky median for sky-subtracted gamma preview
+    // Per-channel sky medians for colour-neutral gamma preview
+    bgMedR=hSampR.length?hSampR[Math.floor(hSampR.length/2)]:0;
+    bgMedG=hSampG.length?hSampG[Math.floor(hSampG.length/2)]:0;
+    bgMedB=hSampB.length?hSampB[Math.floor(hSampB.length/2)]:0;
+    const gb=document.getElementById('bg-gamma-btn');
+    if(gb){gb.classList.add('on');gb.textContent='GAMMA ON';}
+  }
+  if(id==='info'||id==='guide') bgGammaVal=0;
+  requestAnimationFrame(()=>{render();if(bgSamples.length)drawSampleOverlay();});
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ZOOM & PAN
+// ═══════════════════════════════════════════════════════════════════
+function clampZ(){const hw=.5/Z.level;Z.cx=Math.max(hw,Math.min(1-hw,Z.cx));Z.cy=Math.max(hw,Math.min(1-hw,Z.cy));}
+function updZlbl(){const l=document.getElementById('lbl-zoom');if(Z.level<=1){l.style.display='none';return;}l.style.display='block';l.textContent=`${Z.level.toFixed(1)}×`;}
+function resetZoom(){Z.level=1;Z.cx=.5;Z.cy=.5;updZlbl();render();}
+
+;(function(){
+  const cv=document.getElementById('gl');
+  let drag=null,lx=0,ly=0;
+  cv.addEventListener('mousedown',e=>{
+    // In BG tab, check for sample circle hit first
+    if(document.getElementById('tab-bg').classList.contains('on')&&bgSamples.length){
+      if(handleBGCanvasClick(e,cv)) return;
+    }
+    drag='pan';lx=e.clientX;ly=e.clientY;cv.style.cursor='grabbing';
+  });
+  cv.addEventListener('mousemove',e=>{
+    if(!drag){cv.style.cursor=Z.level>1?'grab':'crosshair';return;}
+    const r=cv.getBoundingClientRect();
+    if(Z.level>1){Z.cx-=(e.clientX-lx)/r.width/Z.level;Z.cy-=(e.clientY-ly)/r.height/Z.level;clampZ();}
+    lx=e.clientX;ly=e.clientY;render();
+  });
+  cv.addEventListener('mouseup',()=>{drag=null;cv.style.cursor='crosshair';});
+  cv.addEventListener('mouseleave',()=>drag=null);
+  cv.addEventListener('dblclick',()=>resetZoom());
+  cv.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const f=e.deltaY<0?1.18:1/1.18;
+    const r=cv.getBoundingClientRect();
+    const mx=(e.clientX-r.left)/r.width,my=(e.clientY-r.top)/r.height;
+    const ix=(mx-.5)/Z.level+Z.cx,iy=(my-.5)/Z.level+Z.cy;
+    Z.level=Math.max(1,Math.min(30,Z.level*f));
+    Z.cx=ix-(mx-.5)/Z.level;Z.cy=iy-(my-.5)/Z.level;
+    clampZ();updZlbl();render();
+  },{passive:false});
+  let td=null,tlx=0,tly=0;
+  cv.addEventListener('touchstart',e=>{e.preventDefault();if(e.touches.length!==1)return;const t=e.touches[0];td='pan';tlx=t.clientX;tly=t.clientY;},{passive:false});
+  cv.addEventListener('touchmove',e=>{e.preventDefault();if(!td||e.touches.length!==1)return;const t=e.touches[0],r=cv.getBoundingClientRect();if(Z.level>1){Z.cx-=(t.clientX-tlx)/r.width/Z.level;Z.cy-=(t.clientY-tly)/r.height/Z.level;clampZ();}tlx=t.clientX;tly=t.clientY;render();},{passive:false});
+  cv.addEventListener('touchend',()=>td=null);
+})();
+
+
+// ═══════════════════════════════════════════════════════════════════
+// BACKGROUND EXTRACTION ENGINE
+// ═══════════════════════════════════════════════════════════════════
+
+function initGradTextures(){
+  const zero=new Float32Array([0]);
+  if(gl){
+    [tGradR,tGradG,tGradB].forEach(t=>{if(t)gl.deleteTexture(t);});
+    tGradR=mkTex(zero,1,1);tGradG=mkTex(zero,1,1);tGradB=mkTex(zero,1,1);
+  }
+}
+
+function buildBGDownsampled(plR,plG,plB,w,h){
+  const sc=8;
+  bgDsW=Math.floor(w/sc);bgDsH=Math.floor(h/sc);
+  bgDsR=new Float32Array(bgDsW*bgDsH);
+  bgDsG=new Float32Array(bgDsW*bgDsH);
+  bgDsB=new Float32Array(bgDsW*bgDsH);
+  for(let iy=0;iy<bgDsH;iy++){
+    for(let ix=0;ix<bgDsW;ix++){
+      const sx=Math.min(Math.floor(ix*sc+sc/2),w-1);
+      const sy=Math.min(Math.floor(iy*sc+sc/2),h-1);
+      const idx=sy*w+sx;
+      bgDsR[iy*bgDsW+ix]=plR[idx];
+      bgDsG[iy*bgDsW+ix]=plG[idx];
+      bgDsB[iy*bgDsW+ix]=plB[idx];
+    }
+  }
+}
+
+// Compute sorted values for a box region from one channel array
+function boxVals(arr,x0,y0,x1,y1){
+  const vals=[];
+  for(let py=y0;py<y1;py++)
+    for(let px=x0;px<x1;px++) vals.push(arr[py*bgDsW+px]);
+  return vals.sort((a,b)=>a-b);
+}
+function sortedMedian(sv){return sv[Math.floor(sv.length/2)]||0;}
+function sortedMAD(sv){
+  const m=sortedMedian(sv);
+  return sortedMedian(sv.map(v=>Math.abs(v-m)).sort((a,b)=>a-b));
+}
+
+function generateBGSamples(){
+  if(!bgDsR||!bgDsG||!bgDsB||!bgDsG.length){
+    updateBGStatus('Load a FITS file first','err');return;
+  }
+  const margin=0.04,cols=bgGridCols,rows=bgGridRows;
+  const boxW=bgDsW/cols,boxH=bgDsH/rows;
+  const boxes=[];
+
+  for(let row=0;row<rows;row++){
+    for(let col=0;col<cols;col++){
+      const cx=(col+0.5)/cols,cy=(row+0.5)/rows;
+      if(cx<margin||cx>1-margin||cy<margin||cy>1-margin) continue;
+      const x0=Math.floor(col*boxW),x1=Math.min(Math.ceil((col+1)*boxW),bgDsW);
+      const y0=Math.floor(row*boxH),y1=Math.min(Math.ceil((row+1)*boxH),bgDsH);
+
+      // Per-channel sorted arrays for median calculation
+      const svR=boxVals(bgDsR,x0,y0,x1,y1);
+      const svG=boxVals(bgDsG,x0,y0,x1,y1);
+      const svB=boxVals(bgDsB,x0,y0,x1,y1);
+      const medR=sortedMedian(svR),medG=sortedMedian(svG),medB=sortedMedian(svB);
+
+      // Luminance per pixel for scatter analysis
+      const lumVals=[];
+      for(let py=y0;py<y1;py++){
+        for(let px=x0;px<x1;px++){
+          const i=py*bgDsW+px;
+          lumVals.push(0.299*bgDsR[i]+0.587*bgDsG[i]+0.114*bgDsB[i]);
+        }
+      }
+      lumVals.sort((a,b)=>a-b);
+      const lumMed=sortedMedian(lumVals);
+      // Scatter = MAD within box (measures star contamination)
+      const lumMAD=sortedMAD(lumVals);
+
+      boxes.push({x:cx,y:cy,medR,medG,medB,lumMed,lumMAD});
+    }
+  }
+
+  if(!boxes.length){updateBGStatus('No boxes generated — try reducing margin','err');return;}
+
+  // Global background level from luminance medians
+  const allLum=boxes.map(b=>b.lumMed).slice().sort((a,b)=>a-b);
+  const globalLumMed=sortedMedian(allLum);
+  const globalLumMAD=sortedMedian(allLum.map(v=>Math.abs(v-globalLumMed)).sort((a,b)=>a-b))||0.001;
+
+  // Scatter threshold: boxes with internal scatter > 3.5x median box scatter are star-contaminated
+  const allScatter=boxes.map(b=>b.lumMAD).slice().sort((a,b)=>a-b);
+  const medScatter=sortedMedian(allScatter)||globalLumMAD;
+  const scatterThresh=medScatter*3.5;
+
+  // Brightness threshold: MAD-based, same as before
+  const brightnessThresh=globalLumMed+bgTolerance*globalLumMAD;
+
+  bgSamples=boxes.map(b=>({
+    ...b,
+    // Reject if: too bright (object or sky gradient extreme)
+    //         OR: too much internal scatter (star in box)
+    accepted: b.lumMed<=brightnessThresh && b.lumMAD<=scatterThresh
+  }));
+
+  const nAcc=bgSamples.filter(s=>s.accepted).length;
+  updateBGStatus(
+    `${nAcc} of ${bgSamples.length} boxes accepted — toggle circles to adjust`,
+    nAcc<12?'warn':''
+  );
+
+  document.getElementById('bg-calc-btn').disabled=false;
+  document.getElementById('bg-apply-btn').disabled=true;
+  bgModel=null;
+  initGradTextures();render();
+}
+
+// calculateBGModel: explicit step 2 — fits model, uploads gradient, shows vis
+function calculateBGModel(){
+  fitBGModel(); // fits and uploads gradient textures
+  if(!bgModel) return; // fitBGModel shows error status
+  // Auto-show gradient visualisation
+  gradVisActive=true;
+  const gvb=document.getElementById('bg-grad-btn');
+  if(gvb){gvb.classList.add('on');gvb.textContent='HIDE GRADIENT SURFACE';}
+  document.getElementById('bg-grad-row').style.display='';
+  drawGradientVis();
+}
+
+// ── Linear system solver (Gauss-Jordan with partial pivot) ──────────
+function solveLinear(A,b){
+  const n=b.length;
+  const M=A.map((row,i)=>[...row,b[i]]);
+  for(let col=0;col<n;col++){
+    let mr=col;
+    for(let r=col+1;r<n;r++) if(Math.abs(M[r][col])>Math.abs(M[mr][col])) mr=r;
+    [M[col],M[mr]]=[M[mr],M[col]];
+    if(Math.abs(M[col][col])<1e-14) continue;
+    const s=1/M[col][col];
+    for(let r=0;r<n;r++){
+      if(r===col) continue;
+      const f=M[r][col]*s;
+      for(let k=col;k<=n;k++) M[r][k]-=f*M[col][k];
+    }
+  }
+  return M.map((row,i)=>Math.abs(row[i])>1e-14?row[n]/row[i]:0);
+}
+
+function polyTerms(x,y,d){
+  if(d===1) return[1,x,y];
+  if(d===2) return[1,x,y,x*x,x*y,y*y];
+  return[1,x,y,x*x,x*y,y*y,x*x*x,x*x*y,x*y*y,y*y*y]; // d===3
+}
+
+function fitPolynomial(acc,vals,degree){
+  const k=polyTerms(0,0,degree).length;
+  const A=acc.map(s=>polyTerms(s.x,s.y,degree));
+  const AtA=Array.from({length:k},(_,i)=>Array.from({length:k},(_,j)=>A.reduce((s,r)=>s+r[i]*r[j],0)));
+  const Atb=Array.from({length:k},(_,i)=>A.reduce((s,r,ri)=>s+r[i]*vals[ri],0));
+  return solveLinear(AtA,Atb);
+}
+
+function evalPoly(coeffs,x,y,degree){
+  return polyTerms(x,y,degree).reduce((s,t,i)=>s+coeffs[i]*t,0);
+}
+
+function tpsK(r){return r<1e-9?0:r*r*Math.log(r);}
+
+function fitTPS(acc,vals){
+  const n=acc.length;if(n<3) return null;
+  const sz=n+3;
+  const M=Array.from({length:sz},()=>new Array(sz).fill(0));
+  const rhs=new Array(sz).fill(0);
+  for(let i=0;i<n;i++){
+    for(let j=0;j<n;j++){
+      const dx=acc[i].x-acc[j].x,dy=acc[i].y-acc[j].y;
+      M[i][j]=tpsK(Math.sqrt(dx*dx+dy*dy));
+    }
+    M[i][n]=1;M[i][n+1]=acc[i].x;M[i][n+2]=acc[i].y;
+    M[n][i]=1;M[n+1][i]=acc[i].x;M[n+2][i]=acc[i].y;
+    rhs[i]=vals[i];
+  }
+  return solveLinear(M,rhs);
+}
+
+function evalTPS(coeffs,acc,x,y){
+  const n=acc.length;
+  let v=coeffs[n]+coeffs[n+1]*x+coeffs[n+2]*y;
+  for(let i=0;i<n;i++){
+    const dx=x-acc[i].x,dy=y-acc[i].y;
+    v+=coeffs[i]*tpsK(Math.sqrt(dx*dx+dy*dy));
+  }
+  return v;
+}
+
+function fitBGModel(){
+  const acc=bgSamples.filter(s=>s.accepted);
+  const minSamples={'poly1':3,'poly2':6,'poly3':10,'tps':4};
+  const needed=minSamples[bgAlgo]||4;
+  if(acc.length<needed){
+    bgModel=null;initGradTextures();
+    updateBGStatus(`Need ≥${needed} samples for ${bgAlgo.toUpperCase()}. Have ${acc.length}.`,'err');
+    document.getElementById('bg-apply-btn').disabled=true;
+    render();return;
+  }
+  const degree=bgAlgo==='poly1'?1:bgAlgo==='poly2'?2:3;
+  let cR,cG,cB;
+  if(bgAlgo==='tps'){
+    cR=fitTPS(acc,acc.map(s=>s.medR));
+    cG=fitTPS(acc,acc.map(s=>s.medG));
+    cB=fitTPS(acc,acc.map(s=>s.medB));
+  } else {
+    cR=fitPolynomial(acc,acc.map(s=>s.medR),degree);
+    cG=fitPolynomial(acc,acc.map(s=>s.medG),degree);
+    cB=fitPolynomial(acc,acc.map(s=>s.medB),degree);
+  }
+  bgModel={type:bgAlgo,cR,cG,cB,acc,degree};
+  uploadGradTextures();
+  const warn=acc.length<12?` (⚠ only ${acc.length} samples)`:'';
+  updateBGStatus(`Model fitted · ${acc.length} of ${bgSamples.length} samples accepted${warn}`,acc.length<12?'warn':'ok');
+  document.getElementById('bg-apply-btn').disabled=false;
+  render(); // show real-time gradient subtraction preview
+}
+
+function evalGradSurface(ch){
+  if(!bgModel) return new Float32Array(BG_GRAD_W*BG_GRAD_H);
+  const{type,cR,cG,cB,acc,degree}=bgModel;
+  const coeffs=ch==='R'?cR:ch==='G'?cG:cB;
+  const grad=new Float32Array(BG_GRAD_W*BG_GRAD_H);
+  for(let iy=0;iy<BG_GRAD_H;iy++){
+    for(let ix=0;ix<BG_GRAD_W;ix++){
+      const x=ix/(BG_GRAD_W-1),y=iy/(BG_GRAD_H-1);
+      const v=type==='tps'?evalTPS(coeffs,acc,x,y):evalPoly(coeffs,x,y,degree);
+      grad[iy*BG_GRAD_W+ix]=Math.max(0,v);
+    }
+  }
+  return grad;
+}
+
+function uploadGradTextures(){
+  if(!gl||!bgModel) return;
+  [tGradR,tGradG,tGradB].forEach(t=>{if(t)gl.deleteTexture(t);});
+  tGradR=mkTex(evalGradSurface('R'),BG_GRAD_W,BG_GRAD_H);
+  tGradG=mkTex(evalGradSurface('G'),BG_GRAD_W,BG_GRAD_H);
+  tGradB=mkTex(evalGradSurface('B'),BG_GRAD_W,BG_GRAD_H);
+  render();
+}
+
+// ── Sample overlay drawing ─────────────────────────────────────────
+function sampleToCanvas(sx,sy,cw,ch){
+  const uvx=(sx-Z.cx)*Z.level+0.5;
+  const uvy=((1-sy)-Z.cy)*Z.level+0.5;
+  return{x:uvx*cw,y:(1-uvy)*ch};
+}
+
+function syncSampleOverlay(){
+  const glCv=document.getElementById('gl');
+  const sCv=document.getElementById('sample-cv');
+  if(!glCv||!sCv) return;
+  const wr=document.getElementById('cv-wrap').getBoundingClientRect();
+  const gr=glCv.getBoundingClientRect();
+  sCv.style.left=(gr.left-wr.left)+'px';
+  sCv.style.top=(gr.top-wr.top)+'px';
+  sCv.style.width=glCv.style.width;
+  sCv.style.height=glCv.style.height;
+  sCv.width=glCv.width;sCv.height=glCv.height;
+}
+
+function drawSampleOverlay(){
+  const sCv=document.getElementById('sample-cv');
+  if(!sCv) return;
+  syncSampleOverlay();
+  const ctx=sCv.getContext('2d');
+  ctx.clearRect(0,0,sCv.width,sCv.height);
+  if(!bgSamples.length) return;
+  const dpr=window.devicePixelRatio||1;
+  const cw=sCv.offsetWidth,ch=sCv.offsetHeight;
+  ctx.save();ctx.scale(dpr,dpr);
+  bgSamples.forEach((s,idx)=>{
+    const{x,y}=sampleToCanvas(s.x,s.y,cw,ch);
+    if(x<-20||x>cw+20||y<-20||y>ch+20) return;
+    ctx.beginPath();ctx.arc(x,y,9,0,Math.PI*2);
+    if(s.accepted){ctx.strokeStyle='#39ff14';ctx.fillStyle='rgba(57,255,20,.15)';}
+    else{ctx.strokeStyle='rgba(248,113,113,.65)';ctx.fillStyle='rgba(248,113,113,.08)';}
+    ctx.lineWidth=1.5;ctx.fill();ctx.stroke();
+  });
+  ctx.restore();
+}
+
+// ── BG Apply / Undo ────────────────────────────────────────────────
+function bilinearLookup(arr,w,h,x,y){
+  const px=x*(w-1),py=y*(h-1);
+  const x0=Math.floor(px),y0=Math.floor(py);
+  const x1=Math.min(x0+1,w-1),y1=Math.min(y0+1,h-1);
+  const fx=px-x0,fy=py-y0;
+  return arr[y0*w+x0]*(1-fx)*(1-fy)+arr[y0*w+x1]*fx*(1-fy)+
+         arr[y1*w+x0]*(1-fx)*fy+arr[y1*w+x1]*fx*fy;
+}
+
+async function applyBGCorrection(){
+  if(!bgModel||!historyOrigR) return;
+  const btn=document.getElementById('bg-apply-btn');
+  btn.disabled=true;btn.textContent='APPLYING…';
+
+  // Evaluate gradient surfaces at full BG_GRAD resolution
+  const gradR=evalGradSurface('R');
+  const gradG=evalGradSurface('G');
+  const gradB=evalGradSurface('B');
+  const str=bgStrength;
+
+  // Store snapshot of originals before correction
+  bgSnapshot={
+    plR:new Float32Array(historyOrigR),
+    plG:new Float32Array(historyOrigG),
+    plB:new Float32Array(historyOrigB)
+  };
+
+  // Step 1: subtract gradient — allow negatives (do NOT clamp yet)
+  await raf();
+  for(let iy=0;iy<NH;iy++){
+    for(let ix=0;ix<NW;ix++){
+      const x=ix/(NW-1),y=iy/(NH-1);
+      const i=iy*NW+ix;
+      historyOrigR[i]-=bilinearLookup(gradR,BG_GRAD_W,BG_GRAD_H,x,y)*str;
+      historyOrigG[i]-=bilinearLookup(gradG,BG_GRAD_W,BG_GRAD_H,x,y)*str;
+      historyOrigB[i]-=bilinearLookup(gradB,BG_GRAD_W,BG_GRAD_H,x,y)*str;
+    }
+    if(iy%100===0) await raf();
+  }
+
+  // Step 2: find global min across all three channels (may be negative)
+  let globalMin=0;
+  for(let i=0;i<NW*NH;i++){
+    if(historyOrigR[i]<globalMin) globalMin=historyOrigR[i];
+    if(historyOrigG[i]<globalMin) globalMin=historyOrigG[i];
+    if(historyOrigB[i]<globalMin) globalMin=historyOrigB[i];
+  }
+
+  // Step 3: pedestal shift — lift whole image so no value is below 0.
+  // Small extra pedestal (0.001) preserves the histogram shape and avoids
+  // degenerate spikes at exactly zero. The spike peak will be at the pedestal.
+  const pedestal=globalMin<0 ? (-globalMin + 0.001) : 0.001;
+  for(let i=0;i<NW*NH;i++){
+    historyOrigR[i]+=pedestal;
+    historyOrigG[i]+=pedestal;
+    historyOrigB[i]+=pedestal;
+  }
+
+  // Step 4: channel neutralization using accepted background sample positions.
+  // Sample the corrected (post-pedestal) linear data at each accepted bgSamples
+  // box center. Compute the median of per-sample medians per channel — this is
+  // more accurate than a global sparse percentile because it targets confirmed
+  // sky regions, not the whole frame including nebulosity and stars.
+  await raf();
+  {
+    const acc=bgSamples.filter(s=>s.accepted);
+    let dR=0,dG=0,dB=0;
+    if(acc.length>=3){
+      // For each accepted sample box, collect ~100 pixels from corrected data
+      const bw=Math.max(20,Math.round(NW*0.025));
+      const bh=Math.max(12,Math.round(NH*0.025));
+      const smpR=[],smpG=[],smpB=[];
+      for(const s of acc){
+        const cx=Math.floor(s.x*NW),cy=Math.floor(s.y*NH);
+        const x0=Math.max(0,cx-bw>>1),x1=Math.min(NW,cx+(bw>>1));
+        const y0=Math.max(0,cy-bh>>1),y1=Math.min(NH,cy+(bh>>1));
+        const pixCount=(x1-x0)*(y1-y0);
+        const stride=Math.max(1,Math.floor(pixCount/80));
+        const boxR=[],boxG=[],boxB=[];
+        for(let iy=y0;iy<y1;iy++) for(let ix=x0;ix<x1;ix++){
+          const idx2=iy*NW+ix;
+          if(idx2%stride===0){boxR.push(historyOrigR[idx2]);boxG.push(historyOrigG[idx2]);boxB.push(historyOrigB[idx2]);}
+        }
+        boxR.sort((a,b)=>a-b);boxG.sort((a,b)=>a-b);boxB.sort((a,b)=>a-b);
+        const m=v=>v[Math.floor(v.length/2)]||0;
+        smpR.push(m(boxR));smpG.push(m(boxG));smpB.push(m(boxB));
+      }
+      smpR.sort((a,b)=>a-b);smpG.sort((a,b)=>a-b);smpB.sort((a,b)=>a-b);
+      const mi=Math.floor(smpR.length/2);
+      const skyR=smpR[mi],skyG=smpG[mi],skyB=smpB[mi];
+      const skyMin=Math.min(skyR,skyG,skyB);
+      dR=skyR-skyMin;dG=skyG-skyMin;dB=skyB-skyMin;
+    }
+    bgNeutralDR=dR;bgNeutralDG=dG;bgNeutralDB=dB;
+    // Subtract per-channel offset WITHOUT per-channel clamping to preserve
+    // faint signal. A single global pedestal corrects any introduced negatives.
+    if(dR>0||dG>0||dB>0){
+      for(let i=0;i<NW*NH;i++){
+        historyOrigR[i]-=dR;
+        historyOrigG[i]-=dG;
+        historyOrigB[i]-=dB;
+      }
+      // Recheck global minimum after neutralization and apply shared pedestal if needed
+      let globalMin2=0;
+      for(let i=0;i<NW*NH;i++){
+        if(historyOrigR[i]<globalMin2) globalMin2=historyOrigR[i];
+        if(historyOrigG[i]<globalMin2) globalMin2=historyOrigG[i];
+        if(historyOrigB[i]<globalMin2) globalMin2=historyOrigB[i];
+      }
+      if(globalMin2<0){
+        const finalPedestal=-globalMin2+0.001;
+        for(let i=0;i<NW*NH;i++){
+          historyOrigR[i]+=finalPedestal;
+          historyOrigG[i]+=finalPedestal;
+          historyOrigB[i]+=finalPedestal;
+        }
+      }
+    }
+  }
+
+  // Re-upload textures and reset gradient to zero (baked in now)
+  if(gl){[tR,tG,tB].forEach(t=>{if(t)gl.deleteTexture(t);});}
+  tR=mkTex(new Float32Array(historyOrigR),NW,NH);
+  tG=mkTex(new Float32Array(historyOrigG),NW,NH);
+  tB=mkTex(new Float32Array(historyOrigB),NW,NH);
+  bgApplied=true;
+  initGradTextures(); // zero out gradient — correction is baked
+  bgModel=null;bgSamples=[];bgGammaVal=0;
+  gradVisActive=false;
+  const gvb2=document.getElementById('bg-gamma-btn');if(gvb2){gvb2.classList.remove('on');gvb2.textContent='GAMMA VIEW';}
+  const gvv2=document.getElementById('grad-vis-cv');if(gvv2)gvv2.style.display='none';
+  const gvgb=document.getElementById('bg-grad-btn');if(gvgb){gvgb.classList.remove('on');gvgb.textContent='HIDE GRADIENT SURFACE';}
+  document.getElementById('bg-grad-row').style.display='none';
+  document.getElementById('bg-calc-btn').disabled=true;
+  // Explicitly clear sample overlay canvas
+  const sCv=document.getElementById('sample-cv');
+  if(sCv){const ctx2=sCv.getContext('2d');ctx2.clearRect(0,0,sCv.width,sCv.height);}
+
+  // Full refresh from corrected linear data — stretch seeds always derived
+  // from corrected state only, never from stale pre-correction histogram.
+  refreshLinearState({resetStretchDefaults:true,refreshStats:true});
+
+  updateBGStatus('Correction applied ✓ — gradient baked into data','ok');
+  document.getElementById('bg-undo-btn').disabled=false;
+  btn.textContent='APPLY CORRECTION';
+  btn.disabled=true;
+  if(denoiseApplied) invalidateDenoise();
+  unlockAfterBGApply();
+}
+
+async function undoBGCorrection(){
+  if(!bgSnapshot) return;
+  const btn=document.getElementById('bg-undo-btn');
+  btn.disabled=true;btn.textContent='RESTORING…';
+
+  historyOrigR=new Float32Array(bgSnapshot.plR);
+  historyOrigG=new Float32Array(bgSnapshot.plG);
+  historyOrigB=new Float32Array(bgSnapshot.plB);
+  bgSnapshot=null;bgApplied=false;
+
+  if(gl){[tR,tG,tB].forEach(t=>{if(t)gl.deleteTexture(t);});}
+  tR=mkTex(new Float32Array(historyOrigR),NW,NH);
+  tG=mkTex(new Float32Array(historyOrigG),NW,NH);
+  tB=mkTex(new Float32Array(historyOrigB),NW,NH);
+
+  refreshLinearState({resetStretchDefaults:true,refreshStats:true});
+
+  updateBGStatus('Correction undone — original data restored','');
+  btn.textContent='UNDO LAST CORRECTION';
+}
+
+// ── BG UI controls ─────────────────────────────────────────────────
+function updateBGStatus(msg,cls){
+  const el=document.getElementById('bg-status');
+  if(!el) return;
+  el.textContent=msg;
+  el.className='bg-status'+(cls?' '+cls:'');
+}
+function setBGAlgo(algo,btn){
+  bgAlgo=algo;
+  document.querySelectorAll('.algo-btn[id^="ba-"]').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  const calcBtn=document.getElementById('bg-calc-btn');
+  if(bgSamples.length&&calcBtn&&!calcBtn.disabled){
+    if(bgModel) calculateBGModel();
+  }
+}
+function onBGTol(v){
+  bgTolerance=parseFloat(v)/10;
+  document.getElementById('v-bgtol').textContent=bgTolerance.toFixed(1);
+}
+function setBGGrid(cols,rows,btn){
+  bgGridCols=cols;bgGridRows=rows;
+  document.querySelectorAll('.algo-btn[id^="bg-grid-"]').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function onBGStr(v){
+  bgStrength=parseFloat(v)/100;
+  document.getElementById('bg-str-lbl').textContent=Math.round(bgStrength*100)+'%';
+  render();
+}
+
+// Click on canvas — toggle sample in BG mode
+function handleBGCanvasClick(e,cv){
+  if(!bgSamples.length) return false;
+  const r=cv.getBoundingClientRect();
+  const mx=e.clientX-r.left,my=e.clientY-r.top;
+  const cw=cv.offsetWidth,ch=cv.offsetHeight;
+  for(let i=0;i<bgSamples.length;i++){
+    const{x,y}=sampleToCanvas(bgSamples[i].x,bgSamples[i].y,cw,ch);
+    if((mx-x)**2+(my-y)**2<144){ // 12px radius
+      bgSamples[i].accepted=!bgSamples[i].accepted;
+      if(bgModel){
+        // Model exists (CALCULATE was pressed) — refit immediately
+        fitBGModel();
+        if(gradVisActive) drawGradientVis();
+      } else {
+        // No model yet — just update circle display, gamma preview stays clean
+        drawSampleOverlay();render();
+      }
+      return true;
+    }
+  }
+  return false;
+}
+// ═══════════════════════════════════════════════════════════════════
+// APPLY + HISTORY ENGINE
+// ═══════════════════════════════════════════════════════════════════
+
+// Snapshot current P into history
+function snapParams(){
+  return {
+    mode:P.mode, bp:P.bp, mwp:P.mwp, mmt:P.mmt,
+    aD:P.aD,
+    gD:P.gD, gB:P.gB, gSP:P.gSP, gLP:P.gLP, gHP:P.gHP,
+    ht:P.ht, rl:P.rl, wR:P.wR, wG:P.wG, wB:P.wB, pal:P.pal
+  };
+}
+
+// Summarise a params snapshot for the log display
+function describePass(p){
+  const modes=['MTF','ASINH','GHS'];
+  const m=modes[p.mode]||'?';
+  let detail='';
+  if(p.mode===0) detail=`m=${p.mmt.toFixed(3)} WP=${p.mwp.toFixed(2)}`;
+  else if(p.mode===1) detail=`D=${dFmt(p.aD)}`;
+  else detail=`SP=${p.gSP.toFixed(3)} D=${dFmt(p.gD)} b=${p.gB.toFixed(1)} HP=${p.gHP.toFixed(2)}`;
+  if(p.bp>0.001) detail+=` BP=${p.bp.toFixed(3)}`;
+  return {m, detail};
+}
+
+// CPU-side per-channel GHS/MTF/Asinh — mirrors shader exactly
+// Used during Apply to bake the stretch into float arrays
+function applyStretchCPU(arr, p){
+  const out=new Float32Array(arr.length);
+  for(let i=0;i<arr.length;i++){
+    let x=arr[i];
+    // WB applied per-channel outside this fn; here x is already wb-scaled
+    let v=0;
+    if(p.mode===0){
+      // MTF
+      const r=Math.max((x-p.bp),0)/Math.max(p.mwp-p.bp,1e-4);
+      const rc=Math.min(Math.max(r,0),1);
+      if(p.mmt>=0.489) v=rc;
+      else v=(p.mmt-1)*rc/((2*p.mmt-1)*rc-p.mmt);
+    } else if(p.mode===1){
+      // Asinh
+      const s=Math.max(x-p.bp,0)/Math.max(1-p.bp,1e-4);
+      if(p.aD<0.001) v=s;
+      else v=Math.asinh(p.aD*s)/Math.asinh(p.aD);
+    } else {
+      // GHS
+      const xc=Math.max(x-p.bp,0)/Math.max(1-p.bp,1e-4);
+      if(p.gD<0.001){v=xc;}
+      else {
+        const sp=Math.max(p.gSP,1e-5);
+        const lp=Math.min(p.gLP,sp);
+        const hp=Math.max(p.gHP,sp);
+        const D=p.gD, b=p.gB;
+        let s;
+        if(xc<=sp){
+          const xn=sp>0?xc/sp:0;
+          let xb;
+          if(b>0.001) xb=xn*(1+b)/(1+b*xn);
+          else if(b<-0.001){const nb=-b;xb=Math.log(1+nb*xn)/Math.max(Math.log(1+nb),1e-9);}
+          else xb=xn;
+          let sn=Math.asinh(D*xb)/Math.max(Math.asinh(D),1e-9);
+          const lpN=sp>0?lp/sp:0;
+          if(xn<lpN&&lpN>0.001) sn=xn/lpN*sn+(1-xn/lpN)*xn;
+          s=Math.max(0,Math.min(1,sn))*sp;
+        } else {
+          const xn=(xc-sp)/Math.max(1-sp,1e-9);
+          let sn=Math.log(1+D*xn)/Math.max(Math.log(1+D),1e-9);
+          const hpN=(hp-sp)/Math.max(1-sp,1e-9);
+          if(xn>hpN&&hpN<0.999){const t=(xn-hpN)/Math.max(1-hpN,1e-9);sn=sn*(1-t)+xn*t;}
+          s=sp+Math.max(0,Math.min(1,sn))*Math.max(1-sp,0);
+        }
+        v=Math.max(0,Math.min(1,s));
+      }
+    }
+    // Highlights
+    if(p.ht>0.001&&v>0.5) v=0.5+Math.pow((v-0.5)/0.5,1+p.ht*3)*0.5;
+    // Roll-off
+    if(p.rl>1e-4) v=v/(1+p.rl*v);
+    out[i]=Math.max(0,Math.min(1,v));
+  }
+  return out;
+}
+
+// Replay all history passes from originals to reconstruct state at passIdx
+async function replayToPass(passIdx){
+  let curR=new Float32Array(historyOrigR);
+  let curG=new Float32Array(historyOrigG);
+  let curB=new Float32Array(historyOrigB);
+
+  for(let i=0;i<passIdx;i++){
+    const entry=historyStack[i];
+    const p=entry.params;
+    curR=applyStretchCPU(curR.map((v,j)=>v*p.wR), p);
+    curG=applyStretchCPU(curG.map((v,j)=>v*p.wG), p);
+    curB=applyStretchCPU(curB.map((v,j)=>v*p.wB), p);
+  }
+  return {r:curR,g:curG,b:curB};
+}
+
+// Rebuild histogram samples from float arrays
+function buildHistSamples(plR,plG,plB){
+  const hs=Math.max(1,Math.floor(plG.length/8000));
+  hSampR=[];hSampG=[];hSampB=[];hSampL=[];
+  for(let i=0;i<plG.length;i+=hs){
+    hSampR.push(plR[i]);hSampG.push(plG[i]);hSampB.push(plB[i]);
+    hSampL.push((plR[i]+plG[i]+plB[i])/3);
+  }
+  [hSampR,hSampG,hSampB,hSampL].forEach(a=>a.sort((a,b)=>a-b));
+  // Recompute peak, foot, and spike right-edge
+  const nb=300,range=HHI-HLO,bins=new Array(nb).fill(0);
+  for(const v of hSampL){const b=Math.floor((v-HLO)/range*nb);if(b>=0&&b<nb)bins[b]++;}
+  let peakBin=0;
+  for(let i=1;i<nb;i++) if(bins[i]>bins[peakBin]) peakBin=i;
+  histPeakVal=HLO+(peakBin+0.5)/nb*range;
+  // Foot = left rise of spike
+  const threshold=bins[peakBin]*0.005;
+  let footBin=0;
+  for(let i=0;i<peakBin;i++){if(bins[i]>=threshold){footBin=Math.max(0,i-1);break;}}
+  histFootVal=Math.max(0,HLO+(footBin+0.5)/nb*range);
+  // Spike right edge: scan from peak rightward.
+  // Use 0.1% of peak as threshold with 3 consecutive bins required.
+  // This accounts for log-scale visual perception — in log-Y the spike
+  // appears to extend much further than a 5% threshold captures.
+  // Then multiply result by 2 as visual safety margin.
+  {
+    const dropThresh=Math.max(2,Math.floor(bins[peakBin]*0.001));
+    let rightEdgeBin=Math.min(peakBin+1,nb-1);
+    let run=0;
+    for(let i=peakBin+1;i<nb;i++){
+      if(bins[i]<=dropThresh){run++;if(run>=3){rightEdgeBin=i-2;break;}}
+      else run=0;
+    }
+    // Raw spike edge — no multiplier. BP will be set here directly.
+    const edgeVal=HLO+(rightEdgeBin+0.5)/nb*range;
+    histSpikeEdgeVal=Math.max(0,Math.min(0.15,edgeVal));
+  }
+}
+
+// Render the history log UI
+function updatePassUI(){
+  const counter=document.getElementById('pass-counter');
+  const log=document.getElementById('hist-log');
+  if(!counter||!log) return;
+  counter.textContent=historyStack.length===0
+    ?'NO PASSES APPLIED YET'
+    :`PASS ${currentPass} OF ${historyStack.length}`;
+  log.innerHTML=historyStack.map((entry,i)=>{
+    const {m,detail}=describePass(entry.params);
+    const isActive=i<currentPass;
+    return `<div class="hlog-entry${isActive?' active':''}" title="Undo back to after pass ${i+1}">
+      <span class="hlog-num">${String(i+1).padStart(2,'0')}</span>
+      <span class="hlog-mode">${m}</span>
+      <span class="hlog-params">${detail}</span>
+      <button class="hlog-undo" onclick="undoToPass(${i+1})">→</button>
+    </div>`;
+  }).join('');
+}
+
+// Reset all sliders to identity after apply
+function resetSlidersToIdentity(){
+  P.bp=0;P.mwp=1;P.mmt=.490;P.aD=0;
+  P.gD=0;P.gB=0;P.gHP=1.0;P.gLP=0;
+  P.ht=0;P.rl=0;P.wR=1;P.wG=1;P.wB=1;
+  const sp=Math.max(.001,Math.min(.5,histFootVal));
+  P.gSP=sp;
+  [['i-bp',0],['i-mt',0],['i-mwp',1000],['i-ash',0],['i-gd',0],['i-gb',0],
+   ['i-gsp',Math.round(sp*1000)],['i-glp',0],['i-ghp',1000],
+   ['i-ht',0],['i-rl',0],['i-wr',100],['i-wg',100],['i-wb',100]]
+    .forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.value=v;});
+  [['v-bp','0.000'],['v-mt','0.490'],['v-mwp','1.000'],['v-ash','0.00'],['v-gd','0.00'],
+   ['v-gb','0.0'],['v-gsp',sp.toFixed(3)],['v-glp','0.000'],['v-ghp','1.000'],
+   ['v-ht','0.00'],['v-rl','0.00'],['v-wr','1.00'],['v-wg','1.00'],['v-wb','1.00']]
+    .forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
+}
+
+// APPLY: bake current stretch, add to history, reset sliders
+function showApplyAnim(label){
+  const a=document.getElementById('apply-anim');
+  const f=document.getElementById('apply-anim-fill');
+  const l=document.getElementById('apply-anim-label');
+  if(a){a.classList.add('on');}
+  if(l) l.textContent=label||'APPLYING STRETCH…';
+  if(f){f.style.width='0%';f.style.transition='none';}
+  // Animate bar across estimated bake time
+  requestAnimationFrame(()=>{
+    if(f){f.style.transition='width 3.5s linear';f.style.width='92%';}
+  });
+}
+function hideApplyAnim(){
+  const a=document.getElementById('apply-anim');
+  const f=document.getElementById('apply-anim-fill');
+  if(f){f.style.transition='width .2s';f.style.width='100%';}
+  setTimeout(()=>{if(a)a.classList.remove('on');},220);
+}
+
+async function doApply(){
+  if(!tR||!historyOrigR) return;
+  const btn=document.getElementById('apply-btn');
+  btn.disabled=true;
+  btn.textContent='APPLYING…';
+  showApplyAnim('APPLYING STRETCH…');
+  // Yield two frames so the browser paints the animation before CPU work starts
+  await raf();await raf();
+
+  const snap=snapParams();
+  // CPU bake: apply stretch to current working arrays (replay all previous + this pass)
+  const working=await replayToPass(currentPass);
+  // Apply this pass on top
+  const newR=applyStretchCPU(working.r.map((v,i)=>v*snap.wR), snap);
+  const newG=applyStretchCPU(working.g.map((v,i)=>v*snap.wG), snap);
+  const newB=applyStretchCPU(working.b.map((v,i)=>v*snap.wB), snap);
+
+  // Rebuild histogram samples from new working arrays
+  buildHistSamples(newR,newG,newB);
+
+  // Upload new textures
+  [tR,tG,tB].forEach(t=>{if(t)gl.deleteTexture(t);});
+  // Temporarily update textures for rendering — these are the baked values
+  // We don't store per-pass arrays; we store params and replay from originals
+  tR=mkTex(newR,NW,NH);
+  tG=mkTex(newG,NW,NH);
+  tB=mkTex(newB,NW,NH);
+
+  // Truncate any future history (if we undid then applied)
+  historyStack=historyStack.slice(0,currentPass);
+  historyStack.push({params:snap});
+  currentPass=historyStack.length;
+
+  // Reset sliders to identity for next pass
+  resetSlidersToIdentity();
+  drawHist();render();
+  updatePassUI();
+  hideApplyAnim();
+
+  btn.disabled=false;
+  btn.textContent='⊕  APPLY STRETCH  —  BAKE & CONTINUE';
+}
+
+// UNDO: replay history from originals up to targetPass
+async function undoToPass(targetPass){
+  if(!historyOrigR) return;
+  const btn=document.getElementById('apply-btn');
+  btn.disabled=true;
+  btn.textContent='REPLAYING…';
+  showApplyAnim('REPLAYING PASSES…');
+  await raf();await raf();
+
+  // Replay from originals
+  let curR=new Float32Array(historyOrigR);
+  let curG=new Float32Array(historyOrigG);
+  let curB=new Float32Array(historyOrigB);
+
+  for(let i=0;i<targetPass;i++){
+    const p=historyStack[i].params;
+    const nr=applyStretchCPU(curR.map(v=>v*p.wR), p);
+    const ng=applyStretchCPU(curG.map(v=>v*p.wG), p);
+    const nb2=applyStretchCPU(curB.map(v=>v*p.wB), p);
+    curR=nr;curG=ng;curB=nb2;
+  }
+
+  buildHistSamples(curR,curG,curB);
+
+  [tR,tG,tB].forEach(t=>{if(t)gl.deleteTexture(t);});
+  tR=mkTex(curR,NW,NH);
+  tG=mkTex(curG,NW,NH);
+  tB=mkTex(curB,NW,NH);
+
+  currentPass=targetPass;
+  resetSlidersToIdentity();
+  drawHist();render();
+  updatePassUI();
+  hideApplyAnim();
+
+  btn.disabled=false;
+  btn.textContent='⊕  APPLY STRETCH  —  BAKE & CONTINUE';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════════════════
+function doExport(){
+  if(!gl||!tR)return;
+  const btn=document.getElementById('exp-btn');
+  btn.textContent='RENDERING…';btn.disabled=true;
+  setTimeout(()=>{
+    const cv=document.getElementById('gl');
+    const[ow,oh]=[cv.width,cv.height];
+    cv.width=NW;cv.height=NH;gl.viewport(0,0,NW,NH);
+    const[sz,scx,scy]=[Z.level,Z.cx,Z.cy];
+    Z.level=1;Z.cx=.5;Z.cy=.5;render();
+    cv.toBlob(blob=>{
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      const on=(document.getElementById('m-obj').textContent||'dwarf3').replace(/\s+/g,'_');
+      const dt=(document.getElementById('m-date').textContent||'').replace(/-/g,'');
+      a.download=`${on}_${dt}_processed.png`;a.click();
+      URL.revokeObjectURL(a.href);
+      Z.level=sz;Z.cx=scx;Z.cy=scy;
+      cv.width=ow;cv.height=oh;sizeCanvas();render();
+      btn.textContent='EXPORT FULL RES PNG';btn.disabled=false;
+    },'image/png');
+  },80);
+}
+
+// ── GAMMA PREVIEW ──────────────────────────────────────────────────
+function toggleBGGamma(btn){
+  bgGammaVal=bgGammaVal>0?0:0.28;
+  btn.classList.toggle('on',bgGammaVal>0);
+  btn.textContent=bgGammaVal>0?'GAMMA ON':'GAMMA OFF';
+  render();
+}
+
+// ── GRADIENT SURFACE VISUALISATION (false-colour like GraXpert) ─────
+let gradVisActive=false;
+function toggleGradVis(btn){
+  gradVisActive=!gradVisActive;
+  btn.classList.toggle('on',gradVisActive);
+  btn.textContent=gradVisActive?'HIDE GRADIENT SURFACE':'SHOW GRADIENT SURFACE';
+  const visCV=document.getElementById('grad-vis-cv');
+  if(!gradVisActive){visCV.style.display='none';return;}
+  if(!bgModel){btn.classList.remove('on');btn.textContent='SHOW GRADIENT SURFACE';gradVisActive=false;return;}
+  drawGradientVis();
+}
+
+function drawGradientVis(){
+  const glCv=document.getElementById('gl');
+  const visCV=document.getElementById('grad-vis-cv');
+  if(!glCv||!visCV||!bgModel) return;
+
+  const wr=document.getElementById('cv-wrap').getBoundingClientRect();
+  const gr=glCv.getBoundingClientRect();
+  visCV.style.left=(gr.left-wr.left)+'px';
+  visCV.style.top=(gr.top-wr.top)+'px';
+  visCV.style.width=glCv.style.width;
+  visCV.style.height=glCv.style.height;
+  visCV.style.display='block';
+  const dpr=window.devicePixelRatio||1;
+  const cw=parseFloat(glCv.style.width)||glCv.width;
+  const ch=parseFloat(glCv.style.height)||glCv.height;
+  visCV.width=cw*dpr; visCV.height=ch*dpr;
+  const ctx=visCV.getContext('2d');
+  // Do NOT scale before putImageData — it works in physical pixels.
+  // Scale is applied after putImageData for legend text/lines.
+
+  // ImageData must be in physical pixels, not CSS pixels.
+  // putImageData ignores ctx.scale — using CSS pixels on a HiDPI display
+  // would only fill the top-left (1/dpr)^2 fraction of the canvas.
+  const VW=Math.round(cw*dpr),VH=Math.round(ch*dpr);
+  const imgData=ctx.createImageData(VW,VH);
+  const gradG=evalGradSurface('G'); // G channel drives the display lum
+
+  // KEY FIX: normalise by RANGE (max-min), not absolute max.
+  // This maps the flattest part of the sky to blue and the brightest
+  // LP-affected region to red, revealing the actual gradient shape.
+  let minG=Infinity,maxG=-Infinity;
+  for(let i=0;i<gradG.length;i++){
+    if(gradG[i]<minG) minG=gradG[i];
+    if(gradG[i]>maxG) maxG=gradG[i];
+  }
+  const rangeG=Math.max(maxG-minG,1e-6);
+  // Also compute range percentage for the legend annotation
+  const rangeADU=Math.round(rangeG*65535);
+
+  // Bilinear sampler
+  function blerp(arr,gx,gy){
+    const gx0=Math.floor(gx),gy0=Math.floor(gy);
+    const gx1=Math.min(gx0+1,BG_GRAD_W-1),gy1=Math.min(gy0+1,BG_GRAD_H-1);
+    const fx=gx-gx0,fy=gy-gy0;
+    return arr[gy0*BG_GRAD_W+gx0]*(1-fx)*(1-fy)+arr[gy0*BG_GRAD_W+gx1]*fx*(1-fy)+
+           arr[gy1*BG_GRAD_W+gx0]*(1-fx)*fy+arr[gy1*BG_GRAD_W+gx1]*fx*fy;
+  }
+
+  for(let iy=0;iy<VH;iy++){
+    for(let ix=0;ix<VW;ix++){
+      const gx=ix/(VW-1)*(BG_GRAD_W-1);
+      const gy=iy/(VH-1)*(BG_GRAD_H-1);
+      const gv=Math.max(0,blerp(gradG,gx,gy));
+      // Normalise to 0-1 within the gradient range
+      const lum=(gv-minG)/rangeG;
+      // Colour ramp: dark blue (low/flat) → teal (mid) → orange-red (high/LP)
+      let pr,pg,pb;
+      if(lum<0.5){
+        const t=lum*2; // 0→1 across first half
+        pr=0;
+        pg=Math.round(t*100);
+        pb=Math.round(180+t*30);
+      } else {
+        const t=(lum-0.5)*2; // 0→1 across second half
+        pr=Math.round(t*220);
+        pg=Math.round(100*(1-t));
+        pb=Math.round(210*(1-t));
+      }
+      const idx=(iy*VW+ix)*4;
+      imgData.data[idx]=Math.min(255,pr);
+      imgData.data[idx+1]=Math.min(255,pg);
+      imgData.data[idx+2]=Math.min(255,pb);
+      // Semi-transparent: image is still visible underneath
+      imgData.data[idx+3]=160;
+    }
+  }
+  ctx.putImageData(imgData,0,0);
+
+  // Scale for legend drawing (CSS pixel coordinates)
+  ctx.scale(dpr,dpr);
+
+  // Legend with range annotation
+  const legW=160,legH=12,legX=12,legY=ch-36;
+  const legendGrad=ctx.createLinearGradient(legX,0,legX+legW,0);
+  legendGrad.addColorStop(0,'rgb(0,0,180)');
+  legendGrad.addColorStop(0.5,'rgb(0,100,210)');
+  legendGrad.addColorStop(1,'rgb(220,60,0)');
+  ctx.fillStyle=legendGrad;ctx.fillRect(legX,legY,legW,legH);
+  ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1;ctx.strokeRect(legX,legY,legW,legH);
+  ctx.fillStyle='rgba(255,255,255,.85)';ctx.font='9px Menlo,Monaco,monospace';
+  ctx.fillText('less LP',legX,legY+legH+10);
+  ctx.fillText('more LP',legX+legW-50,legY+legH+10);
+  ctx.fillStyle='rgba(255,255,255,.9)';
+  ctx.font='bold 10px sans-serif';
+  ctx.fillText(`GRADIENT — G channel  range: ${rangeADU} ADU`,legX,legY-5);
+}
+
+
+
+// ═══════════════════════════════════════════════════════════════════
+// LINEAR TAB — COLLAPSIBLE STEPS
+// ═══════════════════════════════════════════════════════════════════
+function toggleStep(n){
+  const body=document.getElementById('lin-s'+n+'-body');
+  const chev=document.getElementById('lin-s'+n+'-chev');
+  if(!body) return;
+  const collapsed=body.classList.contains('collapsed');
+  body.classList.toggle('collapsed',!collapsed);
+  if(chev) chev.textContent=collapsed?'▼':'▶';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LINEAR TAB — STEP STATE MACHINE
+// ═══════════════════════════════════════════════════════════════════
+
+function setStepState(n,state){
+  // state: 'idle'|'active'|'done'|'warn'|'optional'
+  const num=document.getElementById('lin-s'+n+'-num');
+  const tag=document.getElementById('lin-s'+n+'-tag');
+  const body=document.getElementById('lin-s'+n+'-body');
+  if(!num||!tag||!body) return;
+  num.className='lin-step-num'+(state==='done'?' done':state==='active'?' active':'');
+  tag.className='lin-step-tag '+
+    (state==='done'?'done':state==='warn'?'warn':state==='optional'?'optional':
+     state==='active'?'running':'not-run');
+  const labels={idle:'Not applied',active:'Running…',done:'Applied',warn:'Invalidated',optional:'Optional',auto:'Automatic'};
+  tag.textContent=labels[state]||state;
+  body.className='lin-step-body'+(state==='idle'||state==='auto'?'':
+    state==='done'||state==='active'||state==='warn'||state==='optional'?'':' locked');
+}
+
+function initLinearSteps(){
+  setStepState(1,'idle');
+  ['lin-s1-tag'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='Not applied';});
+  // Steps 2-5: collapsed + locked; step 1 expanded
+  document.getElementById('lin-s1-body').classList.remove('collapsed');
+  const s1chev=document.getElementById('lin-s1-chev');if(s1chev)s1chev.textContent='▼';
+  document.getElementById('lin-s2-body').className='lin-step-body collapsed locked';
+  document.getElementById('lin-s3-body').className='lin-step-body collapsed locked';
+  document.getElementById('lin-s4-body').className='lin-step-body collapsed locked';
+  document.getElementById('lin-s5-body').className='lin-step-body collapsed locked';
+  [2,3,4,5].forEach(n=>{const ch=document.getElementById('lin-s'+n+'-chev');if(ch)ch.textContent='▶';});
+  document.getElementById('lin-s2-num').className='lin-step-num';
+  document.getElementById('lin-s3-num').className='lin-step-num';
+  document.getElementById('lin-s4-num').className='lin-step-num';
+  document.getElementById('lin-s5-num').className='lin-step-num';
+  ['lin-s2-tag','lin-s3-tag'].forEach(id=>{const el=document.getElementById(id);if(el){el.className='lin-step-tag not-run';el.textContent='Automatic';}});
+  const s4t=document.getElementById('lin-s4-tag');if(s4t){s4t.className='lin-step-tag optional';s4t.textContent='Optional';}
+  const s5t=document.getElementById('lin-s5-tag');if(s5t){s5t.className='lin-step-tag not-run';s5t.textContent='Waiting';}
+  const gob=document.getElementById('go-stretch-btn');if(gob)gob.disabled=true;
+  const dab=document.getElementById('dn-apply-btn');if(dab)dab.disabled=true;
+  const ds=document.getElementById('dn-status');if(ds)ds.textContent='Apply background correction first';
+  document.getElementById('neutral-display').style.display='none';
+  document.getElementById('stat-display').style.display='none';
+  const sum=document.getElementById('lin-pipeline-summary');if(sum)sum.textContent='Complete Step 1 to proceed.';
+}
+
+function unlockAfterBGApply(){
+  // Step 1 done
+  const s1t=document.getElementById('lin-s1-tag');if(s1t){s1t.className='lin-step-tag done';s1t.textContent='Applied';}
+  const s1n=document.getElementById('lin-s1-num');if(s1n){s1n.className='lin-step-num done';}
+  // Steps 2+3 auto — show as done
+  ['lin-s2-body','lin-s3-body','lin-s4-body','lin-s5-body'].forEach(id=>{
+    const el=document.getElementById(id);if(el){el.classList.remove('locked');}
+  });
+  // Auto-expand step 2 and 3 to show automatic results; collapse step 1
+  document.getElementById('lin-s1-body').classList.add('collapsed');
+  const s1c=document.getElementById('lin-s1-chev');if(s1c)s1c.textContent='▶';
+  document.getElementById('lin-s2-body').classList.remove('collapsed');
+  const s2c=document.getElementById('lin-s2-chev');if(s2c)s2c.textContent='▼';
+  document.getElementById('lin-s3-body').classList.remove('collapsed');
+  const s3c=document.getElementById('lin-s3-chev');if(s3c)s3c.textContent='▼';
+  ['lin-s2-num','lin-s3-num'].forEach(id=>{const el=document.getElementById(id);if(el)el.className='lin-step-num done';});
+  document.getElementById('lin-s4-num').className='lin-step-num active';
+  document.getElementById('lin-s5-num').className='lin-step-num active';
+  ['lin-s2-tag','lin-s3-tag'].forEach(id=>{const el=document.getElementById(id);if(el){el.className='lin-step-tag done';el.textContent='Applied';}});
+
+  // Show neutralization offsets
+  const aduR=Math.round(bgNeutralDR*65535);
+  const aduG=Math.round(bgNeutralDG*65535);
+  const aduB=Math.round(bgNeutralDB*65535);
+  document.getElementById('neu-r').textContent=(aduR>=0?'−':'+')+'ADU '+Math.abs(aduR);
+  document.getElementById('neu-g').textContent=(aduG>=0?'−':'+')+'ADU '+Math.abs(aduG);
+  document.getElementById('neu-b').textContent=(aduB>=0?'−':'+')+'ADU '+Math.abs(aduB);
+  document.getElementById('neutral-display').style.display='flex';
+
+  // Show stats
+  document.getElementById('stat-peak').textContent='ADU '+Math.round(histPeakVal*65535);
+  document.getElementById('stat-edge').textContent='ADU '+Math.round(histSpikeEdgeVal*65535);
+  document.getElementById('stat-mr').textContent='ADU '+Math.round(hSampR[Math.floor(hSampR.length/2)]*65535);
+  document.getElementById('stat-mg').textContent='ADU '+Math.round(hSampG[Math.floor(hSampG.length/2)]*65535);
+  document.getElementById('stat-mb').textContent='ADU '+Math.round(hSampB[Math.floor(hSampB.length/2)]*65535);
+  document.getElementById('stat-sp').textContent=P.gSP.toFixed(4)+' ('+Math.round(P.gSP*65535)+' ADU)';
+  document.getElementById('stat-display').style.display='grid';
+
+  // Denoise
+  const dab=document.getElementById('dn-apply-btn');if(dab)dab.disabled=false;
+  const ds=document.getElementById('dn-status');if(ds)ds.textContent='Ready — set strength and apply, or skip to STRETCH';
+
+  // Step 5
+  const s5t=document.getElementById('lin-s5-tag');if(s5t){s5t.className='lin-step-tag done';s5t.textContent='Ready';}
+  const gob=document.getElementById('go-stretch-btn');if(gob)gob.disabled=false;
+  const sum=document.getElementById('lin-pipeline-summary');
+  if(sum) sum.textContent='Background corrected · Channels neutralized · Stats refreshed'
+    +(denoiseApplied?' · Denoise applied':' · Denoise skipped')+'.';
+}
+
+function invalidateDenoise(){
+  // Called when BG re-applied — denoise output is stale
+  denoiseApplied=false;denoiseSnapshot=null;
+  const s4t=document.getElementById('lin-s4-tag');
+  if(s4t){s4t.className='lin-step-tag warn';s4t.textContent='Invalidated';}
+  const dub=document.getElementById('dn-undo-btn');if(dub)dub.disabled=true;
+  const ds=document.getElementById('dn-status');if(ds)ds.textContent='Background was re-applied — re-run denoise if needed';
+}
+
+function onDNStr(v){
+  denoiseStrength=parseFloat(v)/100;
+  document.getElementById('v-dn-str').textContent=Math.round(denoiseStrength*100)+'%';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LINEAR DENOISE — edge-preserving luminance, separable approximation
+// ═══════════════════════════════════════════════════════════════════
+
+// 1D box-blur pass (horizontal)
+function boxBlurH(src,dst,w,h,r){
+  const iarr=1/(r+r+1);
+  for(let i=0;i<h;i++){
+    let ti=i*w,li=ti,ri=ti+r;
+    let fv=src[ti],lv=src[ti+w-1],val=fv*(r+1);
+    for(let j=0;j<r;j++) val+=src[ti+j];
+    for(let j=0;j<=r;j++){val+=src[ri++]-fv;dst[ti++]=Math.round(val*iarr*1000)/1000;}
+    for(let j=r+1;j<w-r;j++){val+=src[ri++]-src[li++];dst[ti++]=Math.round(val*iarr*1000)/1000;}
+    for(let j=w-r;j<w;j++){val+=lv-src[li++];dst[ti++]=Math.round(val*iarr*1000)/1000;}
+  }
+}
+// 1D box-blur pass (vertical)
+function boxBlurV(src,dst,w,h,r){
+  const iarr=1/(r+r+1);
+  for(let i=0;i<w;i++){
+    let ti=i,li=ti,ri=ti+r*w;
+    let fv=src[ti],lv=src[ti+w*(h-1)],val=fv*(r+1);
+    for(let j=0;j<r;j++) val+=src[ti+j*w];
+    for(let j=0;j<=r;j++){val+=src[ri]-fv;dst[ti]=Math.round(val*iarr*1000)/1000;ri+=w;ti+=w;}
+    for(let j=r+1;j<h-r;j++){val+=src[ri]-src[li];dst[ti]=Math.round(val*iarr*1000)/1000;li+=w;ri+=w;ti+=w;}
+    for(let j=h-r;j<h;j++){val+=lv-src[li];dst[ti]=Math.round(val*iarr*1000)/1000;li+=w;ti+=w;}
+  }
+}
+// 3-pass stack-blur on a float array → returns blurred copy
+function stackBlurFloat(src,w,h,radius){
+  const a=new Float32Array(src);
+  const b=new Float32Array(src.length);
+  for(let pass=0;pass<3;pass++){
+    boxBlurH(a,b,w,h,radius);
+    boxBlurV(b,a,w,h,radius);
+  }
+  return a;
+}
+
+async function applyLinearDenoise(){
+  if(!historyOrigR||!bgApplied) return;
+  if(denoiseStrength<0.005){
+    document.getElementById('dn-status').textContent='Set strength above 0% first';return;
+  }
+  const btn=document.getElementById('dn-apply-btn');
+  btn.disabled=true;btn.textContent='APPLYING…';
+  showApplyAnim('APPLYING DENOISE…');
+  await raf();await raf();
+
+  // Snapshot before bake
+  denoiseSnapshot={
+    plR:new Float32Array(historyOrigR),
+    plG:new Float32Array(historyOrigG),
+    plB:new Float32Array(historyOrigB)
+  };
+
+  const N=NW*NH;
+  const str=denoiseStrength;
+  // Radius: 1px at 0% → 6px at 100%, scaled to image width
+  const radius=Math.max(1,Math.round(str*6));
+
+  // Compute luminance channel
+  const lum=new Float32Array(N);
+  for(let i=0;i<N;i++) lum[i]=0.299*historyOrigR[i]+0.587*historyOrigG[i]+0.114*historyOrigB[i];
+
+  await raf();
+  // Stack-blur the luminance
+  const lumBlur=stackBlurFloat(lum,NW,NH,radius);
+
+  // Apply luminance correction to RGB while preserving chromaticity
+  // For each pixel: compute lum correction ratio, scale RGB
+  for(let i=0;i<N;i++){
+    const lo=lum[i];if(lo<1e-7) continue;
+    const lb=lumBlur[i];
+    // Blend toward blurred luminance by str
+    const lNew=lo*(1-str)+lb*str;
+    const ratio=lNew/lo;
+    historyOrigR[i]*=ratio;
+    historyOrigG[i]*=ratio;
+    historyOrigB[i]*=ratio;
+  }
+
+  // Re-upload textures
+  if(gl){[tR,tG,tB].forEach(t=>{if(t)gl.deleteTexture(t);});}
+  tR=mkTex(new Float32Array(historyOrigR),NW,NH);
+  tG=mkTex(new Float32Array(historyOrigG),NW,NH);
+  tB=mkTex(new Float32Array(historyOrigB),NW,NH);
+  historyStack=[];currentPass=0;updatePassUI();
+  // Refresh stats including LINEAR tab stat panel (Patch 7)
+  refreshLinearState({resetStretchDefaults:false,refreshStats:true});
+  hideApplyAnim();
+
+  denoiseApplied=true;
+  const s4t=document.getElementById('lin-s4-tag');if(s4t){s4t.className='lin-step-tag done';s4t.textContent='Applied';}
+  document.getElementById('lin-s4-num').className='lin-step-num done';
+  document.getElementById('dn-undo-btn').disabled=false;
+  document.getElementById('dn-status').textContent='Denoise applied at radius '+radius+' · Undo available';
+  // Update pipeline summary
+  const sum=document.getElementById('lin-pipeline-summary');
+  if(sum) sum.textContent='Background corrected · Channels neutralized · Stats refreshed · Denoise applied.';
+  btn.textContent='APPLY DENOISE';btn.disabled=false;
+}
+
+async function undoLinearDenoise(){
+  if(!denoiseSnapshot) return;
+  const btn=document.getElementById('dn-undo-btn');
+  btn.disabled=true;btn.textContent='RESTORING…';
+  historyOrigR=new Float32Array(denoiseSnapshot.plR);
+  historyOrigG=new Float32Array(denoiseSnapshot.plG);
+  historyOrigB=new Float32Array(denoiseSnapshot.plB);
+  denoiseSnapshot=null;denoiseApplied=false;
+  if(gl){[tR,tG,tB].forEach(t=>{if(t)gl.deleteTexture(t);});}
+  tR=mkTex(new Float32Array(historyOrigR),NW,NH);
+  tG=mkTex(new Float32Array(historyOrigG),NW,NH);
+  tB=mkTex(new Float32Array(historyOrigB),NW,NH);
+  historyStack=[];currentPass=0;updatePassUI();
+  refreshLinearState({resetStretchDefaults:false,refreshStats:true});
+  const s4t=document.getElementById('lin-s4-tag');if(s4t){s4t.className='lin-step-tag optional';s4t.textContent='Optional';}
+  document.getElementById('lin-s4-num').className='lin-step-num active';
+  document.getElementById('dn-status').textContent='Denoise undone — image restored to pre-denoise state';
+  btn.textContent='UNDO';
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+// REFRESH LINEAR STATE — shared helper used after BG apply/undo
+// and denoise apply/undo. Centralises histogram rebuild and stat
+// display so all pipeline transitions stay in sync.
+// ═══════════════════════════════════════════════════════════════════
+function refreshLinearState({resetStretchDefaults=false,refreshStats=true}={}){
+  // Always rebuild sorted samples and histogram stats from current linear arrays
+  buildHistSamples(historyOrigR,historyOrigG,historyOrigB);
+
+  if(refreshStats){
+    // Update LINEAR tab stats display
+    const sp=document.getElementById('stat-peak');
+    const se=document.getElementById('stat-edge');
+    const smr=document.getElementById('stat-mr');
+    const smg=document.getElementById('stat-mg');
+    const smb=document.getElementById('stat-mb');
+    const ssp=document.getElementById('stat-sp');
+    if(sp) sp.textContent='ADU '+Math.round(histPeakVal*65535);
+    if(se) se.textContent='ADU '+Math.round(histSpikeEdgeVal*65535);
+    if(smr&&hSampR.length) smr.textContent='ADU '+Math.round(hSampR[Math.floor(hSampR.length/2)]*65535);
+    if(smg&&hSampG.length) smg.textContent='ADU '+Math.round(hSampG[Math.floor(hSampG.length/2)]*65535);
+    if(smb&&hSampB.length) smb.textContent='ADU '+Math.round(hSampB[Math.floor(hSampB.length/2)]*65535);
+    if(ssp) ssp.textContent=P.gSP.toFixed(4)+' ('+Math.round(P.gSP*65535)+' ADU)';
+  }
+
+  if(resetStretchDefaults){
+    // Re-derive BP and SP from fresh corrected histogram — these always come
+    // from corrected linear data only, never stale pre-correction state.
+    P.bp=Math.max(0,histFootVal);
+    P.mwp=1.0;P.mmt=0.490;P.aD=0;
+    P.gD=0;P.gB=0;
+    P.gSP=Math.max(P.bp+0.001,Math.min(0.5,
+      histSpikeEdgeVal>P.bp+0.001?histSpikeEdgeVal:P.bp+0.005));
+    P.gLP=0;P.gHP=1.0;P.ht=0;P.rl=0;
+    syncSlider('i-bp',Math.round(P.bp*1000),'v-bp',P.bp.toFixed(3));
+    syncSlider('i-mwp',1000,'v-mwp','1.000');
+    syncSlider('i-gsp',Math.min(500,Math.round(P.gSP*1000)),'v-gsp',P.gSP.toFixed(3));
+    syncSlider('i-ghp',1000,'v-ghp','1.000');
+    syncSlider('i-gb',0,'v-gb','0.0');
+    syncSlider('i-gd',0,'v-gd','0.00');
+    syncSlider('i-glp',0,'v-glp','0.000');
+    historyStack=[];currentPass=0;
+    updatePassUI();
+  }
+
+  drawHist();render();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SAMPLE FILE LOADER
+// ═══════════════════════════════════════════════════════════════════
+async function loadSampleFile(){
+  const statusEl=document.getElementById('sample-status');
+  const SAMPLE_URL='./fits-studio-sample-m42.fits';
+  try{
+    statusEl.textContent='Downloading sample file…';
+    statusEl.style.color='var(--acc)';
+    const resp=await fetch(SAMPLE_URL);
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const total=parseInt(resp.headers.get('content-length')||'0');
+    const reader=resp.body.getReader();
+    const chunks=[];
+    let received=0;
+    while(true){
+      const{done,value}=await reader.read();
+      if(done) break;
+      chunks.push(value);
+      received+=value.length;
+      if(total>0) statusEl.textContent=`Downloading… ${Math.round(received/total*100)}%`;
+    }
+    const buf=await new Blob(chunks).arrayBuffer();
+    statusEl.textContent='';
+    loadFITS(buf);
+  } catch(err){
+    statusEl.style.color='var(--dim)';
+    statusEl.textContent='Sample file not found at ./fits-studio-sample-m42.fits — place it alongside index.html';
+    console.warn('Sample file load failed:',err);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// FILE & RESET
+// ═══════════════════════════════════════════════════════════════════
+function handleFile(f){
+  if(!f)return;
+  if(!['fits','fit','fts'].includes(f.name.split('.').pop().toLowerCase())){alert('Load a .fits file.');return;}
+  const r=new FileReader();r.onload=e=>loadFITS(e.target.result);r.readAsArrayBuffer(f);
+}
+function resetAll(){
+  if(gl)[tR,tG,tB].forEach(t=>{if(t)gl.deleteTexture(t);});
+  tR=tG=tB=null;hSampR=[];hSampG=[];hSampB=[];hSampL=[];
+  document.getElementById('app').style.display='none';
+  document.getElementById('load-screen').style.display='none';
+  document.getElementById('meta').style.display='none';
+  document.getElementById('drop-screen').style.display='flex';
+  document.getElementById('fi').value='';
+  Object.assign(P,{bp:0,mwp:1,mmt:.49,aD:0,gD:0,gB:0,gSP:.005,gLP:0,gHP:1.0,ht:0,rl:0,wR:1,wG:1,wB:1,pal:0,mode:2});
+  Object.assign(Z,{level:1,cx:.5,cy:.5});
+  histPeakVal=0;histFootVal=0;histSpikeEdgeVal=0;
+  historyStack=[];historyOrigR=null;historyOrigG=null;historyOrigB=null;currentPass=0;
+  previewActive=false;previewSnapshot=null;if(document.getElementById('preview-bar'))document.getElementById('preview-bar').classList.remove('on');
+  updatePassUI();
+  bgSamples=[];bgModel=null;bgApplied=false;bgSnapshot=null;bgStrength=1.0;bgGammaVal=0;
+  gradVisActive=false;
+  const gvb=document.getElementById('bg-gamma-btn');if(gvb){gvb.classList.remove('on');gvb.textContent='GAMMA VIEW';}
+  const gvv=document.getElementById('grad-vis-cv');if(gvv)gvv.style.display='none';
+  const calcBtn=document.getElementById('bg-calc-btn');if(calcBtn)calcBtn.disabled=true;
+  const gradRow=document.getElementById('bg-grad-row');if(gradRow)gradRow.style.display='none';
+  if(gl){[tGradR,tGradG,tGradB].forEach(t=>{if(t)gl.deleteTexture(t);});tGradR=tGradG=tGradB=null;}
+  const sCv=document.getElementById('sample-cv');if(sCv){const ctx=sCv.getContext('2d');ctx.clearRect(0,0,sCv.width,sCv.height);}
+  [['i-bp',0],['i-mt',0],['i-mwp',1000],['i-ash',0],['i-gd',0],['i-gb',0],['i-gsp',5],
+   ['i-glp',0],['i-ghp',1000],['i-ht',0],['i-rl',0],['i-wr',100],['i-wg',100],['i-wb',100]]
+    .forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.value=v;});
+  [['v-bp','0.000'],['v-mt','0.490'],['v-mwp','1.000'],['v-ash','0.00'],['v-gd','0.00'],
+   ['v-gb','0.0'],['v-gsp','0.005'],['v-glp','0.000'],['v-ghp','1.000'],
+   ['v-ht','0.00'],['v-rl','0.00'],['v-wr','1.00'],['v-wg','1.00'],['v-wb','1.00']]
+    .forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
+  document.querySelectorAll('.pb2').forEach((b,i)=>b.classList.toggle('on',i===0));
+  // GHS is default mode
+  document.querySelectorAll('.mde').forEach((b,i)=>b.classList.toggle('on',i===2));
+  ['c-mtf','c-ash','c-ghs'].forEach((id,i)=>document.getElementById(id).style.display=i===2?'':'none');
+  // Keep histogram hidden on reset — user must toggle it explicitly
+  document.getElementById('hist-float').classList.add('hidden');
+  // Reset histogram float position for next session
+  const hf=document.getElementById('hist-float');
+  hf.style.left='16px';hf.style.bottom='44px';hf.style.top='auto';hf.style.width='580px';hf.style.height='300px';
+  showTab('proc');
+}
+
+document.getElementById('fi').addEventListener('change',e=>handleFile(e.target.files[0]));
+const dz=document.getElementById('dz');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');handleFile(e.dataTransfer.files[0]);});
+</script>
+</body>
+</html>
