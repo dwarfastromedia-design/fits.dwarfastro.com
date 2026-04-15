@@ -286,11 +286,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 
   <!-- Drop zone + sample -->
   <div style="width:100%;max-width:580px;display:flex;flex-direction:column;gap:12px">
-    <div id="dz" onclick="document.getElementById('fi').click()" style="width:100%">
+    <div id="dz" style="scroll-margin-top:0" onclick="document.getElementById('fi').click()" style="width:100%">
       <div class="ic">🔭</div>
       <div style="font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--txt);margin-bottom:10px">DROP YOUR FITS FILE HERE</div>
       <div style="font-size:15px;color:var(--sub);line-height:1.8">or click to browse &nbsp;·&nbsp; <code>stacked-16_*.fits</code></div>
-      <input type="file" id="fi" accept=".fits,.fit,.fts">
+      <input type="file" id="fi" accept=".fits,.fit,.fts" tabindex="-1">
     </div>
     <div style="display:flex;align-items:center;gap:10px">
       <div style="flex:1;height:1px;background:var(--bdr)"></div>
@@ -336,7 +336,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   </div>
 
   <div style="font-size:13px;color:var(--dim);text-align:center;line-height:1.8">
-    FITS Studio v4.0 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
+    FITS Studio v4.0.1 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
   </div>
 </div>
 </div>
@@ -3140,6 +3140,9 @@ function resetAll(){
 }
 
 document.getElementById('fi').addEventListener('change',e=>handleFile(e.target.files[0]));
+// Prevent browser auto-scroll to hidden file input on page load
+const _ds=document.getElementById('drop-screen');
+if(_ds) requestAnimationFrame(()=>requestAnimationFrame(()=>_ds.scrollTo(0,0)));
 const dz=document.getElementById('dz');
 dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
 dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
