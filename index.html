@@ -257,6 +257,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .go-stretch{width:100%;padding:14px;background:rgba(80,200,120,.15);border:2px solid #50c878;border-radius:8px;color:#50c878;font-family:var(--mono);font-size:16px;letter-spacing:.07em;cursor:pointer;transition:.15s;display:block;text-align:center;font-weight:700;margin-top:4px}
 .go-stretch:hover{background:rgba(80,200,120,.28)}
 .go-stretch:disabled{opacity:.3;cursor:not-allowed}
+
+/* COOKIE CONSENT BANNER */
+#cookie-banner{
+  position:fixed;bottom:0;left:0;right:0;z-index:9999;
+  background:#0d1017;border-top:1px solid var(--bdr);
+  padding:16px 24px;
+  display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+  font-size:15px;color:var(--sub);line-height:1.5;
+}
+#cookie-banner.hidden{display:none}
+#cookie-banner p{flex:1;min-width:260px;margin:0}
+#cookie-banner small{display:block;font-size:12px;color:var(--dim);margin-top:4px}
+.cookie-btn{padding:9px 22px;border-radius:6px;font-family:var(--mono);font-size:14px;letter-spacing:.06em;cursor:pointer;border:1px solid;transition:.15s;white-space:nowrap;flex-shrink:0}
+.cookie-btn.accept{background:rgba(249,115,22,.15);border-color:var(--acc);color:var(--acc)}
+.cookie-btn.accept:hover{background:rgba(249,115,22,.28)}
+.cookie-btn.decline{background:transparent;border-color:var(--bdr);color:var(--dim)}
+.cookie-btn.decline:hover{border-color:var(--sub);color:var(--sub)}
 </style>
 </head>
 <body>
@@ -3147,6 +3164,59 @@ const dz=document.getElementById('dz');
 dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
 dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');handleFile(e.dataTransfer.files[0]);});
+</script>
+
+<!-- COOKIE CONSENT BANNER -->
+<div id="cookie-banner" class="hidden">
+  <p>
+    🍪 This site uses Google Analytics to understand how people use FITS Studio. No personal data is collected and your FITS files never leave your device.
+    <small>Your choice is saved locally and you won't be asked again. You can change it anytime by clearing your browser data.</small>
+  </p>
+  <button class="cookie-btn decline" onclick="cookieDecline()">Decline</button>
+  <button class="cookie-btn accept" onclick="cookieAccept()">Accept</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// GOOGLE ANALYTICS — consent-gated
+// GA only loads after explicit user acceptance. If declined or not
+// yet decided, no GA scripts are injected and no cookies are set.
+// ═══════════════════════════════════════════════════════════════════
+const GA_ID='G-JGRE8CEP0N';
+const CONSENT_KEY='fits_studio_ga_consent';
+
+function loadGA(){
+  if(window._gaLoaded) return;
+  window._gaLoaded=true;
+  const s=document.createElement('script');
+  s.async=true;
+  s.src='https://www.googletagmanager.com/gtag/js?id='+GA_ID;
+  document.head.appendChild(s);
+  window.dataLayer=window.dataLayer||[];
+  function gtag(){dataLayer.push(arguments);}
+  window.gtag=gtag;
+  gtag('js',new Date());
+  gtag('config',GA_ID,{anonymize_ip:true});
+}
+
+function cookieAccept(){
+  localStorage.setItem(CONSENT_KEY,'accepted');
+  document.getElementById('cookie-banner').classList.add('hidden');
+  loadGA();
+}
+
+function cookieDecline(){
+  localStorage.setItem(CONSENT_KEY,'declined');
+  document.getElementById('cookie-banner').classList.add('hidden');
+}
+
+(function initConsent(){
+  const stored=localStorage.getItem(CONSENT_KEY);
+  if(stored==='accepted'){loadGA();return;}
+  if(stored==='declined') return;
+  // No decision yet — show banner after short delay so page renders first
+  setTimeout(()=>document.getElementById('cookie-banner').classList.remove('hidden'),800);
+})();
 </script>
 </body>
 </html>
