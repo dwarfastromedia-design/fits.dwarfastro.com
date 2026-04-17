@@ -123,6 +123,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 #preview-label{font-family:var(--mono);font-size:14px;color:var(--acc);letter-spacing:.05em}
 #preview-exit{background:none;border:1px solid rgba(249,115,22,.4);border-radius:4px;color:var(--acc);font-family:var(--mono);font-size:14px;cursor:pointer;padding:5px 12px;transition:.12s}
 #preview-exit:hover{background:rgba(249,115,22,.2)}
+/* Preview lock — dims and blocks all panel controls except EXIT PREVIEW */
+#panel.preview-lock *:not(#preview-bar):not(#preview-bar *):not(#preview-label){
+  pointer-events:none!important;
+}
+#panel.preview-lock{position:relative}
+#panel.preview-lock::after{
+  content:'';position:absolute;inset:0;z-index:10;
+  background:rgba(8,12,20,.55);pointer-events:all;
+}
+#panel.preview-lock #preview-bar{
+  position:relative;z-index:20;pointer-events:all;
+}
 .mode-row{display:flex;gap:6px;margin-bottom:14px}
 .mde{flex:1;padding:10px 4px;background:var(--card);border:1px solid var(--bdr);border-radius:5px;font-family:var(--mono);font-size:16px;color:var(--dim);cursor:pointer;text-align:center;letter-spacing:.05em;transition:.12s}
 .mde:hover{border-color:var(--acc);color:var(--txt)}
@@ -353,7 +365,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   </div>
 
   <div style="font-size:13px;color:var(--dim);text-align:center;line-height:1.8">
-    FITS Studio v4.1.0 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
+    FITS Studio v4.1.10 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
   </div>
 </div>
 </div>
@@ -382,10 +394,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         <div class="hist-handle-left">
           <span class="hist-float-title">HISTOGRAM · NORMALISED · LOG Y</span>
           <div class="hist-ch-row">
-            <button class="hch on-L" onclick="setHistCh('L',this)">LUM</button>
-            <button class="hch" onclick="setHistCh('R',this)">RED</button>
-            <button class="hch" onclick="setHistCh('G',this)">GRN</button>
-            <button class="hch" onclick="setHistCh('B',this)">BLU</button>
+            <button class="hch on-L" id="hch-L" onclick="toggleHistCh('L')">LUM</button>
+            <button class="hch" id="hch-R" onclick="toggleHistCh('R')">RED</button>
+            <button class="hch" id="hch-G" onclick="toggleHistCh('G')">GRN</button>
+            <button class="hch" id="hch-B" onclick="toggleHistCh('B')">BLU</button>
           </div>
         </div>
         <button id="hist-close" onclick="document.getElementById('hist-float').classList.toggle('hidden')" title="Hide">✕</button>
@@ -569,7 +581,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 
         <div style="display:flex;gap:6px;margin-bottom:12px">
           <button class="stf-btn" style="margin-bottom:0;flex:1" onclick="doAutoSTF()">AUTO STRETCH</button>
-          <button class="stf-btn" style="margin-bottom:0;flex:1;background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.3);color:#7ac8f0" onclick="doAutoPreview()" title="Preview Auto Stretch without committing. Sliders update to show values. Press EXIT PREVIEW or move any slider to return to manual.">PREVIEW STF</button>
+          <button id="preview-stf-btn" class="stf-btn" style="margin-bottom:0;flex:1;background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.3);color:#7ac8f0" onclick="doAutoPreview()" title="Temporary Auto Stretch preview — not baked. Any slider move or action exits preview automatically.">PREVIEW STF</button>
         </div>
         <div class="mode-row">
           <button class="mde" id="m-mtf" onclick="setMode(0,this)">MTF</button>
@@ -649,7 +661,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         </div>
         <div class="ctrl">
           <div class="cr"><span class="cn">Star Roll-off</span><span class="cv" id="v-rl">0.00</span></div>
-          <div class="pm-row"><button class="pm-btn" onclick="stepSlider('rl',-1)">−</button><input type="range" id="i-rl" min="0" max="200" value="0" oninput="onRL(this.value)"><button class="pm-btn" onclick="stepSlider('rl',1)">+</button></div>
+          <div class="pm-row"><button class="pm-btn" onclick="stepSlider('rl',-1)">−</button><input type="range" id="i-rl" min="0" max="200" value="0" oninput="onRL(this.value)" onchange="onRLRelease(this.value)"><button class="pm-btn" onclick="stepSlider('rl',1)">+</button></div>
           <div class="ch">Smooth asymptotic cap. Final star shape control after Highlights.</div>
         </div>
       </div>
@@ -703,58 +715,209 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 
     <div class="tab-content" id="tab-guide">
       <div class="guide-step">
-        <div class="step-num">01 — GETTING THE FILE FROM YOUR DWARF 3</div>
-        <div class="step-title">Retrieve the stacked FITS file via USB-C</div>
-        <div class="step-body">Connect your Dwarf 3 to a laptop or desktop using the USB-C cable supplied. Power on, wait for the device to mount as a storage drive. Navigate to <code>/Astronomy/</code> and open the session folder <code>DWARF_RAW_TELE_{target}_EXP_{n}_GAIN_{n}_{timestamp}</code>. Copy <code>stacked-16_*.fits</code> to your computer.</div>
-        <div class="step-note">The stacked-16 file is the internally calibrated stack. Individual sub-frames are not needed.</div>
+        <div class="step-num">01 — WHAT FITS STUDIO DOES</div>
+        <div class="step-title">A browser-based processor for stacked Dwarf 3 FITS files</div>
+        <div class="step-body">FITS Studio is designed for the <code>stacked-16_*.fits</code> files created by the Dwarf 3 after a session or Mega Stack. It does not stack sub-frames. Instead, it takes the linear stacked FITS file the scope already created and gives you a clean processing path: background extraction, channel neutralization, optional linear denoise, stretching, white balance, and PNG export.</div>
+        <div class="step-note">For tutorials and first-time use, load the built-in <b>M42 Orion Nebula</b> sample file from the start screen. It is the fastest way to learn the workflow.</div>
       </div>
       <div class="guide-step">
-        <div class="step-num">02 — THE RAW SIDE (LEFT OF SPLIT)</div>
-        <div class="step-title">What you are seeing on the left is real colour, gamma lifted</div>
-        <div class="step-body">The split-screen left side applies <code>pow(channel, 0.28)</code> to each RGB channel independently. This is a strong gamma lift — it takes the nearly-black linear data and makes it visible. The colours you see are real: the actual R, G, B values from the three FITS data planes. Nothing is processed or stretched. It is dim and low-contrast by nature because linear data contains almost no contrast.</div>
-        <div class="step-note">Drag the split to the right to compare before and after. The left side does not change when you move sliders — it always shows the raw data.</div>
+        <div class="step-num">02 — THE FASTEST GOOD WORKFLOW</div>
+        <div class="step-title">Use this sequence for most images</div>
+        <div class="step-body">
+          1) Load your FITS file or the built-in M42 sample.<br>
+          2) Go to <code>LINEAR</code> and run <b>Background Extraction</b>.<br>
+          3) Let <b>Channel Neutralization</b> and <b>Statistics Refresh</b> complete automatically.<br>
+          4) Optionally apply <b>Gentle Linear Denoise</b>.<br>
+          5) Switch to <code>STRETCH</code> and use <b>Preview STF</b> or <b>Auto Stretch</b> for a starting point.<br>
+          6) Refine with <b>MTF</b>, <b>Asinh</b>, or <b>GHS</b>.<br>
+          7) Protect bright stars with <b>Highlights</b> or <b>HP</b> in GHS.<br>
+          8) Finish with <b>White Balance</b>.<br>
+          9) Export a full-resolution PNG.
+        </div>
+        <div class="step-note">The linear cleanup comes first for a reason: a cleaner linear image gives better stretch placement, better colour behaviour, and more predictable results later.</div>
       </div>
       <div class="guide-step">
-        <div class="step-num">03 — THE HISTOGRAM</div>
-        <div class="step-title">Drag, resize, and read the floating histogram</div>
-        <div class="step-body">The histogram floats over the image and can be dragged by its title bar. X axis: 0 = sky background, 1 = brightest stars. Y axis: logarithmic bin count. The tall peak near 0 is normal — most pixels are sky. The tail to the right contains nebulosity and stars. Switch channels (LUM, RED, GRN, BLU) to check colour balance. Three draggable vertical markers: orange = Background Clip, red = White Point (MTF), blue dashed = Stretch Point (GHS). Click anywhere on the histogram to set BP directly.</div>
-        <div class="step-note">Colour imbalance shows as one channel's histogram peak sitting at a different position from the others. Use white balance to align them.</div>
+        <div class="step-num">03 — LOAD THE M42 SAMPLE</div>
+        <div class="step-title">The best way to learn the app</div>
+        <div class="step-body">From the opening screen, click <b>LOAD SAMPLE FILE — M42 Orion Nebula</b>. This loads a Dwarf 3 sample FITS file so you can follow the guide without needing your own data first.</div>
+        <div class="step-note">The M42 sample is ideal for tutorials because it shows faint nebula, a bright core, and bright stars — all the things that make the stretch controls meaningful.</div>
       </div>
       <div class="guide-step">
-        <div class="step-num">04 — AUTO STRETCH</div>
-        <div class="step-title">One click to a usable starting point</div>
-        <div class="step-body">Press AUTO STRETCH at the top of the PROCESS tab. Computes median and MAD from the luminance channel. Sets Background Clip to median − 2.5×MAD and solves for the stretch parameter so the background maps to approximately 20% output brightness — the same target PixInsight AutoSTF uses.</div>
-        <div class="step-note">Switch stretch mode before pressing Auto Stretch — it solves for the correct parameters for whichever mode is active.</div>
+        <div class="step-num">04 — START IN LINEAR</div>
+        <div class="step-title">Fix the linear image before stretching it</div>
+        <div class="step-body">Always begin in the <code>LINEAR</code> tab. Linear data contains the real signal, but it is dim and low-contrast by nature. The goal here is to clean the image before you amplify anything with a stretch.</div>
+        <div class="step-note">Stretching first and correcting later usually makes colour cast, background gradients, and noise harder to control.</div>
       </div>
       <div class="guide-step">
-        <div class="step-num">05 — MTF MODE</div>
-        <div class="step-title">Midtone Transfer Function — three-point curve</div>
-        <div class="step-body">Three independent controls: Background Clip (clips below sky), White Point (clips above and renormalises), and Midtone m (applies T(x)=(m−1)x/((2m−1)x−m)). At m=0.490 the curve is identity. Lower m = more aggressive contrast. This is the same algorithm as PixInsight's HistogramTransformation. Use the red histogram marker to set White Point and the orange marker for Background Clip.</div>
-        <div class="step-note">MTF is the recommended starting mode for most Dwarf 3 images.</div>
+        <div class="step-num">05 — BACKGROUND EXTRACTION</div>
+        <div class="step-title">Use POLY-2 first, then escalate only if needed</div>
+        <div class="step-body">
+          Start with <b>POLY-2</b>. It is the best normal starting point for most Dwarf 3 images, especially under suburban skies. Use <b>TPS-RBF</b> only when the background gradient is unusually complex or comes from multiple directions.<br><br>
+          Recommended workflow:<br>
+          • Click <b>GENERATE SAMPLE GRID</b><br>
+          • Review accepted and rejected samples<br>
+          • Click <b>CALCULATE &amp; PREVIEW</b><br>
+          • If the correction looks good, click <b>APPLY CORRECTION</b>
+        </div>
+        <div class="step-note">If the correction feels too strong near the frame edges, reduce the Strength slider slightly before applying. For most clean examples, 100% is a good first try.</div>
       </div>
       <div class="guide-step">
-        <div class="step-num">06 — ASINH MODE</div>
-        <div class="step-title">Inverse hyperbolic sine — smooth highlight compression</div>
-        <div class="step-body">Applies asinh(D×x)/asinh(D). Logarithmic D slider. At low D nearly linear. At high D very aggressive in shadows, smooth in highlights. Better star colour preservation than MTF at equivalent stretch levels because highlights are compressed smoothly rather than clipped.</div>
-        <div class="step-note">No White Point in Asinh mode. Use the Highlights and Star Roll-off sliders to manage bright stars.</div>
+        <div class="step-num">06 — AUTOMATIC LINEAR CLEANUP</div>
+        <div class="step-title">Channel Neutralization and Statistics Refresh run for you</div>
+        <div class="step-body">
+          After background correction is applied, FITS Studio automatically runs <b>Channel Neutralization</b> and <b>Statistics Refresh</b>.<br><br>
+          Channel Neutralization removes residual per-channel sky bias so red, green, and blue share the same background floor before stretching.<br><br>
+          Statistics Refresh then recalculates the histogram-based values the <code>STRETCH</code> tab uses.
+        </div>
+        <div class="step-note">This is one of the reasons the recommended workflow starts in LINEAR. Stretch placement is more reliable after the linear image has been normalized.</div>
       </div>
       <div class="guide-step">
-        <div class="step-num">07 — GHS MODE</div>
-        <div class="step-title">Generalised Hyperbolic Stretch — Siril's method</div>
-        <div class="step-body">Stretches around a pivot point SP. Shadow side: Möbius pre-warp (B) boosts faint detail before asinh stretch, with LP fade near zero. Highlight side: log compression with HP fade. Set SP to background median — use Auto Stretch or drag the blue histogram marker. Start with B=0 and D at a moderate value.</div>
-        <div class="step-note">D and SP are the primary controls. B, LP, HP are refinements once the basic stretch looks right.</div>
+        <div class="step-num">07 — OPTIONAL LINEAR DENOISE</div>
+        <div class="step-title">Use it lightly, before stretch</div>
+        <div class="step-body">
+          <b>Gentle Linear Denoise</b> is optional. Use it when the background is noisy and you want to take the edge off before stretching amplifies that noise. A light setting is usually best.<br><br>
+          Suggested starting point:<br>
+          • <b>20–30%</b> for moderate noise<br>
+          • Skip it entirely for very deep, clean stacks
+        </div>
+        <div class="step-note">The goal is not to blur the image. The goal is to smooth background noise while preserving colour balance and keeping stars under control.</div>
       </div>
       <div class="guide-step">
-        <div class="step-num">08 — WHITE BALANCE</div>
-        <div class="step-title">Correct colour after stretching</div>
-        <div class="step-body">Inspect white stars in the processed side. If they appear orange, lower Red or raise Blue. If blue, raise Red. Green is the reference channel and is usually left at 1.00. Check the histogram channel selector — a balanced image shows all three channel curves overlapping closely.</div>
-        <div class="step-note">Apply white balance before selecting a palette. An uncalibrated image will look unpredictable in HUBBLE or COOL mode.</div>
+        <div class="step-num">08 — PREVIEW STF</div>
+        <div class="step-title">Scout the image before committing to a real stretch</div>
+        <div class="step-body">
+          <b>Preview STF</b> is a temporary preview mode. Use it to see where the image wants to go before you start making real manual decisions.<br><br>
+          A good workflow is:<br>
+          • Open the histogram<br>
+          • Click <b>PREVIEW STF</b><br>
+          • Study the result<br>
+          • Exit preview<br>
+          • Choose your real stretch mode and refine from there
+        </div>
+        <div class="step-note">Think of Preview STF as a scouting tool, not a finished result. It is there to help you choose the next step more intelligently.</div>
       </div>
       <div class="guide-step">
-        <div class="step-num">09 — EXPORT</div>
-        <div class="step-title">Export at native 3856 × 2180 resolution</div>
-        <div class="step-body">Press EXPORT FULL RES PNG. Renders at native Dwarf 3 resolution without the split overlay. Filename is built from the OBJECT and DATE-OBS header fields. Zoom and pan do not affect the export — always exports the full frame.</div>
-        <div class="step-note">The PNG contains all current stretch, white balance, and palette settings baked in. It is ready to share or open in Affinity Photo or Photoshop for further work.</div>
+        <div class="step-num">09 — AUTO STRETCH</div>
+        <div class="step-title">A starting point, not the final answer</div>
+        <div class="step-body">
+          <b>Auto Stretch</b> uses per-channel statistics — with green as the reference — to place the stretch controls automatically. The black point is placed conservatively to preserve faint signal, especially in targets with dim outer structure.<br><br>
+          That means the black point marker may still appear partly inside the histogram data. This is often normal. It does <b>not</b> mean the stretch is wrong. It usually means the app is protecting faint signal instead of forcing an artificially black background too early.
+        </div>
+        <div class="step-note">If you want a darker cosmetic background, raise the black point manually after Auto Stretch. For galaxies and faint nebulosity, conservative placement is often the better choice.</div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">10 — UNDERSTANDING THE HISTOGRAM</div>
+        <div class="step-title">Use it as a control surface, not just a graph</div>
+        <div class="step-body">
+          The histogram shows the tonal distribution of the image.<br><br>
+          General guide:<br>
+          • Left side = background and dark signal<br>
+          • Right side = brighter stars and cores<br>
+          • The main hump near the left is usually normal sky background<br><br>
+          The markers represent active control points, depending on the current mode:<br>
+          • <b>BP</b> (orange) = black point / background clip<br>
+          • <b>WP</b> (red) = white point in MTF only<br>
+          • <b>SP</b> (blue dashed) = stretch point in GHS<br>
+          • <b>LP</b> (green) and <b>HP</b> (amber) = lower and highlight protection in GHS — only visible when active
+        </div>
+        <div class="step-note">Do not assume the BP marker must always sit fully outside the histogram data. In a conservative stretch, it may sit near the left shoulder of the data to preserve faint structure.</div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">11 — CHOOSING A STRETCH MODE</div>
+        <div class="step-title">MTF, Asinh, and GHS are different tools</div>
+        <div class="step-body">
+          <b>MTF</b><br>
+          Use when you want a simple, straightforward stretch and quick contrast shaping.<br><br>
+          <b>Asinh</b><br>
+          Use when star colour matters. Asinh is often the safest first stretch for bright-star fields because it tends to preserve star colour better than a harsher stretch.<br><br>
+          <b>GHS</b><br>
+          Use when you want the most control over faint detail versus highlights. GHS is excellent when you want to shape the stretch more precisely and protect bright cores and stars.
+        </div>
+        <div class="step-note">A useful rule: start with <b>Asinh</b> if bright stars are your main concern, and use <b>GHS</b> when you want more fine-grained control.</div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">12 — A SIMPLE M42 WORKFLOW IN ASINH</div>
+        <div class="step-title">Great for star colour and a bright core</div>
+        <div class="step-body">
+          Recommended sequence for the built-in M42 sample:<br>
+          1) Clean the image in <code>LINEAR</code><br>
+          2) Use <b>Preview STF</b><br>
+          3) Exit preview<br>
+          4) Switch to <b>Asinh</b><br>
+          5) Raise <b>Stretch D</b> gradually<br>
+          6) Watch the bright core and the stars<br>
+          7) If stars start to get harsh or pale, use <b>Highlights</b> to tame them<br>
+          8) Fine-tune the background with BP only if needed<br>
+          9) Finish with <b>White Balance</b>
+        </div>
+        <div class="step-note">The goal is not to make Orion as bright as possible immediately. The goal is to build the image in stages without blowing out the core or whitening the stars too early.</div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">13 — A SIMPLE M42 WORKFLOW IN GHS</div>
+        <div class="step-title">Best when you want more control</div>
+        <div class="step-body">
+          Recommended sequence:<br>
+          1) Start from the cleaned linear image<br>
+          2) Switch to <b>GHS</b><br>
+          3) Place <b>SP</b> near the rise of the data<br>
+          4) Increase <b>Stretch D</b> gently<br>
+          5) Use <b>HP</b> to protect the bright core and bright stars<br>
+          6) Use <b>LP</b> only if you want to preserve deeper shadow structure<br>
+          7) Use <b>Highlights</b> as a finishing control for bright stars<br>
+          8) Finish with <b>White Balance</b>
+        </div>
+        <div class="step-note">In GHS, build the stretch slowly. If the image starts to look harsh, add protection before adding more stretch.</div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">14 — STAR COLOUR AND BRIGHT STARS</div>
+        <div class="step-title">Protect highlights before forcing more stretch</div>
+        <div class="step-body">
+          Star colour is usually lost because of aggressive highlight handling, not because of a conservative black point.<br><br>
+          Best practices:<br>
+          • Keep BP conservative at first<br>
+          • Avoid pushing the stretch too hard too early<br>
+          • In <b>Asinh</b>, use <b>Highlights</b> to tame bright stars<br>
+          • In <b>GHS</b>, use <b>HP</b> to protect bright stars and the core<br>
+          • Finish with <b>White Balance</b> using neutral-looking stars as reference
+        </div>
+        <div class="step-note">If stars are turning white, do not solve that by pushing BP harder. Reduce the stretch or add more highlight protection instead.</div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">15 — WHITE BALANCE</div>
+        <div class="step-title">Do this after the main stretch is close</div>
+        <div class="step-body">
+          Use White Balance near the end of the workflow, after the structure and brightness are mostly where you want them.<br><br>
+          Practical guide:<br>
+          • If stars look too orange or yellow, reduce <b>Red</b> slightly or raise <b>Blue</b><br>
+          • If stars look too blue, raise <b>Red</b> slightly<br>
+          • Use neutral-looking stars as your reference
+        </div>
+        <div class="step-note">White Balance is a finishing tool. It should not need to rescue a poorly stretched image.</div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">16 — EXPORT</div>
+        <div class="step-title">Finish with a full-resolution PNG</div>
+        <div class="step-body">When the image looks right, click <b>EXPORT FULL RES PNG</b>. This saves your current processed result as a full-resolution PNG for sharing, archiving, or finishing in another editor.</div>
+        <div class="step-note">A good export point is: the structure is visible, the background is clean enough, the stars are controlled, and the colour balance looks believable.</div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">17 — TROUBLESHOOTING</div>
+        <div class="step-title">Common issues and what to try next</div>
+        <div class="step-body">
+          <b>The image still looks flat</b><br>
+          Increase the stretch more gently before pushing BP too far.<br><br>
+          <b>The background is too gray</b><br>
+          Raise BP slightly, but do it carefully.<br><br>
+          <b>Stars are turning white</b><br>
+          Stop increasing the main stretch. Use <b>Highlights</b> or <b>HP</b> instead.<br><br>
+          <b>The M42 core looks harsh</b><br>
+          Back off the stretch slightly and add highlight protection.<br><br>
+          <b>The BP marker sits inside the histogram</b><br>
+          That can be normal in a conservative stretch. It often means faint signal is being preserved.<br><br>
+          <b>Preview looks odd</b><br>
+          Exit Preview STF and continue from the real controls.
+        </div>
+        <div class="step-note">When in doubt, make smaller moves. Most overprocessed images come from one or two controls being pushed too hard, too early.</div>
       </div>
     </div>
   </div>
@@ -804,7 +967,7 @@ void main(){uv=a*.5+.5;gl_Position=vec4(a,0,1);}`;
 const FS=`#version 300 es
 precision highp float;
 in vec2 uv;out vec4 o;
-uniform sampler2D tR,tG,tB,tGradR,tGradG,tGradB;
+uniform sampler2D tR,tG,tB,tGradR,tGradG,tGradB,tStarMask;
 uniform float bp,mwp,mmt,aD,gD,gB,gSP,gLP,gHP,ht,rl,wR,wG,wB,zoom,bgStr,bgGamma,bgMedR,bgMedG,bgMedB,bgGradActive;
 uniform vec2 view;
 uniform int mode,pal;
@@ -872,7 +1035,20 @@ float highlights(float x){
   if(ht<.001||x<=.5)return x;
   return .5+pow((x-.5)/.5,1.+ht*3.)*.5;
 }
-float rolloff(float x){return rl<1e-4?x:x/(1.+rl*x);}
+/* Star Roll-off — uses precomputed star mask texture (same mask as CPU bake).
+   Mask is built from compactness + brightness + structure terms on CPU,
+   downsampled 4x, and uploaded as tStarMask. Preview matches baked output.
+   Luminance-ratio rescaling preserves hue and saturation. */
+vec3 starRolloff(vec3 c, vec2 maskUV){
+  if(rl<1e-4) return c;
+  float mask=texture(tStarMask,maskUV).r;
+  if(mask<1e-4) return c;
+  float lum=dot(c,vec3(.299,.587,.114));
+  if(lum<1e-7) return c;
+  float lumRolled=lum/(1.+rl*lum);
+  float ratio=mix(1.0,lumRolled/lum,mask);
+  return c*ratio;
+}
 vec3 palHubble(vec3 c){
   /* Dual-band aware Hubble palette.
      For Ha+OIII data (R >> G,B): remap to SHO colour space so
@@ -924,7 +1100,7 @@ void main(){
   else if(mode==1){sr=ash(r);sg=ash(g);sb=ash(b);}
   else{sr=ghs(r);sg=ghs(g);sb=ghs(b);}
   sr=highlights(sr);sg=highlights(sg);sb=highlights(sb);
-  vec3 col=clamp(vec3(rolloff(sr),rolloff(sg),rolloff(sb)),0.,1.);
+  vec3 col=clamp(starRolloff(vec3(sr,sg,sb),f),0.,1.);
   if(pal==1)col=palHubble(col);
   else if(pal==2)col=palCool(col);
   else if(pal==3){float l=dot(col,vec3(.299,.587,.114));col=vec3(l);}
@@ -942,7 +1118,11 @@ const P={bp:0,mwp:1.0,mmt:.490,aD:0,gD:0,gB:0,gSP:.005,gLP:0,gHP:1.0,ht:0,rl:0,w
 const Z={level:1,cx:.5,cy:.5};
 let NW=0,NH=0,gl,prog,locs={},tR,tG,tB;
 let hSampR=[],hSampG=[],hSampB=[],hSampL=[];
-let histCh='L',histDrag=null,histPeakVal=0,histFootVal=0,histSpikeEdgeVal=0;
+let histChActive=new Set(['L']),histDrag=null,histPeakVal=0,histFootVal=0,histSpikeEdgeVal=0;
+// Cached histogram bins — rebuilt only when sample data changes, not on every render
+let histBins={L:null,R:null,G:null,B:null};
+let histBinsGlobalMax=1;
+let histBinsDirty=true;
 
 // ── BACKGROUND EXTRACTION STATE ────────────────────────────────────
 const BG_GRAD_W=256,BG_GRAD_H=144; // gradient texture resolution
@@ -980,6 +1160,31 @@ const CHECKPOINT_INTERVAL=3;
 let workR1=null,workG1=null,workB1=null;
 let workR2=null,workG2=null,workB2=null;
 
+// ── LAST STRETCHED PIXEL DATA ─────────────────────────────────────────
+// Stored after every apply/undo so the rl slider can rebuild the star
+// mask without requiring a new apply. These are pre-rolloff values so
+// the mask always sees the correct star structure.
+let lastStretchedR=null,lastStretchedG=null,lastStretchedB=null;
+
+// ── STAR MASK TEXTURE ─────────────────────────────────────────────────
+// Precomputed CPU star mask, downsampled 4× and uploaded as R32F texture.
+// Preview shader samples this to match CPU bake exactly.
+let tStarMask=null;
+const STAR_MASK_SCALE=4;    // 4× downsample factor
+let STAR_MASK_W=0,STAR_MASK_H=0; // set at file load
+
+// ── STAR MASK TUNING CONSTANTS ────────────────────────────────────────
+// All use smooth ramps — no hard thresholds. Tune here without touching logic.
+const STAR_SMALL_RADIUS       = 1;     // small blur radius (retains star peaks)
+const STAR_LARGE_RADIUS       = 12;    // large blur radius — must be large enough to dilute
+                                               //   big bright stars (10-15px FWHM at Dwarf 3 scale)
+const STAR_COMPACT_START      = 0.01;  // compactness signal where mask starts rising
+const STAR_COMPACT_END        = 0.06;  // compactness signal for full mask
+const STAR_BRIGHT_START       = 0.10;  // luminance where brightness gate starts
+const STAR_BRIGHT_END         = 0.25;  // luminance for full brightness gate
+const STAR_STRUCT_REJECT_START= 0.70;  // support ratio where extended-structure rejection starts
+const STAR_STRUCT_REJECT_END  = 0.90;  // support ratio for full rejection
+
 // ═══════════════════════════════════════════════════════════════════
 // WEBGL
 // ═══════════════════════════════════════════════════════════════════
@@ -997,7 +1202,7 @@ function initGL(){
   gl.linkProgram(p);
   if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
   prog=p;
-  ['tR','tG','tB','tGradR','tGradG','tGradB','bp','mwp','mmt','aD','gD','gB','gSP','gLP','gHP',
+  ['tR','tG','tB','tGradR','tGradG','tGradB','tStarMask','bp','mwp','mmt','aD','gD','gB','gSP','gLP','gHP',
    'ht','rl','wR','wG','wB','zoom','bgStr','bgGamma','bgMedR','bgMedG','bgMedB','bgGradActive','view','mode','pal'].forEach(n=>{
     locs[n]=gl.getUniformLocation(p,n);});
   locs.a=gl.getAttribLocation(p,'a');
@@ -1031,6 +1236,7 @@ function render(){
   gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,tGradR||tR);gl.uniform1i(locs.tGradR,3);
   gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,tGradG||tG);gl.uniform1i(locs.tGradG,4);
   gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,tGradB||tB);gl.uniform1i(locs.tGradB,5);
+  gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,tStarMask||tR);gl.uniform1i(locs.tStarMask,6);
   gl.uniform1f(locs.zoom,Z.level);
   gl.uniform1f(locs.bgStr,(bgApplied||!tGradR)?0:bgStrength);
   gl.uniform1f(locs.bgGamma,bgGammaVal);
@@ -1218,7 +1424,7 @@ async function loadFITS(buf){
   showTab('info');
   initLinearSteps();
   await raf();
-  allocScratch();sizeCanvas();drawHist();render();
+  allocScratch();lastStretchedR=historyOrigR;lastStretchedG=historyOrigG;lastStretchedB=historyOrigB;if(gl){if(tStarMask)gl.deleteTexture(tStarMask);tStarMask=mkTex(new Float32Array([0]),1,1);}sizeCanvas();drawHist();render();
   updatePassUI();
 }
 
@@ -1340,6 +1546,39 @@ function ghsJS(xc){
   return Math.max(0,Math.min(1,s));
 }
 
+// ── HISTOGRAM BIN CACHE ──────────────────────────────────────────────
+// Bins are expensive to recompute (walks all sample arrays).
+// Cache them and mark dirty only when sample data changes.
+// Slider movement and channel toggles render from cache — no recompute.
+const HIST_NB=140;
+
+function rebuildHistBins(){
+  const range=HHI-HLO;
+  const sampMap={L:hSampL,R:hSampR,G:hSampG,B:hSampB};
+  let gmax=1;
+  for(const ch of ['L','R','G','B']){
+    const samp=sampMap[ch];
+    if(!samp||!samp.length){histBins[ch]=null;continue;}
+    const bins=new Array(HIST_NB).fill(0);
+    for(const v of samp){
+      const b=Math.floor((v-HLO)/range*HIST_NB);
+      if(b>=0&&b<HIST_NB)bins[b]++;
+    }
+    histBins[ch]=bins;
+    gmax=Math.max(gmax,...bins);
+  }
+  histBinsGlobalMax=gmax;
+  histBinsDirty=false;
+}
+
+// RAF-throttled draw for use in slider oninput handlers.
+// Ensures at most one drawHist per animation frame during fast drag.
+let _histDrawRAF=0;
+function scheduleHistDraw(){
+  cancelAnimationFrame(_histDrawRAF);
+  _histDrawRAF=requestAnimationFrame(()=>{if(histVisible())drawHist();});
+}
+
 function drawHist(){
   const cv=document.getElementById('hist-cv');
   const dpr=window.devicePixelRatio||1;
@@ -1353,16 +1592,16 @@ function drawHist(){
   const ctx=cv.getContext('2d');
   ctx.scale(dpr,dpr);
 
-  const samp=histCh==='R'?hSampR:histCh==='G'?hSampG:histCh==='B'?hSampB:hSampL;
-  ctx.fillStyle='#080808';ctx.fillRect(0,0,W,H);
-  if(!samp||!samp.length)return;
+  // Rebuild bins from sample arrays only if data changed since last draw.
+  // Slider movement does not change sample data — bins stay valid.
+  if(histBinsDirty) rebuildHistBins();
+  if(!hSampL.length) return;
 
-  const nb=140,bins=new Array(nb).fill(0),range=HHI-HLO;
-  for(const v of samp){
-    const b=Math.floor((v-HLO)/range*nb);
-    if(b>=0&&b<nb)bins[b]++;
-  }
-  const mx=Math.max(...bins,1);
+  ctx.fillStyle='#080808';ctx.fillRect(0,0,W,H);
+
+  const lineColors={L:'rgba(200,200,200,1)',R:'rgba(220,80,80,1)',G:'rgba(60,190,80,1)',B:'rgba(70,130,220,1)'};
+  const fillColors={L:'rgba(200,200,200,.07)',R:'rgba(220,80,80,.09)',G:'rgba(60,190,80,.09)',B:'rgba(70,130,220,.09)'};
+  const globalMax=histBinsGlobalMax;
 
   // Grid
   ctx.strokeStyle='rgba(37,37,37,.6)';ctx.lineWidth=1;
@@ -1375,31 +1614,28 @@ function drawHist(){
   ctx.strokeStyle='rgba(153,153,153,.1)';
   ctx.beginPath();ctx.moveTo(Math.round(hValToX(1,W)),0);ctx.lineTo(Math.round(hValToX(1,W)),H);ctx.stroke();
 
-  // Build polyline
-  const lineColors={L:'rgba(200,200,200,1)',R:'rgba(220,80,80,1)',G:'rgba(60,190,80,1)',B:'rgba(70,130,220,1)'};
-  const fillColors={L:'rgba(200,200,200,.1)',R:'rgba(220,80,80,.1)',G:'rgba(60,190,80,.1)',B:'rgba(70,130,220,.1)'};
   const bpX=hValToX(P.bp,W);
-  const pts=[];
-  for(let i=0;i<nb;i++){
-    const x=(i+0.5)/nb*W;
-    const h=bins[i]>0?(Math.log(bins[i]+1)/Math.log(mx+1))*(H-6):0;
-    pts.push({x,y:H-h});
+
+  // Render each active channel from cached bins — no sample-array traversal
+  for(const ch of ['L','B','G','R']){
+    if(!histChActive.has(ch)) continue;
+    const bins=histBins[ch];
+    if(!bins) continue;
+    const pts=[];
+    for(let i=0;i<HIST_NB;i++){
+      const x=(i+0.5)/HIST_NB*W;
+      const h=bins[i]>0?(Math.log(bins[i]+1)/Math.log(globalMax+1))*(H-6):0;
+      pts.push({x,y:H-h});
+    }
+    ctx.beginPath();ctx.moveTo(Math.max(bpX,0),H);
+    let st=false;
+    for(const p of pts){if(p.x<bpX)continue;if(!st){ctx.lineTo(p.x,p.y);st=true;}else ctx.lineTo(p.x,p.y);}
+    ctx.lineTo(W,H);ctx.closePath();
+    ctx.fillStyle=fillColors[ch];ctx.fill();
+    ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+    for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);
+    ctx.strokeStyle=lineColors[ch];ctx.lineWidth=1.5;ctx.lineJoin='round';ctx.stroke();
   }
-  // Fill left (clipped)
-  ctx.beginPath();ctx.moveTo(0,H);
-  for(const p of pts){if(p.x>bpX)break;ctx.lineTo(p.x,p.y);}
-  ctx.lineTo(Math.min(bpX,W),H);ctx.closePath();
-  ctx.fillStyle='rgba(50,50,50,.15)';ctx.fill();
-  // Fill right
-  ctx.beginPath();ctx.moveTo(Math.max(bpX,0),H);
-  let st=false;
-  for(const p of pts){if(p.x<bpX)continue;if(!st){ctx.lineTo(p.x,p.y);st=true;}else ctx.lineTo(p.x,p.y);}
-  ctx.lineTo(W,H);ctx.closePath();
-  ctx.fillStyle=fillColors[histCh];ctx.fill();
-  // Line
-  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
-  for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);
-  ctx.strokeStyle=lineColors[histCh];ctx.lineWidth=1.5;ctx.lineJoin='round';ctx.stroke();
 
   // ── TRANSFORM CURVE (GHS mode) ──────────────────────────────────
   // X axis = input value, mapped to screen X.
@@ -1538,10 +1774,19 @@ document.addEventListener('mousemove',e=>{
 });
 document.addEventListener('mouseup',()=>histDrag=null);
 
-function setHistCh(ch,btn){
-  histCh=ch;
-  document.querySelectorAll('.hch').forEach(b=>{b.className='hch';});
-  btn.className='hch on-'+ch;
+function toggleHistCh(ch){
+  const btn=document.getElementById('hch-'+ch);
+  if(!btn) return;
+  if(histChActive.has(ch)){
+    // Only deactivate if at least one other channel stays active
+    if(histChActive.size>1){
+      histChActive.delete(ch);
+      btn.className='hch';
+    }
+  } else {
+    histChActive.add(ch);
+    btn.className='hch on-'+ch;
+  }
   drawHist();
 }
 
@@ -1599,17 +1844,17 @@ function syncSlider(sid,val,did,txt){
 // 'key' maps to the slider id suffix and determines step behaviour
 function stepSlider(key,dir){
   const cfg={
-    bp: {min:0,max:.6,step:.001,fn:v=>{P.bp=v;syncSlider('i-bp',Math.round(v*1000),'v-bp',v.toFixed(3));if(histVisible())drawHist();render();}},
+    bp: {min:0,max:.6,step:.001,fn:v=>{P.bp=v;syncSlider('i-bp',Math.round(v*1000),'v-bp',v.toFixed(3));scheduleHistDraw();render();}},
     mt: {min:.010,max:.490,step:.002,fn:v=>{P.mmt=v;syncSlider('i-mt',Math.max(0,Math.min(480,Math.round((0.490-v)*(480/0.480)))),'v-mt',v.toFixed(3));render();}},
-    mwp:{min:.05,max:1,step:.005,fn:v=>{P.mwp=v;syncSlider('i-mwp',Math.round(v*1000),'v-mwp',v.toFixed(3));if(histVisible())drawHist();render();}},
+    mwp:{min:.05,max:1,step:.005,fn:v=>{P.mwp=v;syncSlider('i-mwp',Math.round(v*1000),'v-mwp',v.toFixed(3));scheduleHistDraw();render();}},
     ash:{logScale:true,fn:v=>{P.aD=v;syncSlider('i-ash',dToSlider(v),'v-ash',dFmt(v));render();}},
-    gsp:{min:.001,max:.5,step:.001,fn:v=>{P.gSP=v;syncSlider('i-gsp',Math.round(v*1000),'v-gsp',v.toFixed(3));if(histVisible())drawHist();render();}},
+    gsp:{min:.001,max:.5,step:.001,fn:v=>{P.gSP=v;syncSlider('i-gsp',Math.round(v*1000),'v-gsp',v.toFixed(3));scheduleHistDraw();render();}},
     gd: {logScale:true,fn:v=>{P.gD=v;syncSlider('i-gd',dToSlider(v),'v-gd',dFmt(v));render();}},
     gb: {min:-5,max:15,step:.1,fn:v=>{P.gB=v;syncSlider('i-gb',Math.round(v*10),'v-gb',v.toFixed(1));render();}},
-    glp:{min:0,max:.5,step:.001,fn:v=>{P.gLP=v;syncSlider('i-glp',Math.round(v*1000),'v-glp',v.toFixed(3));if(histVisible())drawHist();render();}},
-    ghp:{min:0,max:1,step:.005,fn:v=>{P.gHP=v;syncSlider('i-ghp',Math.round(v*1000),'v-ghp',v.toFixed(3));if(histVisible())drawHist();render();}},
+    glp:{min:0,max:.5,step:.001,fn:v=>{P.gLP=v;syncSlider('i-glp',Math.round(v*1000),'v-glp',v.toFixed(3));scheduleHistDraw();render();}},
+    ghp:{min:0,max:1,step:.005,fn:v=>{P.gHP=v;syncSlider('i-ghp',Math.round(v*1000),'v-ghp',v.toFixed(3));scheduleHistDraw();render();}},
     ht: {min:0,max:1,step:.01,fn:v=>{P.ht=v;syncSlider('i-ht',Math.round(v*100),'v-ht',v.toFixed(2));render();}},
-    rl: {min:0,max:2,step:.01,fn:v=>{P.rl=v;syncSlider('i-rl',Math.round(v*100),'v-rl',v.toFixed(2));render();}},
+    rl: {min:0,max:2,step:.01,fn:v=>{P.rl=v;syncSlider('i-rl',Math.round(v*100),'v-rl',v.toFixed(2));if(lastStretchedR)buildAndUploadStarMask(lastStretchedR,lastStretchedG,lastStretchedB);render();}},
     wr: {min:.1,max:4,step:.02,fn:v=>{P.wR=v;syncSlider('i-wr',Math.round(v*100),'v-wr',v.toFixed(2));render();}},
     wg: {min:.1,max:4,step:.02,fn:v=>{P.wG=v;syncSlider('i-wg',Math.round(v*100),'v-wg',v.toFixed(2));render();}},
     wb: {min:.1,max:4,step:.02,fn:v=>{P.wB=v;syncSlider('i-wb',Math.round(v*100),'v-wb',v.toFixed(2));render();}},
@@ -1626,6 +1871,7 @@ function stepSlider(key,dir){
   }
 }
 function setMode(m,btn){
+  resolvePreviewBeforeAction();
   P.mode=m;
   document.querySelectorAll('.mde').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
@@ -1637,6 +1883,7 @@ function setMode(m,btn){
 }
 // ── TARGET PRESETS ───────────────────────────────────────────────
 function applyPreset(type){
+  resolvePreviewBeforeAction();
   if(!hSampL.length)return;
   // All presets use GHS mode and set SP to histogram foot
   const sp=Math.max(.001,Math.min(.4,histFootVal));
@@ -1679,17 +1926,24 @@ function applyPreset(type){
   if(histVisible()) drawHist();render();
 }
 
-function onBP(v){exitPreviewIfActive();P.bp=v/1000;document.getElementById('v-bp').textContent=P.bp.toFixed(3);if(histVisible())drawHist();render();}
+function onBP(v){exitPreviewIfActive();P.bp=v/1000;document.getElementById('v-bp').textContent=P.bp.toFixed(3);scheduleHistDraw();render();}
 function onMT(v){exitPreviewIfActive();P.mmt=0.490-v*(0.480/480);document.getElementById('v-mt').textContent=P.mmt.toFixed(3);render();}
-function onMWP(v){exitPreviewIfActive();P.mwp=v/1000;document.getElementById('v-mwp').textContent=P.mwp.toFixed(3);if(histVisible())drawHist();render();}
+function onMWP(v){exitPreviewIfActive();P.mwp=v/1000;document.getElementById('v-mwp').textContent=P.mwp.toFixed(3);scheduleHistDraw();render();}
 function onAsh(v){exitPreviewIfActive();P.aD=sToD(parseFloat(v));document.getElementById('v-ash').textContent=dFmt(P.aD);render();}
-function onGSP(v){exitPreviewIfActive();P.gSP=v/1000;document.getElementById('v-gsp').textContent=P.gSP.toFixed(3);if(histVisible())drawHist();render();}
+function onGSP(v){exitPreviewIfActive();P.gSP=v/1000;document.getElementById('v-gsp').textContent=P.gSP.toFixed(3);scheduleHistDraw();render();}
 function onGD(v){exitPreviewIfActive();P.gD=sToD(parseFloat(v));document.getElementById('v-gd').textContent=dFmt(P.gD);render();}
 function onGB(v){exitPreviewIfActive();P.gB=parseFloat(v)/10;document.getElementById('v-gb').textContent=P.gB.toFixed(1);render();}
-function onGLP(v){exitPreviewIfActive();P.gLP=parseFloat(v)/1000;document.getElementById('v-glp').textContent=P.gLP.toFixed(3);if(histVisible())drawHist();render();}
-function onGHP(v){exitPreviewIfActive();P.gHP=parseFloat(v)/1000;document.getElementById('v-ghp').textContent=P.gHP.toFixed(3);if(histVisible())drawHist();render();}
+function onGLP(v){exitPreviewIfActive();P.gLP=parseFloat(v)/1000;document.getElementById('v-glp').textContent=P.gLP.toFixed(3);scheduleHistDraw();render();}
+function onGHP(v){exitPreviewIfActive();P.gHP=parseFloat(v)/1000;document.getElementById('v-ghp').textContent=P.gHP.toFixed(3);scheduleHistDraw();render();}
 function onHT(v){exitPreviewIfActive();P.ht=v/100;document.getElementById('v-ht').textContent=P.ht.toFixed(2);render();}
 function onRL(v){exitPreviewIfActive();P.rl=v/100;document.getElementById('v-rl').textContent=P.rl.toFixed(2);render();}
+// On slider release: rebuild star mask from last stretched data so preview updates.
+// This is the key wiring that makes the rl slider actually show an effect.
+function onRLRelease(v){
+  P.rl=parseFloat(v)/100;
+  if(lastStretchedR) buildAndUploadStarMask(lastStretchedR,lastStretchedG,lastStretchedB);
+  render();
+}
 function onWB(){exitPreviewIfActive();
   P.wR=document.getElementById('i-wr').value/100;
   P.wG=document.getElementById('i-wg').value/100;
@@ -1700,20 +1954,54 @@ function onWB(){exitPreviewIfActive();
 function setPal(i,btn){P.pal=i;document.querySelectorAll('.pb2').forEach(b=>b.classList.remove('on'));btn.classList.add('on');render();}
 
 // ── AUTO STF ─────────────────────────────────────────────────────
-function doAutoSTF(){
-  const samp=hSampL;if(!samp||!samp.length)return;
-  const n=samp.length,med=samp[Math.floor(n/2)];
-  const devs=samp.map(v=>Math.abs(v-med));devs.sort((a,b)=>a-b);
-  const mad=devs[Math.floor(devs.length/2)];
+// _computeAutoSTF: pure STF compute — no preview guard, no render.
+// Called by both doAutoSTF (after resolving preview) and doAutoPreview
+// (which must NOT resolve preview before computing).
+function _computeAutoSTF(){
+  if(!hSampL.length) return;
 
-  // Conservative BP clip: 1.5×MAD keeps more faint signal intact.
-  // At 2.5×MAD, megastack data with tight MAD clips too deep.
-  P.bp=Math.max(0,Math.min(.45,med-1.5*mad));
+  // ── Per-channel sky floor neutralization (Option A) ───────────────
+  // Green is the reference channel — most populated, least LP-biased.
+  // Compute per-channel medians and MADs from sorted histogram samples.
+  const nR=hSampR.length, nG=hSampG.length, nB=hSampB.length;
+  const medR=hSampR[Math.floor(nR/2)], medG=hSampG[Math.floor(nG/2)], medB=hSampB[Math.floor(nB/2)];
+
+  // MAD for each channel to find the BP (background clip point)
+  function channelMAD(samp,med){
+    const devs=new Float32Array(samp.length);
+    for(let i=0;i<samp.length;i++) devs[i]=Math.abs(samp[i]-med);
+    devs.sort(); return devs[Math.floor(devs.length/2)];
+  }
+  const madR=channelMAD(hSampR,medR);
+  const madG=channelMAD(hSampG,medG);
+  const madB=channelMAD(hSampB,medB);
+
+  // Per-channel BP: median − 1.5×MAD, clamped to safe range
+  const bpR=Math.max(0,Math.min(.45,medR-1.5*madR));
+  const bpG=Math.max(0,Math.min(.45,medG-1.5*madG));
+  const bpB=Math.max(0,Math.min(.45,medB-1.5*madB));
+
+  // Use green BP as the single P.bp (reference channel drives the clip slider)
+  P.bp=bpG;
   syncSlider('i-bp',Math.round(P.bp*1000),'v-bp',P.bp.toFixed(3));
 
-  // Target background at 15% rather than 20% — leaves more dynamic range
-  // for the faint signal and avoids over-brightening on high-SNR stacks.
-  const mNorm=Math.max((med-P.bp)/Math.max(1-P.bp,1e-4),0.001),tgt=0.15;
+  // Derive WB scalars so that after WB*channel, the effective sky floor
+  // equals the green sky floor. This neutralizes the brownish LP cast.
+  // Sky above BP for each channel after its own BP removal:
+  const skyR=Math.max(medR-bpR,1e-6);
+  const skyG=Math.max(medG-bpG,1e-6);
+  const skyB=Math.max(medB-bpB,1e-6);
+  // Scale R and B so their post-BP sky signal matches green's post-BP sky.
+  // Clamp to [0.5, 2.0] to avoid wild corrections on noisy short stacks.
+  P.wR=Math.max(0.5,Math.min(2.0,skyG/skyR));
+  P.wG=1.0;
+  P.wB=Math.max(0.5,Math.min(2.0,skyG/skyB));
+  syncSlider('i-wr',Math.round(P.wR*100),'v-wr',P.wR.toFixed(2));
+  syncSlider('i-wg',100,'v-wg','1.00');
+  syncSlider('i-wb',Math.round(P.wB*100),'v-wb',P.wB.toFixed(2));
+
+  // ── Stretch solve — driven by green channel (reference) ───────────
+  const mNorm=Math.max((medG-bpG)/Math.max(1-bpG,1e-4),0.001), tgt=0.15;
 
   if(P.mode===0){
     const m=mNorm*(1-tgt)/(mNorm+tgt-2*mNorm*tgt);
@@ -1725,8 +2013,6 @@ function doAutoSTF(){
     for(let i=0;i<80;i++){D=(lo+hi)/2;(Math.asinh(D*mNorm)/Math.asinh(D)<tgt)?lo=D:hi=D;}
     P.aD=D;syncSlider('i-ash',dToSlider(D),'v-ash',dFmt(D));
   }else{
-    // GHS: SP at histogram foot (not median) for initial linear stretch.
-    // D solved to bring background to target brightness.
     P.gSP=Math.max(.001,Math.min(.4,histFootVal>0?histFootVal:mNorm));
     P.gB=0;
     const tn=Math.min(.99,tgt/Math.max(P.gSP,.001));
@@ -1737,36 +2023,90 @@ function doAutoSTF(){
     syncSlider('i-gb',0,'v-gb','0.0');
     syncSlider('i-gd',dToSlider(P.gD),'v-gd',dFmt(P.gD));
   }
+}
+
+function doAutoSTF(){
+  resolvePreviewBeforeAction();  // exits preview first if active
+  _computeAutoSTF();
   if(histVisible()) drawHist();render();
 }
 
 // ── AUTO PREVIEW ─────────────────────────────────────────────────
-// Stores manual slider state so we can restore it on EXIT
+// Stores manual slider state so we can restore it on EXIT.
+// Preview is a true modal state — repeated entry is a no-op.
 let previewActive=false;
 let previewSnapshot=null;
 
+// Requirement 2: call at top of any action that mutates stretch state
+function resolvePreviewBeforeAction(){
+  if(previewActive) exitPreview();
+}
+// Alias kept for slider handlers
+function exitPreviewIfActive(){ resolvePreviewBeforeAction(); }
+
+// IDs/selectors of every interactive element to disable during preview lock.
+// Sliders already handled by exitPreviewIfActive; these are the button/tab controls.
+const PREVIEW_LOCK_SELECTORS=[
+  '#tb-info','#tb-bg','#tb-proc','#tb-guide',   // tab buttons
+  '#apply-btn','#exp-btn',                        // apply + export
+  '#m-mtf','#m-ash','#m-ghs',                    // mode buttons
+  '.pre-btn','.stf-btn',                          // preset + AUTO STRETCH + PREVIEW STF
+  'input[type=range]',                            // all sliders
+];
+function _setPreviewLock(locked){
+  const panel=document.getElementById('panel');
+  if(!panel) return;
+  if(locked){
+    panel.classList.add('preview-lock');
+    // Also explicitly disable focusable controls so keyboard nav is blocked
+    PREVIEW_LOCK_SELECTORS.forEach(sel=>
+      panel.querySelectorAll(sel).forEach(el=>el.disabled=true)
+    );
+    // Disable any history undo buttons (dynamically generated)
+    panel.querySelectorAll('.hlog-undo').forEach(el=>el.disabled=true);
+  } else {
+    panel.classList.remove('preview-lock');
+    PREVIEW_LOCK_SELECTORS.forEach(sel=>
+      panel.querySelectorAll(sel).forEach(el=>el.disabled=false)
+    );
+    panel.querySelectorAll('.hlog-undo').forEach(el=>el.disabled=false);
+    // preview-stf-btn re-enable is handled inside exitPreview
+  }
+}
+
 function doAutoPreview(){
   if(!hSampL.length) return;
-  // Save current manual state
+  if(previewActive) return;          // already in preview — ignore repeated clicks
   previewSnapshot=snapParams();
   previewActive=true;
   document.getElementById('preview-bar').classList.add('on');
-  // Compute and apply Auto STF visually only — same as doAutoSTF
-  // but flagged so any slider move exits preview first
-  doAutoSTF();
-  if(histVisible()) drawHist();render();
+  // Lock the entire panel — only EXIT PREVIEW is reachable
+  _setPreviewLock(true);
+  const pb=document.getElementById('preview-stf-btn');
+  if(pb){ pb.disabled=true; pb.title='Already previewing — click EXIT PREVIEW to return'; }
+  // Compute STF directly — must NOT call doAutoSTF() here because
+  // doAutoSTF() starts with resolvePreviewBeforeAction() which would
+  // immediately exit the preview we just entered.
+  _computeAutoSTF();
+  if(histVisible()) drawHist();
+  render();
 }
 
+// Idempotent exit: safe to call even when not in preview
 function exitPreview(){
-  if(!previewSnapshot) return;
+  if(!previewActive||!previewSnapshot) return;   // already exited — no-op
   previewActive=false;
   document.getElementById('preview-bar').classList.remove('on');
-  // Restore manual state
+  // Unlock the panel
+  _setPreviewLock(false);
+  const pb=document.getElementById('preview-stf-btn');
+  if(pb){ pb.disabled=false; pb.title='Temporary Auto Stretch preview — not baked. Any slider move or action exits preview automatically.'; }
+  // Restore exact pre-preview manual state
   const p=previewSnapshot;
+  previewSnapshot=null;              // clear first so any re-entrant call is a no-op
   P.bp=p.bp;P.mwp=p.mwp;P.mmt=p.mmt;P.aD=p.aD;
   P.gD=p.gD;P.gB=p.gB;P.gSP=p.gSP;P.gLP=p.gLP;P.gHP=p.gHP;
   P.ht=p.ht;P.rl=p.rl;P.wR=p.wR;P.wG=p.wG;P.wB=p.wB;
-  // Sync sliders
   syncSlider('i-bp',Math.round(p.bp*1000),'v-bp',p.bp.toFixed(3));
   syncSlider('i-mt',Math.max(0,Math.min(480,Math.round((0.490-p.mmt)*(480/0.480)))),'v-mt',p.mmt.toFixed(3));
   syncSlider('i-mwp',Math.round(p.mwp*1000),'v-mwp',p.mwp.toFixed(3));
@@ -1782,19 +2122,15 @@ function exitPreview(){
     const v=[p.wR,p.wG,p.wB][i];
     syncSlider('i-w'+ch,Math.round(v*100),'v-w'+ch,v.toFixed(2));
   });
-  previewSnapshot=null;
-  if(histVisible()) drawHist();render();
-}
-
-// Any manual slider interaction exits preview automatically
-function exitPreviewIfActive(){
-  if(previewActive) exitPreview();
+  if(histVisible()) drawHist();
+  render();
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // TAB SWITCHING
 // ═══════════════════════════════════════════════════════════════════
 function showTab(id){
+  resolvePreviewBeforeAction();
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('on'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));
   document.getElementById('tab-'+id).classList.add('on');
@@ -1841,7 +2177,7 @@ function resetZoom(){Z.level=1;Z.cx=.5;Z.cy=.5;updZlbl();render();}
   cv.addEventListener('mousemove',e=>{
     if(!drag){cv.style.cursor=Z.level>1?'grab':'crosshair';return;}
     const r=cv.getBoundingClientRect();
-    if(Z.level>1){Z.cx-=(e.clientX-lx)/r.width/Z.level;Z.cy-=(e.clientY-ly)/r.height/Z.level;clampZ();}
+    if(Z.level>1){Z.cx-=(e.clientX-lx)/r.width/Z.level;Z.cy+=(e.clientY-ly)/r.height/Z.level;clampZ();}
     lx=e.clientX;ly=e.clientY;render();
   });
   cv.addEventListener('mouseup',()=>{drag=null;cv.style.cursor='crosshair';});
@@ -1859,7 +2195,7 @@ function resetZoom(){Z.level=1;Z.cx=.5;Z.cy=.5;updZlbl();render();}
   },{passive:false});
   let td=null,tlx=0,tly=0;
   cv.addEventListener('touchstart',e=>{e.preventDefault();if(e.touches.length!==1)return;const t=e.touches[0];td='pan';tlx=t.clientX;tly=t.clientY;},{passive:false});
-  cv.addEventListener('touchmove',e=>{e.preventDefault();if(!td||e.touches.length!==1)return;const t=e.touches[0],r=cv.getBoundingClientRect();if(Z.level>1){Z.cx-=(t.clientX-tlx)/r.width/Z.level;Z.cy-=(t.clientY-tly)/r.height/Z.level;clampZ();}tlx=t.clientX;tly=t.clientY;render();},{passive:false});
+  cv.addEventListener('touchmove',e=>{e.preventDefault();if(!td||e.touches.length!==1)return;const t=e.touches[0],r=cv.getBoundingClientRect();if(Z.level>1){Z.cx-=(t.clientX-tlx)/r.width/Z.level;Z.cy+=(t.clientY-tly)/r.height/Z.level;clampZ();}tlx=t.clientX;tly=t.clientY;render();},{passive:false});
   cv.addEventListener('touchend',()=>td=null);
 })();
 
@@ -2406,6 +2742,9 @@ function allocScratch(){
   const n=NW*NH;
   workR1=new Float32Array(n);workG1=new Float32Array(n);workB1=new Float32Array(n);
   workR2=new Float32Array(n);workG2=new Float32Array(n);workB2=new Float32Array(n);
+  // Set star mask texture dimensions (4× downsample)
+  STAR_MASK_W=Math.max(1,Math.ceil(NW/STAR_MASK_SCALE));
+  STAR_MASK_H=Math.max(1,Math.ceil(NH/STAR_MASK_SCALE));
 }
 
 // Replace main WebGL textures atomically — single path for all callers
@@ -2511,11 +2850,113 @@ function applyStretchCPU(src, dst, p, scale=1.0){
     }
     // Highlights
     if(p.ht>0.001&&v>0.5) v=0.5+Math.pow((v-0.5)/0.5,1+p.ht*3)*0.5;
-    // Roll-off
-    if(p.rl>1e-4) v=v/(1+p.rl*v);
+    // Roll-off is applied as a post-pass via applyStarRolloffCPU (not per-channel)
     dst[i]=Math.max(0,Math.min(1,v));
   }
 }
+
+// ── STAR-MASKED ROLLOFF (CPU bake path + mask texture builder) ──────
+// Three-term star mask: compactness × brightness × structure-rejection.
+// All transitions are smooth (smoothstep). No hard thresholds.
+// Mask is computed from the stretched image so stars are identifiable.
+
+function _smoothstep(e0,e1,x){
+  const t=Math.min(1,Math.max(0,(x-e0)/(e1-e0)));
+  return t*t*(3-2*t);
+}
+
+// Build luminance and two blur levels, return the star mask Float32Array.
+// r/g/b must be full-resolution stretched pixel arrays.
+function computeStarMaskFull(r,g,b){
+  const n=r.length;
+  const lum=new Float32Array(n);
+  for(let i=0;i<n;i++) lum[i]=0.299*r[i]+0.587*g[i]+0.114*b[i];
+
+  const lumSmall=stackBlurFloat(lum,NW,NH,STAR_SMALL_RADIUS);
+  const lumLarge=stackBlurFloat(lum,NW,NH,STAR_LARGE_RADIUS);
+
+  const mask=new Float32Array(n);
+  for(let i=0;i<n;i++){
+    const lo=lum[i];
+    // Compactness: point sources stay high in small blur, dilute in large blur.
+    // Extended structures have similar values at both radii.
+    const compact=Math.max(0,lumSmall[i]-lumLarge[i]);
+    const compactNorm=_smoothstep(STAR_COMPACT_START,STAR_COMPACT_END,compact);
+
+    // Brightness gate: suppress mask on dim background pixels (noise protection).
+    const brightMask=_smoothstep(STAR_BRIGHT_START,STAR_BRIGHT_END,lo);
+
+    // Structure rejection: support ratio near 1 means extended, near 0 means compact.
+    // support = lumLarge / lumSmall — high for galaxy cores, low for stars.
+    // Gate on brightness so near-zero noise ratios are ignored.
+    const support=lumLarge[i]/Math.max(lumSmall[i],1e-6);
+    const structureReject=_smoothstep(STAR_STRUCT_REJECT_START,STAR_STRUCT_REJECT_END,support)*brightMask;
+    const structureMask=1-structureReject;
+
+    mask[i]=Math.min(1,compactNorm*brightMask*structureMask);
+  }
+  return mask;
+}
+
+// Build star mask, downsample 4×, upload as tStarMask GPU texture.
+// Called after every apply/undo so preview always matches baked output.
+// r/g/b: post-stretch, post-rolloff pixel arrays (full resolution).
+function buildAndUploadStarMask(r,g,b){
+  if(!gl) return;
+  if(STAR_MASK_W===0||STAR_MASK_H===0) return;
+  // Always build the mask regardless of rl — the mask encodes WHERE stars are,
+  // which is a property of the image, not of the rl slider value.
+  // The rl uniform controls HOW MUCH rolloff to apply at those locations.
+  const fullMask=computeStarMaskFull(r,g,b);
+
+  // 4× box-average downsample to STAR_MASK_W × STAR_MASK_H
+  const mw=STAR_MASK_W,mh=STAR_MASK_H,sc=STAR_MASK_SCALE;
+  const ds=new Float32Array(mw*mh);
+  for(let oy=0;oy<mh;oy++){
+    for(let ox=0;ox<mw;ox++){
+      let sum=0,cnt=0;
+      for(let dy=0;dy<sc;dy++){
+        const sy=oy*sc+dy; if(sy>=NH) break;
+        for(let dx=0;dx<sc;dx++){
+          const sx=ox*sc+dx; if(sx>=NW) break;
+          sum+=fullMask[sy*NW+sx]; cnt++;
+        }
+      }
+      ds[oy*mw+ox]=cnt>0?sum/cnt:0;
+    }
+  }
+
+  if(tStarMask) gl.deleteTexture(tStarMask);
+  tStarMask=mkTex(ds,mw,mh);
+}
+
+// Apply star-masked rolloff in-place on r/g/b arrays using the provided mask.
+// Luminance-ratio rescaling preserves hue and saturation exactly.
+function applyStarRolloffCPU(r,g,b,rl){
+  if(rl<1e-4) return;
+  const n=r.length;
+
+  // Compute luminance for rolloff ratio calculation
+  const lum=new Float32Array(n);
+  for(let i=0;i<n;i++) lum[i]=0.299*r[i]+0.587*g[i]+0.114*b[i];
+
+  // Compute star mask (same logic as buildAndUploadStarMask)
+  const mask=computeStarMaskFull(r,g,b);
+
+  for(let i=0;i<n;i++){
+    const m=mask[i];
+    if(m<1e-4) continue;
+    const lo=lum[i];
+    if(lo<1e-7) continue;
+    const lumRolled=lo/(1+rl*lo);
+    // Blend toward rolled luminance by mask weight
+    const ratio=mix(1.0,lumRolled/lo,m);
+    r[i]=Math.min(1,r[i]*ratio);
+    g[i]=Math.min(1,g[i]*ratio);
+    b[i]=Math.min(1,b[i]*ratio);
+  }
+}
+function mix(a,b,t){return a*(1-t)+b*t;}
 
 // Replay history passes from checkpoint to targetPass using scratch buffers.
 // Returns {r,g,b} pointing at whichever scratch pair was last written.
@@ -2532,6 +2973,8 @@ function replayFromCheckpointToPass(targetPass){
     applyStretchCPU(srcR,dstR,p,p.wR);
     applyStretchCPU(srcG,dstG,p,p.wG);
     applyStretchCPU(srcB,dstB,p,p.wB);
+    // Star-masked rolloff post-pass (all three channels together)
+    if(p.rl>1e-4) applyStarRolloffCPU(dstR,dstG,dstB,p.rl);
     // Ping-pong
     [srcR,dstR]=[dstR,srcR];
     [srcG,dstG]=[dstG,srcG];
@@ -2577,6 +3020,7 @@ function buildHistSamples(plR,plG,plB){
     const edgeVal=HLO+(rightEdgeBin+0.5)/nb*range;
     histSpikeEdgeVal=Math.max(0,Math.min(0.15,edgeVal));
   }
+  histBinsDirty=true; // cached bins must be rebuilt before next draw
 }
 
 // Render the history log UI
@@ -2638,6 +3082,7 @@ function hideApplyAnim(){
 
 // APPLY: bake current stretch pass, checkpoint if needed, reset sliders
 async function doApply(){
+  resolvePreviewBeforeAction();
   if(!tR||!historyOrigR) return;
   const btn=document.getElementById('apply-btn');
   btn.disabled=true;
@@ -2658,6 +3103,13 @@ async function doApply(){
   applyStretchCPU(working.r,outR,snap,snap.wR);
   applyStretchCPU(working.g,outG,snap,snap.wG);
   applyStretchCPU(working.b,outB,snap,snap.wB);
+  // Store pre-rolloff data so rl slider can rebuild mask without re-applying.
+  // Then build the star mask, apply rolloff, upload mask texture.
+  lastStretchedR=new Float32Array(outR);
+  lastStretchedG=new Float32Array(outG);
+  lastStretchedB=new Float32Array(outB);
+  buildAndUploadStarMask(outR,outG,outB);
+  if(snap.rl>1e-4) applyStarRolloffCPU(outR,outG,outB,snap.rl);
 
   buildHistSamples(outR,outG,outB);
   replaceMainTextures(outR,outG,outB);
@@ -2686,6 +3138,7 @@ async function doApply(){
 
 // UNDO: replay from nearest checkpoint to targetPass
 async function undoToPass(targetPass){
+  resolvePreviewBeforeAction();
   if(!historyOrigR) return;
   const btn=document.getElementById('apply-btn');
   btn.disabled=true;
@@ -2695,6 +3148,13 @@ async function undoToPass(targetPass){
 
   const result=replayFromCheckpointToPass(targetPass);
 
+  // Store replayed pixel data and build star mask.
+  // result already has rolloff applied per-pass inside replay; we store it
+  // for rl slider rebuilds (star structure remains identifiable post-rolloff).
+  lastStretchedR=new Float32Array(result.r);
+  lastStretchedG=new Float32Array(result.g);
+  lastStretchedB=new Float32Array(result.b);
+  buildAndUploadStarMask(result.r,result.g,result.b);
   buildHistSamples(result.r,result.g,result.b);
   replaceMainTextures(result.r,result.g,result.b);
 
@@ -3191,6 +3651,7 @@ function handleFile(f){
   const r=new FileReader();r.onload=e=>loadFITS(e.target.result);r.readAsArrayBuffer(f);
 }
 function resetAll(){
+  resolvePreviewBeforeAction();
   if(gl)[tR,tG,tB].forEach(t=>{if(t)gl.deleteTexture(t);});
   tR=tG=tB=null;hSampR=[];hSampG=[];hSampB=[];hSampL=[];
   document.getElementById('app').style.display='none';
@@ -3203,6 +3664,7 @@ function resetAll(){
   histPeakVal=0;histFootVal=0;histSpikeEdgeVal=0;
   historyStack=[];historyOrigR=null;historyOrigG=null;historyOrigB=null;currentPass=0;
   previewActive=false;previewSnapshot=null;if(document.getElementById('preview-bar'))document.getElementById('preview-bar').classList.remove('on');
+  if(gl&&tStarMask){gl.deleteTexture(tStarMask);tStarMask=mkTex(new Float32Array([0]),1,1);}
   updatePassUI();
   bgSamples=[];bgModel=null;bgApplied=false;bgSnapshot=null;bgStrength=1.0;bgGammaVal=0;
   gradVisActive=false;
