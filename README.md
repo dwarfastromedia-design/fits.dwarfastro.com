@@ -1,56 +1,30 @@
-# DwarfAstro FITS Studio
+# FITS Studio
 
-Browser based FITS processing and visualization for smart telescope stacked FITS images.
+FITS Studio is a free, browser-based FITS processor built for DWARF 3 stacked FITS files.
 
-Hosted at: **fits.dwarfastro.com**
+It runs entirely in the browser. There is no install, no account, and your file stays on your machine.
 
-## What this is
+## What it does
 
-DwarfAstro FITS Studio is a lightweight web app for exploring and processing already stacked FITS files directly in the browser.
+- Background extraction
+- Channel neutralization / color correction after gradient removal
+- Stretching tools including GHS, Asinh, and MTF
+- Multi-pass workflow with history
+- Fast preview and full-resolution processing
+- Designed around DWARF 3 linear stacked FITS files
 
-The tool was originally built to support stacked FITS output from DWARF smart telescopes, with room to expand to additional devices over time.
+## Live app
 
-## Goals
+[fits.dwarfastro.com](https://fits.dwarfastro.com)
 
-- Open stacked FITS images in the browser
-- Stretch and inspect image data interactively
-- Keep the workflow simple and accessible
-- Support DWARF 3, DWARF Mini, and future smart telescope FITS workflows where practical
+## Why it exists
 
-## Current scope
+I built FITS Studio because I wanted more control than the default smart telescope workflow, without the steep learning curve of traditional desktop processing tools.
 
-This app is intended for **already stacked FITS files** produced by the device or by the user's workflow. It is not intended to replace full desktop astrophotography processing suites.
+## Privacy
 
-## Features
+Your FITS file is processed locally in your browser. It is not uploaded by the app for processing.
 
-- Browser based workflow
-- FITS file loading
-- Interactive image visualization
-- Fast experimentation without desktop software overhead
+## License
 
-## Intended users
-
-- DWARF telescope users
-- Smart telescope users
-- Astrophotography beginners who want a lighter workflow
-- Anyone who wants to inspect stacked FITS files quickly in a browser
-
-## Hosting
-
-This project is designed to be hosted with **GitHub Pages** and published on the custom subdomain:
-
-`fits.dwarfastro.com`
-
-## Project status
-
-Active and evolving.
-
-Planned direction includes broader device compatibility and continued refinement of the browser based FITS workflow.
-
-## Local development
-
-Clone the repository:
-
-```bash
-git clone https://github.com/YOUR-USERNAME/YOUR-REPO.git
-cd YOUR-REPO
+Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
