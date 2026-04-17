@@ -353,7 +353,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   </div>
 
   <div style="font-size:13px;color:var(--dim);text-align:center;line-height:1.8">
-    FITS Studio v4.0.1 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
+    FITS Studio v4.1.0 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
   </div>
 </div>
 </div>
@@ -965,12 +965,20 @@ let bgApplied=false;                // gradient baked into data
 let bgSnapshot=null;                // {plR,plG,plB} before bake
 
 // ── APPLY + HISTORY ──────────────────────────────────────────────────
-// History stores parameter snapshots and the float arrays at each pass.
-// We keep the ORIGINAL raw float arrays and replay all passes from scratch
-// on undo — no per-pass pixel storage, so memory is bounded.
-let historyStack=[];   // [{params, sampR, sampG, sampB, sampL, peakVal, footVal}]
-let historyOrigR=null,historyOrigG=null,historyOrigB=null; // original 0-1/65535 arrays
+// Checkpointed history: every 3 passes we store a full baked snapshot.
+// Replay starts from the nearest checkpoint, not always from base.
+let historyStack=[];          // [{params}]
+let historyCheckpoints=[];    // [{passIndex, r, g, b}]  capped at MAX_CHECKPOINTS
+let historyOrigR=null,historyOrigG=null,historyOrigB=null; // immutable base
 let currentPass=0;
+const MAX_CHECKPOINTS=9;
+const CHECKPOINT_INTERVAL=3;
+
+// ── SCRATCH BUFFERS ───────────────────────────────────────────────────
+// Reused during replay/apply to avoid allocating new arrays per step.
+// Allocated once at file load; reallocated only on image dimension change.
+let workR1=null,workG1=null,workB1=null;
+let workR2=null,workG2=null,workB2=null;
 
 // ═══════════════════════════════════════════════════════════════════
 // WEBGL
@@ -1210,7 +1218,7 @@ async function loadFITS(buf){
   showTab('info');
   initLinearSteps();
   await raf();
-  sizeCanvas();drawHist();render();
+  allocScratch();sizeCanvas();drawHist();render();
   updatePassUI();
 }
 
@@ -1507,7 +1515,7 @@ histCv.addEventListener('mousedown',e=>{
   // No marker hit — click sets BP
   const val=Math.max(0,Math.min(.8,hXToVal(pxN,W)));
   P.bp=val;syncSlider('i-bp',Math.round(val*1000),'v-bp',val.toFixed(3));
-  drawHist();render();
+  if(histVisible()) drawHist();render();
 });
 document.addEventListener('mousemove',e=>{
   if(!histDrag)return;
@@ -1526,7 +1534,7 @@ document.addEventListener('mousemove',e=>{
   } else if(histDrag==='hp'){
     P.gHP=Math.max(P.gSP,Math.min(1,val));syncSlider('i-ghp',Math.round(P.gHP*1000),'v-ghp',P.gHP.toFixed(3));
   }
-  drawHist();render();
+  if(histVisible()) drawHist();render();
 });
 document.addEventListener('mouseup',()=>histDrag=null);
 
@@ -1565,7 +1573,19 @@ function setHistCh(ch,btn){
 })();
 
 // Resize observer on histogram panel — redraws canvas when user resizes
-new ResizeObserver(()=>{ if(hSampL.length) drawHist(); }).observe(document.getElementById('hist-float'));
+// Pass 3: histVisible helper — guard all histogram redraws
+function histVisible(){
+  const hf=document.getElementById('hist-float');
+  return hf&&!hf.classList.contains('hidden');
+}
+
+// Debounced histogram resize — only one redraw per animation frame
+let _histResizeRAF=0;
+new ResizeObserver(()=>{
+  if(!histVisible()) return;
+  cancelAnimationFrame(_histResizeRAF);
+  _histResizeRAF=requestAnimationFrame(()=>{ if(hSampL.length) drawHist(); });
+}).observe(document.getElementById('hist-float'));
 
 // ═══════════════════════════════════════════════════════════════════
 // CONTROLS
@@ -1579,15 +1599,15 @@ function syncSlider(sid,val,did,txt){
 // 'key' maps to the slider id suffix and determines step behaviour
 function stepSlider(key,dir){
   const cfg={
-    bp: {min:0,max:.6,step:.001,fn:v=>{P.bp=v;syncSlider('i-bp',Math.round(v*1000),'v-bp',v.toFixed(3));drawHist();render();}},
+    bp: {min:0,max:.6,step:.001,fn:v=>{P.bp=v;syncSlider('i-bp',Math.round(v*1000),'v-bp',v.toFixed(3));if(histVisible())drawHist();render();}},
     mt: {min:.010,max:.490,step:.002,fn:v=>{P.mmt=v;syncSlider('i-mt',Math.max(0,Math.min(480,Math.round((0.490-v)*(480/0.480)))),'v-mt',v.toFixed(3));render();}},
-    mwp:{min:.05,max:1,step:.005,fn:v=>{P.mwp=v;syncSlider('i-mwp',Math.round(v*1000),'v-mwp',v.toFixed(3));drawHist();render();}},
+    mwp:{min:.05,max:1,step:.005,fn:v=>{P.mwp=v;syncSlider('i-mwp',Math.round(v*1000),'v-mwp',v.toFixed(3));if(histVisible())drawHist();render();}},
     ash:{logScale:true,fn:v=>{P.aD=v;syncSlider('i-ash',dToSlider(v),'v-ash',dFmt(v));render();}},
-    gsp:{min:.001,max:.5,step:.001,fn:v=>{P.gSP=v;syncSlider('i-gsp',Math.round(v*1000),'v-gsp',v.toFixed(3));drawHist();render();}},
+    gsp:{min:.001,max:.5,step:.001,fn:v=>{P.gSP=v;syncSlider('i-gsp',Math.round(v*1000),'v-gsp',v.toFixed(3));if(histVisible())drawHist();render();}},
     gd: {logScale:true,fn:v=>{P.gD=v;syncSlider('i-gd',dToSlider(v),'v-gd',dFmt(v));render();}},
     gb: {min:-5,max:15,step:.1,fn:v=>{P.gB=v;syncSlider('i-gb',Math.round(v*10),'v-gb',v.toFixed(1));render();}},
-    glp:{min:0,max:.5,step:.001,fn:v=>{P.gLP=v;syncSlider('i-glp',Math.round(v*1000),'v-glp',v.toFixed(3));drawHist();render();}},
-    ghp:{min:0,max:1,step:.005,fn:v=>{P.gHP=v;syncSlider('i-ghp',Math.round(v*1000),'v-ghp',v.toFixed(3));drawHist();render();}},
+    glp:{min:0,max:.5,step:.001,fn:v=>{P.gLP=v;syncSlider('i-glp',Math.round(v*1000),'v-glp',v.toFixed(3));if(histVisible())drawHist();render();}},
+    ghp:{min:0,max:1,step:.005,fn:v=>{P.gHP=v;syncSlider('i-ghp',Math.round(v*1000),'v-ghp',v.toFixed(3));if(histVisible())drawHist();render();}},
     ht: {min:0,max:1,step:.01,fn:v=>{P.ht=v;syncSlider('i-ht',Math.round(v*100),'v-ht',v.toFixed(2));render();}},
     rl: {min:0,max:2,step:.01,fn:v=>{P.rl=v;syncSlider('i-rl',Math.round(v*100),'v-rl',v.toFixed(2));render();}},
     wr: {min:.1,max:4,step:.02,fn:v=>{P.wR=v;syncSlider('i-wr',Math.round(v*100),'v-wr',v.toFixed(2));render();}},
@@ -1613,7 +1633,7 @@ function setMode(m,btn){
   document.getElementById('c-ash').style.display=m===1?'':'none';
   document.getElementById('c-ghs').style.display=m===2?'':'none';
   document.getElementById('ghs-presets').style.display=m===2?'':'none';
-  drawHist();render();
+  if(histVisible()) drawHist();render();
 }
 // ── TARGET PRESETS ───────────────────────────────────────────────
 function applyPreset(type){
@@ -1656,18 +1676,18 @@ function applyPreset(type){
     syncSlider('i-glp',0,'v-glp','0.000');
     syncSlider('i-ghp',1000,'v-ghp','1.000');
   }
-  drawHist();render();
+  if(histVisible()) drawHist();render();
 }
 
-function onBP(v){exitPreviewIfActive();P.bp=v/1000;document.getElementById('v-bp').textContent=P.bp.toFixed(3);drawHist();render();}
+function onBP(v){exitPreviewIfActive();P.bp=v/1000;document.getElementById('v-bp').textContent=P.bp.toFixed(3);if(histVisible())drawHist();render();}
 function onMT(v){exitPreviewIfActive();P.mmt=0.490-v*(0.480/480);document.getElementById('v-mt').textContent=P.mmt.toFixed(3);render();}
-function onMWP(v){exitPreviewIfActive();P.mwp=v/1000;document.getElementById('v-mwp').textContent=P.mwp.toFixed(3);drawHist();render();}
+function onMWP(v){exitPreviewIfActive();P.mwp=v/1000;document.getElementById('v-mwp').textContent=P.mwp.toFixed(3);if(histVisible())drawHist();render();}
 function onAsh(v){exitPreviewIfActive();P.aD=sToD(parseFloat(v));document.getElementById('v-ash').textContent=dFmt(P.aD);render();}
-function onGSP(v){exitPreviewIfActive();P.gSP=v/1000;document.getElementById('v-gsp').textContent=P.gSP.toFixed(3);drawHist();render();}
+function onGSP(v){exitPreviewIfActive();P.gSP=v/1000;document.getElementById('v-gsp').textContent=P.gSP.toFixed(3);if(histVisible())drawHist();render();}
 function onGD(v){exitPreviewIfActive();P.gD=sToD(parseFloat(v));document.getElementById('v-gd').textContent=dFmt(P.gD);render();}
 function onGB(v){exitPreviewIfActive();P.gB=parseFloat(v)/10;document.getElementById('v-gb').textContent=P.gB.toFixed(1);render();}
-function onGLP(v){exitPreviewIfActive();P.gLP=parseFloat(v)/1000;document.getElementById('v-glp').textContent=P.gLP.toFixed(3);drawHist();render();}
-function onGHP(v){exitPreviewIfActive();P.gHP=parseFloat(v)/1000;document.getElementById('v-ghp').textContent=P.gHP.toFixed(3);drawHist();render();}
+function onGLP(v){exitPreviewIfActive();P.gLP=parseFloat(v)/1000;document.getElementById('v-glp').textContent=P.gLP.toFixed(3);if(histVisible())drawHist();render();}
+function onGHP(v){exitPreviewIfActive();P.gHP=parseFloat(v)/1000;document.getElementById('v-ghp').textContent=P.gHP.toFixed(3);if(histVisible())drawHist();render();}
 function onHT(v){exitPreviewIfActive();P.ht=v/100;document.getElementById('v-ht').textContent=P.ht.toFixed(2);render();}
 function onRL(v){exitPreviewIfActive();P.rl=v/100;document.getElementById('v-rl').textContent=P.rl.toFixed(2);render();}
 function onWB(){exitPreviewIfActive();
@@ -1717,7 +1737,7 @@ function doAutoSTF(){
     syncSlider('i-gb',0,'v-gb','0.0');
     syncSlider('i-gd',dToSlider(P.gD),'v-gd',dFmt(P.gD));
   }
-  drawHist();render();
+  if(histVisible()) drawHist();render();
 }
 
 // ── AUTO PREVIEW ─────────────────────────────────────────────────
@@ -1734,7 +1754,7 @@ function doAutoPreview(){
   // Compute and apply Auto STF visually only — same as doAutoSTF
   // but flagged so any slider move exits preview first
   doAutoSTF();
-  drawHist();render();
+  if(histVisible()) drawHist();render();
 }
 
 function exitPreview(){
@@ -1763,7 +1783,7 @@ function exitPreview(){
     syncSlider('i-w'+ch,Math.round(v*100),'v-w'+ch,v.toFixed(2));
   });
   previewSnapshot=null;
-  drawHist();render();
+  if(histVisible()) drawHist();render();
 }
 
 // Any manual slider interaction exits preview automatically
@@ -1784,7 +1804,7 @@ function showTab(id){
     bgGammaVal=0;
     const gb=document.getElementById('bg-gamma-btn');
     if(gb){gb.classList.remove('on');gb.textContent='GAMMA VIEW';}
-    requestAnimationFrame(()=>drawHist());
+    requestAnimationFrame(()=>{if(histVisible())drawHist();});
   }
   if(id==='bg'){
     // Entering BG tab — auto-activate gamma lift so image is visible
@@ -2252,11 +2272,8 @@ async function applyBGCorrection(){
     }
   }
 
-  // Re-upload textures and reset gradient to zero (baked in now)
-  if(gl){[tR,tG,tB].forEach(t=>{if(t)gl.deleteTexture(t);});}
-  tR=mkTex(new Float32Array(historyOrigR),NW,NH);
-  tG=mkTex(new Float32Array(historyOrigG),NW,NH);
-  tB=mkTex(new Float32Array(historyOrigB),NW,NH);
+  // Re-upload textures via shared helper and reset gradient to zero (baked in now)
+  replaceMainTextures(historyOrigR,historyOrigG,historyOrigB);
   bgApplied=true;
   initGradTextures(); // zero out gradient — correction is baked
   bgModel=null;bgSamples=[];bgGammaVal=0;
@@ -2292,10 +2309,7 @@ async function undoBGCorrection(){
   historyOrigB=new Float32Array(bgSnapshot.plB);
   bgSnapshot=null;bgApplied=false;
 
-  if(gl){[tR,tG,tB].forEach(t=>{if(t)gl.deleteTexture(t);});}
-  tR=mkTex(new Float32Array(historyOrigR),NW,NH);
-  tG=mkTex(new Float32Array(historyOrigG),NW,NH);
-  tB=mkTex(new Float32Array(historyOrigB),NW,NH);
+  replaceMainTextures(historyOrigR,historyOrigG,historyOrigB);
 
   refreshLinearState({resetStretchDefaults:true,refreshStats:true});
 
@@ -2383,13 +2397,76 @@ function describePass(p){
   return {m, detail};
 }
 
-// CPU-side per-channel GHS/MTF/Asinh — mirrors shader exactly
-// Used during Apply to bake the stretch into float arrays
-function applyStretchCPU(arr, p){
-  const out=new Float32Array(arr.length);
-  for(let i=0;i<arr.length;i++){
-    let x=arr[i];
-    // WB applied per-channel outside this fn; here x is already wb-scaled
+// ═══════════════════════════════════════════════════════════════════
+// PASS 1 — CHECKPOINTED STRETCH HISTORY + SCRATCH BUFFERS
+// ═══════════════════════════════════════════════════════════════════
+
+// Allocate / reallocate scratch buffers to match current image size
+function allocScratch(){
+  const n=NW*NH;
+  workR1=new Float32Array(n);workG1=new Float32Array(n);workB1=new Float32Array(n);
+  workR2=new Float32Array(n);workG2=new Float32Array(n);workB2=new Float32Array(n);
+}
+
+// Replace main WebGL textures atomically — single path for all callers
+function replaceMainTextures(r,g,b){
+  if(gl){[tR,tG,tB].forEach(t=>{if(t)gl.deleteTexture(t);});}
+  tR=mkTex(r,NW,NH);
+  tG=mkTex(g,NW,NH);
+  tB=mkTex(b,NW,NH);
+}
+
+// Checkpoint helpers
+function makeCheckpoint(passIndex,r,g,b){
+  return {passIndex, r:new Float32Array(r), g:new Float32Array(g), b:new Float32Array(b)};
+}
+function getNearestCheckpoint(targetPass){
+  // Find highest checkpoint whose passIndex <= targetPass
+  let best=null;
+  for(const cp of historyCheckpoints){
+    if(cp.passIndex<=targetPass){
+      if(!best||cp.passIndex>best.passIndex) best=cp;
+    }
+  }
+  return best;
+}
+function pruneCheckpoints(){
+  // Keep checkpoint 0 always; cap total at MAX_CHECKPOINTS
+  while(historyCheckpoints.length>MAX_CHECKPOINTS){
+    // Remove oldest non-zero checkpoint
+    let idx=-1;
+    for(let i=0;i<historyCheckpoints.length;i++){
+      if(historyCheckpoints[i].passIndex>0){idx=i;break;}
+    }
+    if(idx<0) break;
+    historyCheckpoints.splice(idx,1);
+  }
+}
+
+// Seed checkpoint 0 from current base arrays (call after any base change)
+function seedCheckpoint0(){
+  // Remove any existing checkpoint 0
+  historyCheckpoints=historyCheckpoints.filter(cp=>cp.passIndex!==0);
+  historyCheckpoints.unshift(makeCheckpoint(0,historyOrigR,historyOrigG,historyOrigB));
+  pruneCheckpoints();
+}
+
+// Reset stretch history and checkpoints after base image change
+function resetStretchHistoryFromBase(){
+  historyStack=[];
+  historyCheckpoints=[];
+  currentPass=0;
+  seedCheckpoint0();
+  updatePassUI();
+}
+
+// CPU-side per-channel GHS/MTF/Asinh — mirrors shader exactly.
+// src: input Float32Array, dst: pre-allocated output Float32Array
+// scale: white-balance multiplier applied inline (no .map() allocation)
+function applyStretchCPU(src, dst, p, scale=1.0){
+  const n=src.length;
+  for(let i=0;i<n;i++){
+    let x=src[i]*scale;
     let v=0;
     if(p.mode===0){
       // MTF
@@ -2436,25 +2513,31 @@ function applyStretchCPU(arr, p){
     if(p.ht>0.001&&v>0.5) v=0.5+Math.pow((v-0.5)/0.5,1+p.ht*3)*0.5;
     // Roll-off
     if(p.rl>1e-4) v=v/(1+p.rl*v);
-    out[i]=Math.max(0,Math.min(1,v));
+    dst[i]=Math.max(0,Math.min(1,v));
   }
-  return out;
 }
 
-// Replay all history passes from originals to reconstruct state at passIdx
-async function replayToPass(passIdx){
-  let curR=new Float32Array(historyOrigR);
-  let curG=new Float32Array(historyOrigG);
-  let curB=new Float32Array(historyOrigB);
+// Replay history passes from checkpoint to targetPass using scratch buffers.
+// Returns {r,g,b} pointing at whichever scratch pair was last written.
+// Caller must not hold these references across another replayFromCheckpointToPass call.
+function replayFromCheckpointToPass(targetPass){
+  const cp=getNearestCheckpoint(targetPass);
+  // Clone checkpoint into scratch set A
+  workR1.set(cp.r); workG1.set(cp.g); workB1.set(cp.b);
+  let srcR=workR1,srcG=workG1,srcB=workB1;
+  let dstR=workR2,dstG=workG2,dstB=workB2;
 
-  for(let i=0;i<passIdx;i++){
-    const entry=historyStack[i];
-    const p=entry.params;
-    curR=applyStretchCPU(curR.map((v,j)=>v*p.wR), p);
-    curG=applyStretchCPU(curG.map((v,j)=>v*p.wG), p);
-    curB=applyStretchCPU(curB.map((v,j)=>v*p.wB), p);
+  for(let i=cp.passIndex;i<targetPass;i++){
+    const p=historyStack[i].params;
+    applyStretchCPU(srcR,dstR,p,p.wR);
+    applyStretchCPU(srcG,dstG,p,p.wG);
+    applyStretchCPU(srcB,dstB,p,p.wB);
+    // Ping-pong
+    [srcR,dstR]=[dstR,srcR];
+    [srcG,dstG]=[dstG,srcG];
+    [srcB,dstB]=[dstB,srcB];
   }
-  return {r:curR,g:curG,b:curB};
+  return {r:srcR,g:srcG,b:srcB};
 }
 
 // Rebuild histogram samples from float arrays
@@ -2553,42 +2636,47 @@ function hideApplyAnim(){
   setTimeout(()=>{if(a)a.classList.remove('on');},220);
 }
 
+// APPLY: bake current stretch pass, checkpoint if needed, reset sliders
 async function doApply(){
   if(!tR||!historyOrigR) return;
   const btn=document.getElementById('apply-btn');
   btn.disabled=true;
   btn.textContent='APPLYING…';
   showApplyAnim('APPLYING STRETCH…');
-  // Yield two frames so the browser paints the animation before CPU work starts
   await raf();await raf();
 
   const snap=snapParams();
-  // CPU bake: apply stretch to current working arrays (replay all previous + this pass)
-  const working=await replayToPass(currentPass);
-  // Apply this pass on top
-  const newR=applyStretchCPU(working.r.map((v,i)=>v*snap.wR), snap);
-  const newG=applyStretchCPU(working.g.map((v,i)=>v*snap.wG), snap);
-  const newB=applyStretchCPU(working.b.map((v,i)=>v*snap.wB), snap);
 
-  // Rebuild histogram samples from new working arrays
-  buildHistSamples(newR,newG,newB);
+  // Replay to currentPass from nearest checkpoint (no .map allocations)
+  const working=replayFromCheckpointToPass(currentPass);
 
-  // Upload new textures
-  [tR,tG,tB].forEach(t=>{if(t)gl.deleteTexture(t);});
-  // Temporarily update textures for rendering — these are the baked values
-  // We don't store per-pass arrays; we store params and replay from originals
-  tR=mkTex(newR,NW,NH);
-  tG=mkTex(newG,NW,NH);
-  tB=mkTex(newB,NW,NH);
+  // Apply this pass on top into the other scratch set
+  const isSrcSet1=(working.r===workR1);
+  const outR=isSrcSet1?workR2:workR1;
+  const outG=isSrcSet1?workG2:workG1;
+  const outB=isSrcSet1?workB2:workB1;
+  applyStretchCPU(working.r,outR,snap,snap.wR);
+  applyStretchCPU(working.g,outG,snap,snap.wG);
+  applyStretchCPU(working.b,outB,snap,snap.wB);
 
-  // Truncate any future history (if we undid then applied)
+  buildHistSamples(outR,outG,outB);
+  replaceMainTextures(outR,outG,outB);
+
+  // Truncate future history if we're branching from a prior undo point
   historyStack=historyStack.slice(0,currentPass);
+  historyCheckpoints=historyCheckpoints.filter(cp=>cp.passIndex<=currentPass);
   historyStack.push({params:snap});
   currentPass=historyStack.length;
 
-  // Reset sliders to identity for next pass
+  // Create a checkpoint every CHECKPOINT_INTERVAL passes
+  if(currentPass%CHECKPOINT_INTERVAL===0){
+    historyCheckpoints.push(makeCheckpoint(currentPass,outR,outG,outB));
+    pruneCheckpoints();
+  }
+
   resetSlidersToIdentity();
-  drawHist();render();
+  if(histVisible()) drawHist();
+  render();
   updatePassUI();
   hideApplyAnim();
 
@@ -2596,7 +2684,7 @@ async function doApply(){
   btn.textContent='⊕  APPLY STRETCH  —  BAKE & CONTINUE';
 }
 
-// UNDO: replay history from originals up to targetPass
+// UNDO: replay from nearest checkpoint to targetPass
 async function undoToPass(targetPass){
   if(!historyOrigR) return;
   const btn=document.getElementById('apply-btn');
@@ -2605,29 +2693,15 @@ async function undoToPass(targetPass){
   showApplyAnim('REPLAYING PASSES…');
   await raf();await raf();
 
-  // Replay from originals
-  let curR=new Float32Array(historyOrigR);
-  let curG=new Float32Array(historyOrigG);
-  let curB=new Float32Array(historyOrigB);
+  const result=replayFromCheckpointToPass(targetPass);
 
-  for(let i=0;i<targetPass;i++){
-    const p=historyStack[i].params;
-    const nr=applyStretchCPU(curR.map(v=>v*p.wR), p);
-    const ng=applyStretchCPU(curG.map(v=>v*p.wG), p);
-    const nb2=applyStretchCPU(curB.map(v=>v*p.wB), p);
-    curR=nr;curG=ng;curB=nb2;
-  }
-
-  buildHistSamples(curR,curG,curB);
-
-  [tR,tG,tB].forEach(t=>{if(t)gl.deleteTexture(t);});
-  tR=mkTex(curR,NW,NH);
-  tG=mkTex(curG,NW,NH);
-  tB=mkTex(curB,NW,NH);
+  buildHistSamples(result.r,result.g,result.b);
+  replaceMainTextures(result.r,result.g,result.b);
 
   currentPass=targetPass;
   resetSlidersToIdentity();
-  drawHist();render();
+  if(histVisible()) drawHist();
+  render();
   updatePassUI();
   hideApplyAnim();
 
@@ -2908,30 +2982,30 @@ function onDNStr(v){
 // ═══════════════════════════════════════════════════════════════════
 
 // 1D box-blur pass (horizontal)
+// ── PASS 2: STAR-PROTECTED LUMINANCE DENOISE ────────────────────────
+// Raw float output — no quantization rounding
 function boxBlurH(src,dst,w,h,r){
   const iarr=1/(r+r+1);
   for(let i=0;i<h;i++){
     let ti=i*w,li=ti,ri=ti+r;
     let fv=src[ti],lv=src[ti+w-1],val=fv*(r+1);
     for(let j=0;j<r;j++) val+=src[ti+j];
-    for(let j=0;j<=r;j++){val+=src[ri++]-fv;dst[ti++]=Math.round(val*iarr*1000)/1000;}
-    for(let j=r+1;j<w-r;j++){val+=src[ri++]-src[li++];dst[ti++]=Math.round(val*iarr*1000)/1000;}
-    for(let j=w-r;j<w;j++){val+=lv-src[li++];dst[ti++]=Math.round(val*iarr*1000)/1000;}
+    for(let j=0;j<=r;j++){val+=src[ri++]-fv;dst[ti++]=val*iarr;}
+    for(let j=r+1;j<w-r;j++){val+=src[ri++]-src[li++];dst[ti++]=val*iarr;}
+    for(let j=w-r;j<w;j++){val+=lv-src[li++];dst[ti++]=val*iarr;}
   }
 }
-// 1D box-blur pass (vertical)
 function boxBlurV(src,dst,w,h,r){
   const iarr=1/(r+r+1);
   for(let i=0;i<w;i++){
     let ti=i,li=ti,ri=ti+r*w;
     let fv=src[ti],lv=src[ti+w*(h-1)],val=fv*(r+1);
     for(let j=0;j<r;j++) val+=src[ti+j*w];
-    for(let j=0;j<=r;j++){val+=src[ri]-fv;dst[ti]=Math.round(val*iarr*1000)/1000;ri+=w;ti+=w;}
-    for(let j=r+1;j<h-r;j++){val+=src[ri]-src[li];dst[ti]=Math.round(val*iarr*1000)/1000;li+=w;ri+=w;ti+=w;}
-    for(let j=h-r;j<h;j++){val+=lv-src[li];dst[ti]=Math.round(val*iarr*1000)/1000;li+=w;ti+=w;}
+    for(let j=0;j<=r;j++){val+=src[ri]-fv;dst[ti]=val*iarr;ri+=w;ti+=w;}
+    for(let j=r+1;j<h-r;j++){val+=src[ri]-src[li];dst[ti]=val*iarr;li+=w;ri+=w;ti+=w;}
+    for(let j=h-r;j<h;j++){val+=lv-src[li];dst[ti]=val*iarr;li+=w;ti+=w;}
   }
 }
-// 3-pass stack-blur on a float array → returns blurred copy
 function stackBlurFloat(src,w,h,radius){
   const a=new Float32Array(src);
   const b=new Float32Array(src.length);
@@ -2952,7 +3026,6 @@ async function applyLinearDenoise(){
   showApplyAnim('APPLYING DENOISE…');
   await raf();await raf();
 
-  // Snapshot before bake
   denoiseSnapshot={
     plR:new Float32Array(historyOrigR),
     plG:new Float32Array(historyOrigG),
@@ -2961,24 +3034,33 @@ async function applyLinearDenoise(){
 
   const N=NW*NH;
   const str=denoiseStrength;
-  // Radius: 1px at 0% → 6px at 100%, scaled to image width
-  const radius=Math.max(1,Math.round(str*6));
+  // Gentler radius: str*3 instead of str*6 — less PSF damage to stars
+  const radius=Math.max(1,Math.round(str*3));
 
   // Compute luminance channel
   const lum=new Float32Array(N);
   for(let i=0;i<N;i++) lum[i]=0.299*historyOrigR[i]+0.587*historyOrigG[i]+0.114*historyOrigB[i];
 
   await raf();
-  // Stack-blur the luminance
+
+  // Broad blur for background smoothing
   const lumBlur=stackBlurFloat(lum,NW,NH,radius);
 
-  // Apply luminance correction to RGB while preserving chromaticity
-  // For each pixel: compute lum correction ratio, scale RGB
+  // Small-radius reference blur to detect local structure (stars, nebula edges)
+  const lumBlurSmall=stackBlurFloat(lum,NW,NH,1);
+
+  // Star-protected blend: reduce denoise near bright and detailed structures
   for(let i=0;i<N;i++){
     const lo=lum[i];if(lo<1e-7) continue;
     const lb=lumBlur[i];
-    // Blend toward blurred luminance by str
-    const lNew=lo*(1-str)+lb*str;
+    const detail=Math.max(0,lo-lumBlurSmall[i]);
+    // Bright pixel protection (full protection above ~0.12)
+    const protectBright=Math.min(1,lo*8);
+    // Local detail protection (full protection at 5% local contrast)
+    const protectDetail=Math.min(1,detail*20);
+    const protect=Math.max(protectBright,protectDetail);
+    const applyAmount=str*(1-protect);
+    const lNew=lo*(1-applyAmount)+lb*applyAmount;
     const ratio=lNew/lo;
     historyOrigR[i]*=ratio;
     historyOrigG[i]*=ratio;
@@ -2986,11 +3068,8 @@ async function applyLinearDenoise(){
   }
 
   // Re-upload textures
-  if(gl){[tR,tG,tB].forEach(t=>{if(t)gl.deleteTexture(t);});}
-  tR=mkTex(new Float32Array(historyOrigR),NW,NH);
-  tG=mkTex(new Float32Array(historyOrigG),NW,NH);
-  tB=mkTex(new Float32Array(historyOrigB),NW,NH);
-  historyStack=[];currentPass=0;updatePassUI();
+  replaceMainTextures(historyOrigR,historyOrigG,historyOrigB);
+  resetStretchHistoryFromBase();
   // Refresh stats including LINEAR tab stat panel (Patch 7)
   refreshLinearState({resetStretchDefaults:false,refreshStats:true});
   hideApplyAnim();
@@ -2999,7 +3078,7 @@ async function applyLinearDenoise(){
   const s4t=document.getElementById('lin-s4-tag');if(s4t){s4t.className='lin-step-tag done';s4t.textContent='Applied';}
   document.getElementById('lin-s4-num').className='lin-step-num done';
   document.getElementById('dn-undo-btn').disabled=false;
-  document.getElementById('dn-status').textContent='Denoise applied at radius '+radius+' · Undo available';
+  document.getElementById('dn-status').textContent='Linear luminance denoise applied · background-weighted · star-protected · Undo available';
   // Update pipeline summary
   const sum=document.getElementById('lin-pipeline-summary');
   if(sum) sum.textContent='Background corrected · Channels neutralized · Stats refreshed · Denoise applied.';
@@ -3014,11 +3093,8 @@ async function undoLinearDenoise(){
   historyOrigG=new Float32Array(denoiseSnapshot.plG);
   historyOrigB=new Float32Array(denoiseSnapshot.plB);
   denoiseSnapshot=null;denoiseApplied=false;
-  if(gl){[tR,tG,tB].forEach(t=>{if(t)gl.deleteTexture(t);});}
-  tR=mkTex(new Float32Array(historyOrigR),NW,NH);
-  tG=mkTex(new Float32Array(historyOrigG),NW,NH);
-  tB=mkTex(new Float32Array(historyOrigB),NW,NH);
-  historyStack=[];currentPass=0;updatePassUI();
+  replaceMainTextures(historyOrigR,historyOrigG,historyOrigB);
+  resetStretchHistoryFromBase();
   refreshLinearState({resetStretchDefaults:false,refreshStats:true});
   const s4t=document.getElementById('lin-s4-tag');if(s4t){s4t.className='lin-step-tag optional';s4t.textContent='Optional';}
   document.getElementById('lin-s4-num').className='lin-step-num active';
@@ -3053,8 +3129,7 @@ function refreshLinearState({resetStretchDefaults=false,refreshStats=true}={}){
   }
 
   if(resetStretchDefaults){
-    // Re-derive BP and SP from fresh corrected histogram — these always come
-    // from corrected linear data only, never stale pre-correction state.
+    // Re-derive BP and SP from fresh corrected histogram.
     P.bp=Math.max(0,histFootVal);
     P.mwp=1.0;P.mmt=0.490;P.aD=0;
     P.gD=0;P.gB=0;
@@ -3068,11 +3143,11 @@ function refreshLinearState({resetStretchDefaults=false,refreshStats=true}={}){
     syncSlider('i-gb',0,'v-gb','0.0');
     syncSlider('i-gd',0,'v-gd','0.00');
     syncSlider('i-glp',0,'v-glp','0.000');
-    historyStack=[];currentPass=0;
-    updatePassUI();
+    // Pass 1: clear history + checkpoints, seed checkpoint 0 from new base
+    resetStretchHistoryFromBase();
   }
 
-  drawHist();render();
+  if(histVisible()) drawHist();render();
 }
 
 // ═══════════════════════════════════════════════════════════════════
