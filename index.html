@@ -61,14 +61,18 @@ body{background:var(--bg);color:var(--txt);display:flex;flex-direction:column}
   user-select:none;
   z-index:10;
   overflow:hidden;
-  resize:both;
   display:flex;flex-direction:column; /* children stack vertically */
+}
+#hist-resize-grip{
+  position:absolute;right:0;bottom:0;width:22px;height:22px;
+  cursor:nwse-resize;touch-action:none;z-index:20;
+  background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,.18) 40%,rgba(255,255,255,.18) 52%,transparent 52%,transparent 64%,rgba(255,255,255,.18) 64%,rgba(255,255,255,.18) 76%,transparent 76%);
 }
 #hist-float.hidden{display:none}
 #hist-drag-handle{
   display:flex;align-items:center;justify-content:space-between;
   padding:8px 12px;border-bottom:1px solid var(--bdr);
-  cursor:move;flex-shrink:0;
+  cursor:move;flex-shrink:0;touch-action:none;
 }
 .hist-handle-left{display:flex;align-items:center;gap:10px}
 .hist-float-title{font-family:var(--mono);font-size:13px;color:var(--dim);letter-spacing:.08em}
@@ -82,7 +86,7 @@ body{background:var(--bg);color:var(--txt);display:flex;flex-direction:column}
 #hist-close{background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;line-height:1;padding:0 2px}
 #hist-close:hover{color:var(--txt)}
 /* Canvas fills available height - JS measures parent and sets height */
-#hist-cv{width:100%;display:block;cursor:crosshair;flex:1;min-height:0}
+#hist-cv{width:100%;display:block;cursor:crosshair;flex:1;min-height:0;touch-action:none}
 .hist-axis-labels{display:flex;justify-content:space-between;padding:4px 12px 7px;pointer-events:none;flex-shrink:0}
 .hal{font-family:var(--mono);font-size:13px;color:var(--dim)}
 
@@ -365,7 +369,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   </div>
 
   <div style="font-size:13px;color:var(--dim);text-align:center;line-height:1.8">
-    FITS Studio v4.1.10 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
+    FITS Studio v4.1.12 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
   </div>
 </div>
 </div>
@@ -403,6 +407,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         <button id="hist-close" onclick="document.getElementById('hist-float').classList.toggle('hidden')" title="Hide">✕</button>
       </div>
       <canvas id="hist-cv"></canvas>
+      <div id="hist-resize-grip" title="Drag to resize"></div>
       <div class="hist-axis-labels">
         <span class="hal">← 0  (ADU 0)</span>
         <span class="hal" style="color:var(--sub)">drag markers · click sets BP</span>
@@ -1733,11 +1738,13 @@ function drawMarker(ctx,x,H,color,dashed,label,W){
 
 // Histogram mouse interaction — supports BP, WP (MTF), SP/LP/HP (GHS)
 const histCv=document.getElementById('hist-cv');
-histCv.addEventListener('mousedown',e=>{
+histCv.addEventListener('pointerdown',e=>{
+  histCv.setPointerCapture(e.pointerId);
   const r=histCv.getBoundingClientRect();
   const W=histCv.offsetWidth;
   const pxN=(e.clientX-r.left)/r.width*W;
-  // Build list of active draggable markers
+  // Hit area: 24px for touch, 14px for mouse/pen
+  const hitPx=e.pointerType==='touch'?24:14;
   const mkrs=[{name:'bp',val:P.bp}];
   if(P.mode===0) mkrs.push({name:'wp',val:P.mwp});
   if(P.mode===2){
@@ -1746,14 +1753,14 @@ histCv.addEventListener('mousedown',e=>{
     if(P.gHP<0.9995) mkrs.push({name:'hp',val:P.gHP});
   }
   for(const m of mkrs){
-    if(Math.abs(pxN-hValToX(m.val,W))<14){histDrag=m.name;return;}
+    if(Math.abs(pxN-hValToX(m.val,W))<hitPx){histDrag=m.name;return;}
   }
-  // No marker hit — click sets BP
+  // No marker hit — tap/click sets BP
   const val=Math.max(0,Math.min(.8,hXToVal(pxN,W)));
   P.bp=val;syncSlider('i-bp',Math.round(val*1000),'v-bp',val.toFixed(3));
   if(histVisible()) drawHist();render();
 });
-document.addEventListener('mousemove',e=>{
+histCv.addEventListener('pointermove',e=>{
   if(!histDrag)return;
   const r=histCv.getBoundingClientRect();
   const W=histCv.offsetWidth;
@@ -1772,7 +1779,8 @@ document.addEventListener('mousemove',e=>{
   }
   if(histVisible()) drawHist();render();
 });
-document.addEventListener('mouseup',()=>histDrag=null);
+histCv.addEventListener('pointerup',()=>histDrag=null);
+histCv.addEventListener('pointercancel',()=>histDrag=null);
 
 function toggleHistCh(ch){
   const btn=document.getElementById('hch-'+ch);
@@ -1790,20 +1798,22 @@ function toggleHistCh(ch){
   drawHist();
 }
 
-// ── FLOATING PANEL DRAG ───────────────────────────────────────────
+// ── FLOATING PANEL DRAG + RESIZE GRIP (pointer events — works for mouse and touch) ──
 ;(function(){
   const panel=document.getElementById('hist-float');
   const handle=document.getElementById('hist-drag-handle');
-  let dragging=false,ox=0,oy=0,sx=0,sy=0;
-  handle.addEventListener('mousedown',e=>{
-    if(e.target.id==='hist-close')return;
+  let dragging=false,ox=0,oy=0;
+
+  handle.addEventListener('pointerdown',e=>{
+    if(e.target.id==='hist-close') return;
+    handle.setPointerCapture(e.pointerId);
     dragging=true;
     const r=panel.getBoundingClientRect();
     ox=e.clientX-r.left; oy=e.clientY-r.top;
     e.preventDefault();
   });
-  document.addEventListener('mousemove',e=>{
-    if(!dragging)return;
+  handle.addEventListener('pointermove',e=>{
+    if(!dragging) return;
     const wrap=document.getElementById('cv-wrap').getBoundingClientRect();
     let nx=e.clientX-wrap.left-ox;
     let ny=e.clientY-wrap.top-oy;
@@ -1814,7 +1824,28 @@ function toggleHistCh(ch){
     panel.style.top=ny+'px';
     panel.style.bottom='auto';
   });
-  document.addEventListener('mouseup',()=>dragging=false);
+  handle.addEventListener('pointerup',()=>dragging=false);
+  handle.addEventListener('pointercancel',()=>dragging=false);
+
+  // ── RESIZE GRIP ──
+  const grip=document.getElementById('hist-resize-grip');
+  let resizing=false,rStartX=0,rStartY=0,rStartW=0,rStartH=0;
+  grip.addEventListener('pointerdown',e=>{
+    grip.setPointerCapture(e.pointerId);
+    resizing=true;
+    rStartX=e.clientX;rStartY=e.clientY;
+    rStartW=panel.offsetWidth;rStartH=panel.offsetHeight;
+    e.preventDefault();e.stopPropagation();
+  });
+  grip.addEventListener('pointermove',e=>{
+    if(!resizing) return;
+    const nw=Math.max(360,Math.min(1100,rStartW+(e.clientX-rStartX)));
+    const nh=Math.max(180,Math.min(700,rStartH+(e.clientY-rStartY)));
+    panel.style.width=nw+'px';panel.style.height=nh+'px';
+    if(hSampL.length) drawHist();
+  });
+  grip.addEventListener('pointerup',()=>resizing=false);
+  grip.addEventListener('pointercancel',()=>resizing=false);
 })();
 
 // Resize observer on histogram panel — redraws canvas when user resizes
@@ -2166,22 +2197,144 @@ function resetZoom(){Z.level=1;Z.cx=.5;Z.cy=.5;updZlbl();render();}
 
 ;(function(){
   const cv=document.getElementById('gl');
-  let drag=null,lx=0,ly=0;
-  cv.addEventListener('mousedown',e=>{
-    // In BG tab, check for sample circle hit first
-    if(document.getElementById('tab-bg').classList.contains('on')&&bgSamples.length){
-      if(handleBGCanvasClick(e,cv)) return;
-    }
-    drag='pan';lx=e.clientX;ly=e.clientY;cv.style.cursor='grabbing';
-  });
-  cv.addEventListener('mousemove',e=>{
-    if(!drag){cv.style.cursor=Z.level>1?'grab':'crosshair';return;}
+  cv.style.touchAction='none'; // prevent Safari from claiming gestures
+
+  // ── Pointer map: tracks every active pointer by id → {x, y} ──────
+  // Mouse always has exactly one entry; touch can have up to two.
+  // A third+ finger is ignored (we don't capture it).
+  const ptrs=new Map(); // pointerId → {x, y}
+
+  // ── Tap detection state (first finger only) ────────────────────────
+  const TAP_THRESH=12; // px of movement before a tap becomes a drag
+  let tapPtId=null,tapX=0,tapY=0,tapHit=false;
+
+  // ── Helpers ─────────────────────────────────────────────────────────
+  function bgHitTest(cx,cy,hitR){
+    if(!bgSamples.length) return -1;
     const r=cv.getBoundingClientRect();
-    if(Z.level>1){Z.cx-=(e.clientX-lx)/r.width/Z.level;Z.cy+=(e.clientY-ly)/r.height/Z.level;clampZ();}
-    lx=e.clientX;ly=e.clientY;render();
+    const mx=cx-r.left,my=cy-r.top;
+    const cw=cv.offsetWidth,ch=cv.offsetHeight;
+    for(let i=0;i<bgSamples.length;i++){
+      const{x,y}=sampleToCanvas(bgSamples[i].x,bgSamples[i].y,cw,ch);
+      if((mx-x)**2+(my-y)**2<hitR*hitR) return i;
+    }
+    return -1;
+  }
+
+  function commitSampleTap(cx,cy,pointerType){
+    const hitR=pointerType==='touch'?24:12;
+    const i=bgHitTest(cx,cy,hitR);
+    if(i<0) return;
+    bgSamples[i].accepted=!bgSamples[i].accepted;
+    if(bgModel){fitBGModel();if(gradVisActive)drawGradientVis();}
+    else{drawSampleOverlay();render();}
+  }
+
+  // ── POINTER DOWN ─────────────────────────────────────────────────────
+  cv.addEventListener('pointerdown',e=>{
+    if(ptrs.size>=2) return; // ignore 3rd+ fingers
+    cv.setPointerCapture(e.pointerId);
+    ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+
+    if(ptrs.size===1){
+      // First pointer — set up tap detection
+      tapPtId=e.pointerId;
+      tapX=e.clientX;tapY=e.clientY;tapHit=false;
+      if(document.getElementById('tab-bg').classList.contains('on')&&bgSamples.length){
+        const hitR=e.pointerType==='touch'?24:12;
+        if(bgHitTest(e.clientX,e.clientY,hitR)>=0) tapHit=true;
+      }
+      if(e.pointerType==='mouse') cv.style.cursor='grabbing';
+    } else {
+      // Second pointer arrived — cancel any pending tap, enter pinch mode
+      tapHit=false;tapPtId=null;
+    }
   });
-  cv.addEventListener('mouseup',()=>{drag=null;cv.style.cursor='crosshair';});
-  cv.addEventListener('mouseleave',()=>drag=null);
+
+  // ── POINTER MOVE ─────────────────────────────────────────────────────
+  cv.addEventListener('pointermove',e=>{
+    if(!ptrs.has(e.pointerId)) return;
+    const prev=ptrs.get(e.pointerId);
+
+    if(ptrs.size===2){
+      // ── PINCH TO ZOOM ──────────────────────────────────────────────
+      // Find the other pointer's current position
+      let other=null;
+      for(const[id,pos] of ptrs){if(id!==e.pointerId){other=pos;break;}}
+
+      // Previous geometry (before updating this pointer)
+      const prevMx=(prev.x+other.x)/2, prevMy=(prev.y+other.y)/2;
+      const prevDist=Math.hypot(prev.x-other.x,prev.y-other.y);
+
+      // Current geometry
+      const currMx=(e.clientX+other.x)/2, currMy=(e.clientY+other.y)/2;
+      const currDist=Math.hypot(e.clientX-other.x,e.clientY-other.y);
+
+      // Update map for this pointer
+      ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+
+      if(prevDist<2) return; // fingers too close — skip to avoid divide-by-near-zero
+      const factor=Math.max(0.5,Math.min(2.0,currDist/prevDist));
+      const r=cv.getBoundingClientRect();
+
+      // Normalized canvas coords of previous midpoint
+      const pmx=(prevMx-r.left)/r.width;
+      const pmy=(prevMy-r.top)/r.height;
+      // Normalized canvas coords of current midpoint
+      const cmx=(currMx-r.left)/r.width;
+      const cmy=(currMy-r.top)/r.height;
+
+      // Image-space point that was under the previous midpoint — must stay fixed
+      const ix=(pmx-.5)/Z.level+Z.cx;
+      const iy=(pmy-.5)/Z.level+Z.cy;
+
+      // Apply zoom
+      Z.level=Math.max(1,Math.min(30,Z.level*factor));
+
+      // Reposition so that same image point is under the CURRENT midpoint
+      // (this handles both zoom anchoring and midpoint translation in one step)
+      Z.cx=ix-(cmx-.5)/Z.level;
+      Z.cy=iy-(cmy-.5)/Z.level;
+
+      clampZ();updZlbl();render();
+      return;
+    }
+
+    // ── SINGLE-FINGER PAN ──────────────────────────────────────────────
+    if(e.pointerId===tapPtId){
+      const moved=Math.hypot(e.clientX-tapX,e.clientY-tapY);
+      if(moved>TAP_THRESH) tapHit=false; // too much movement — not a tap
+    }
+    const r=cv.getBoundingClientRect();
+    if(!tapHit&&Z.level>1){
+      Z.cx-=(e.clientX-prev.x)/r.width/Z.level;
+      Z.cy+=(e.clientY-prev.y)/r.height/Z.level;
+      clampZ();
+    }
+    ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(!tapHit&&Z.level>1) render();
+    if(e.pointerType==='mouse'&&!tapHit) cv.style.cursor=Z.level>1?'grab':'crosshair';
+  });
+
+  // ── POINTER UP ────────────────────────────────────────────────────────
+  cv.addEventListener('pointerup',e=>{
+    if(!ptrs.has(e.pointerId)) return;
+    const wasOnly=(ptrs.size===1);
+    ptrs.delete(e.pointerId);
+    if(e.pointerType==='mouse') cv.style.cursor='crosshair';
+    // Complete tap only if this was the sole active pointer (no pinch in flight)
+    if(wasOnly&&tapHit&&e.pointerId===tapPtId){
+      commitSampleTap(e.clientX,e.clientY,e.pointerType);
+    }
+    if(ptrs.size===0){tapHit=false;tapPtId=null;}
+  });
+
+  // ── POINTER CANCEL ────────────────────────────────────────────────────
+  cv.addEventListener('pointercancel',e=>{
+    ptrs.delete(e.pointerId);
+    if(ptrs.size===0){tapHit=false;tapPtId=null;}
+  });
+
   cv.addEventListener('dblclick',()=>resetZoom());
   cv.addEventListener('wheel',e=>{
     e.preventDefault();
@@ -2193,10 +2346,6 @@ function resetZoom(){Z.level=1;Z.cx=.5;Z.cy=.5;updZlbl();render();}
     Z.cx=ix-(mx-.5)/Z.level;Z.cy=iy-(my-.5)/Z.level;
     clampZ();updZlbl();render();
   },{passive:false});
-  let td=null,tlx=0,tly=0;
-  cv.addEventListener('touchstart',e=>{e.preventDefault();if(e.touches.length!==1)return;const t=e.touches[0];td='pan';tlx=t.clientX;tly=t.clientY;},{passive:false});
-  cv.addEventListener('touchmove',e=>{e.preventDefault();if(!td||e.touches.length!==1)return;const t=e.touches[0],r=cv.getBoundingClientRect();if(Z.level>1){Z.cx-=(t.clientX-tlx)/r.width/Z.level;Z.cy+=(t.clientY-tly)/r.height/Z.level;clampZ();}tlx=t.clientX;tly=t.clientY;render();},{passive:false});
-  cv.addEventListener('touchend',()=>td=null);
 })();
 
 
