@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://fits.dwarfastro.com/sitemap.xml
