@@ -1533,6 +1533,7 @@ async function loadFITS(buf){
     hSampL.push((plR[i]+plG[i]+plB[i])/3);
   }
   [hSampR,hSampG,hSampB,hSampL].forEach(a=>a.sort((a,b)=>a-b));
+  histBinsDirty=true; // mark bins stale so all channels rebuild on first drawHist
 
   // Compute histogram peak and foot positions
   {
