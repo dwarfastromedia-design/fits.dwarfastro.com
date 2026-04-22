@@ -369,7 +369,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   </div>
 
   <div style="font-size:13px;color:var(--dim);text-align:center;line-height:1.8">
-    FITS Studio v4.1.13 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
+    FITS Studio v4.1.14 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
   </div>
 </div>
 </div>
@@ -1287,11 +1287,6 @@ const raf=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))
 function setLoad(m,p){document.getElementById('lmsg').textContent=m;document.getElementById('lfill').style.width=p+'%';}
 function secToHM(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h>0?`${h}h ${m}m`:`${m}m`;}
 
-// Set before calling loadFITS to indicate who triggered the load.
-// 'user_file' = user dropped/selected their own FITS.
-// 'sample'    = built-in sample loader (tracked separately in loadSampleFile).
-let _loadSource='user_file';
-
 async function loadFITS(buf){
   document.getElementById('drop-screen').style.display='none';
   document.getElementById('load-screen').style.display='flex';
@@ -1434,8 +1429,6 @@ async function loadFITS(buf){
   showTab('info');
   initLinearSteps();
   await raf();
-  if(_loadSource==='user_file') trackGA4('fits_file_loaded',{source_type:'user_file',device_class:getDeviceClass()});
-  _loadSource='user_file'; // reset to default
   allocScratch();lastStretchedR=historyOrigR;lastStretchedG=historyOrigG;lastStretchedB=historyOrigB;if(gl){if(tStarMask)gl.deleteTexture(tStarMask);tStarMask=mkTex(new Float32Array([0]),1,1);}sizeCanvas();drawHist();render();
   updatePassUI();
 }
@@ -3697,6 +3690,9 @@ async function applyLinearDenoise(){
   refreshLinearState({resetStretchDefaults:false,refreshStats:true});
   hideApplyAnim();
 
+  // Denoise computation succeeded — fire milestone event before any UI updates
+  trackGA4('linear_denoise_applied',{device_class:getDeviceClass()});
+
   denoiseApplied=true;
   const s4t=document.getElementById('lin-s4-tag');if(s4t){s4t.className='lin-step-tag done';s4t.textContent='Applied';}
   document.getElementById('lin-s4-num').className='lin-step-num done';
@@ -3706,7 +3702,6 @@ async function applyLinearDenoise(){
   const sum=document.getElementById('lin-pipeline-summary');
   if(sum) sum.textContent='Background corrected · Channels neutralized · Stats refreshed · Denoise applied.';
   btn.textContent='APPLY DENOISE';btn.disabled=false;
-  trackGA4('linear_denoise_applied',{device_class:getDeviceClass()});
 }
 
 async function undoLinearDenoise(){
@@ -3798,8 +3793,8 @@ async function loadSampleFile(){
     }
     const buf=await new Blob(chunks).arrayBuffer();
     statusEl.textContent='';
-    _loadSource='sample';
-    loadFITS(buf);
+    await loadFITS(buf);
+    // Fire only after loadFITS fully succeeds — the app is now visible and ready.
     trackGA4('sample_file_loaded',{source_type:'sample',device_class:getDeviceClass()});
   } catch(err){
     statusEl.style.color='var(--dim)';
@@ -3814,7 +3809,13 @@ async function loadSampleFile(){
 function handleFile(f){
   if(!f)return;
   if(!['fits','fit','fts'].includes(f.name.split('.').pop().toLowerCase())){alert('Load a .fits file.');return;}
-  const r=new FileReader();r.onload=e=>loadFITS(e.target.result);r.readAsArrayBuffer(f);
+  const r=new FileReader();
+  r.onload=async e=>{
+    await loadFITS(e.target.result);
+    // Fire only after loadFITS fully succeeds — the app is now visible and ready.
+    trackGA4('fits_file_loaded',{source_type:'user_file',device_class:getDeviceClass()});
+  };
+  r.readAsArrayBuffer(f);
 }
 function resetAll(){
   resolvePreviewBeforeAction();
