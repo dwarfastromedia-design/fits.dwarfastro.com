@@ -3,7 +3,135 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FITS Studio · DwarfAstro — Browser FITS Processing</title>
+
+<title>FITS Studio for DWARF 3 | Browser FITS Processing by DwarfAstro</title>
+<meta name="description" content="Browser-based FITS processing for stacked DWARF 3 astrophotography. Background extraction, channel neutralization, MTF, Asinh, and GHS stretching, white balance controls, and full-resolution PNG export. No installation, no cloud, no account.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://fits.dwarfastro.com/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="FITS Studio for DWARF 3 | Browser FITS Processing by DwarfAstro">
+<meta property="og:description" content="Browser-based FITS processing for stacked DWARF 3 astrophotography. Background extraction, channel neutralization, MTF, Asinh, and GHS stretching, white balance controls, and full-resolution PNG export.">
+<meta property="og:url" content="https://fits.dwarfastro.com/">
+
+<!-- Twitter / X -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="FITS Studio for DWARF 3 | Browser FITS Processing by DwarfAstro">
+<meta name="twitter:description" content="Browser-based FITS processing for stacked DWARF 3 astrophotography. Background extraction, channel neutralization, MTF, Asinh, and GHS stretching, white balance controls, and full-resolution PNG export.">
+
+<!-- SoftwareApplication structured data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "@id": "https://fits.dwarfastro.com/#software",
+  "name": "FITS Studio",
+  "url": "https://fits.dwarfastro.com/",
+  "applicationCategory": "MultimediaApplication",
+  "operatingSystem": "Web",
+  "browserRequirements": "Desktop Chrome or Firefox with WebGL2 support",
+  "description": "Browser-based FITS processing for stacked DWARF 3 astrophotography. Includes background extraction, channel neutralization, MTF, Asinh, and GHS stretching, white balance controls, and full-resolution PNG export.",
+  "featureList": [
+    "Background extraction with polynomial and TPS-RBF gradient models",
+    "Automatic channel neutralization",
+    "Gentle linear denoise",
+    "MTF stretch",
+    "Asinh stretch",
+    "GHS stretch",
+    "White balance adjustment",
+    "Full-resolution PNG export",
+    "Built-in sample FITS file"
+  ],
+  "author": {
+    "@type": "Organization",
+    "name": "DwarfAstro",
+    "url": "https://dwarfastro.com"
+  },
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "isAccessibleForFree": true
+}
+</script>
+
+<!-- FAQPage structured data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "@id": "https://fits.dwarfastro.com/#faq",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What FITS files does FITS Studio accept?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "FITS Studio is designed for the stacked-16_*.fits files produced by the DwarfLab Dwarf 3 after a Mega Stack session. It supports 16-bit native DWARF 3 files and 32-bit float FITS. The file must contain three RGB planes (NAXIS3=3). Single-channel and Bayer RAW files are not supported."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does FITS Studio stack sub-frames?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. FITS Studio is a post-processing tool for an already stacked result. It takes the linear stacked FITS file the Dwarf 3 produced after a session and gives you a processing pipeline to bring out the detail. It does not stack individual sub-frames."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Are my FITS files uploaded anywhere?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. FITS Studio runs entirely in your browser. Your files are never uploaded to a server, cloud service, or external system. No account is required and nothing leaves your device."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which browsers work best with FITS Studio?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Desktop Chrome or Firefox with WebGL2 support. WebGL2 is required for the GPU-accelerated processing that runs at full 8.4 MP Dwarf 3 resolution."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the fastest good workflow in FITS Studio?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Load your FITS file or the built-in M42 sample. Go to the LINEAR tab and run Background Extraction, then let Channel Neutralization and Statistics Refresh complete automatically. Optionally apply Gentle Linear Denoise. Switch to the STRETCH tab and use Preview STF or Auto Stretch as a starting point, then refine with MTF, Asinh, or GHS. Finish with White Balance and export a full-resolution PNG."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Should I start in the LINEAR tab before stretching?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Starting in the LINEAR tab and running background extraction before stretching generally produces better results. Correcting gradients and balancing the image on linear data first gives you better stretch placement and more predictable colour behaviour. Stretching first and correcting later makes gradients, noise, and colour casts harder to control."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "When should I use POLY-2 instead of TPS-RBF for background extraction?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "POLY-2 is the normal starting point and handles most Dwarf 3 gradients, especially under suburban skies. Use TPS-RBF only when the background gradient is unusually complex or comes from multiple directions, such as moonlit sessions with multi-source sky glow."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What stretch tools are included in FITS Studio?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "FITS Studio includes three stretch modes: MTF (Midtone Transfer Function) for straightforward contrast shaping, Asinh for smooth highlight compression that tends to preserve star colour well, and GHS (Generalised Hyperbolic Stretch) for precise control over faint detail and highlight protection. All three support multi-pass apply with full undo history."
+      }
+    }
+  ]
+}
+</script>
+
 <style>
 :root{
   --bg:#080808;--sur:#0d0d0d;--card:#161616;--bdr:#252525;
@@ -290,6 +418,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .cookie-btn.accept:hover{background:rgba(249,115,22,.28)}
 .cookie-btn.decline{background:transparent;border-color:var(--bdr);color:var(--dim)}
 .cookie-btn.decline:hover{border-color:var(--sub);color:var(--sub)}
+
+/* ── FAQ SECTION ─────────────────────────────────────────────────── */
+.faq-section{width:100%;margin-top:8px}
+.faq-inner{display:flex;flex-direction:column;gap:0}
+.faq-inner h2{font-family:var(--mono);font-size:11px;color:var(--acc);letter-spacing:.16em;text-transform:uppercase;margin-bottom:16px}
+.faq-item{border-top:1px solid var(--bdr);padding:18px 0}
+.faq-item:last-child{border-bottom:1px solid var(--bdr)}
+.faq-item h3{font-family:var(--mono);font-size:14px;color:var(--txt);letter-spacing:.04em;margin-bottom:10px;font-weight:600}
+.faq-item p{font-size:15px;color:var(--sub);line-height:1.7;max-width:720px}
 </style>
 </head>
 <body>
@@ -367,6 +504,53 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     </div>
 
   </div>
+
+  <!-- FAQ -->
+  <section id="faq" class="faq-section">
+    <div class="faq-inner">
+      <h2>FAQ — FITS Studio for stacked DWARF 3 FITS files</h2>
+
+      <article class="faq-item">
+        <h3>What FITS files does FITS Studio accept?</h3>
+        <p>FITS Studio is designed for the <code style="font-family:var(--mono);font-size:13px;color:var(--acc)">stacked-16_*.fits</code> files produced by the DwarfLab Dwarf 3 after a Mega Stack session. It supports 16-bit native DWARF 3 files and 32-bit float FITS. The file must contain three RGB planes (NAXIS3=3). Single-channel and Bayer RAW files are not supported.</p>
+      </article>
+
+      <article class="faq-item">
+        <h3>Does FITS Studio stack sub-frames?</h3>
+        <p>No. FITS Studio is a post-processing tool for an already stacked result. It takes the linear stacked FITS file the Dwarf 3 produced after a session and gives you a processing pipeline to bring out the detail. It does not stack individual sub-frames.</p>
+      </article>
+
+      <article class="faq-item">
+        <h3>Are my FITS files uploaded anywhere?</h3>
+        <p>No. FITS Studio runs entirely in your browser. Your files are never uploaded to a server, cloud service, or external system. No account is required and nothing leaves your device.</p>
+      </article>
+
+      <article class="faq-item">
+        <h3>Which browsers work best with FITS Studio?</h3>
+        <p>Desktop Chrome or Firefox with WebGL2 support. WebGL2 is required for the GPU-accelerated processing that runs at full 8.4 MP Dwarf 3 resolution.</p>
+      </article>
+
+      <article class="faq-item">
+        <h3>What is the fastest good workflow in FITS Studio?</h3>
+        <p>Load your FITS file or the built-in M42 sample. Go to the LINEAR tab and run Background Extraction, then let Channel Neutralization and Statistics Refresh complete automatically. Optionally apply Gentle Linear Denoise. Switch to the STRETCH tab and use Preview STF or Auto Stretch as a starting point, then refine with MTF, Asinh, or GHS. Finish with White Balance and export a full-resolution PNG.</p>
+      </article>
+
+      <article class="faq-item">
+        <h3>Should I start in the LINEAR tab before stretching?</h3>
+        <p>Yes. Starting in the LINEAR tab and running background extraction before stretching generally produces better results. Correcting gradients and balancing the image on linear data first gives you better stretch placement and more predictable colour behaviour. Stretching first and correcting later makes gradients, noise, and colour casts harder to control.</p>
+      </article>
+
+      <article class="faq-item">
+        <h3>When should I use POLY-2 instead of TPS-RBF for background extraction?</h3>
+        <p>POLY-2 is the normal starting point and handles most Dwarf 3 gradients, especially under suburban skies. Use TPS-RBF only when the background gradient is unusually complex or comes from multiple directions, such as moonlit sessions with multi-source sky glow.</p>
+      </article>
+
+      <article class="faq-item">
+        <h3>What stretch tools are included in FITS Studio?</h3>
+        <p>FITS Studio includes three stretch modes: MTF (Midtone Transfer Function) for straightforward contrast shaping, Asinh for smooth highlight compression that tends to preserve star colour well, and GHS (Generalised Hyperbolic Stretch) for precise control over faint detail and highlight protection. All three support multi-pass apply with full undo history.</p>
+      </article>
+    </div>
+  </section>
 
   <div style="font-size:13px;color:var(--dim);text-align:center;line-height:1.8">
     FITS Studio v4.1.14 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
