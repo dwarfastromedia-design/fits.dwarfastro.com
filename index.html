@@ -369,7 +369,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   </div>
 
   <div style="font-size:13px;color:var(--dim);text-align:center;line-height:1.8">
-    FITS Studio v4.1.12 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
+    FITS Studio v4.1.13 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
   </div>
 </div>
 </div>
@@ -428,7 +428,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 
     <div class="tab-content" id="tab-bg" style="padding:12px">
 
-      <button class="stf-btn" style="margin-bottom:12px" onclick="document.getElementById('hist-float').classList.toggle('hidden');if(!document.getElementById('hist-float').classList.contains('hidden'))drawHist()">HISTOGRAM</button>
+      <button class="stf-btn" style="margin-bottom:12px" onclick="toggleHistogram()">HISTOGRAM</button>
 
       <!-- STEP 1 -->
       <div class="lin-step" id="lin-s1">
@@ -602,7 +602,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         </div>
 
         <div class="ctrl" style="margin-bottom:10px">
-          <button class="stf-btn" style="margin-bottom:0" onclick="document.getElementById('hist-float').classList.toggle('hidden')">HISTOGRAM</button>
+          <button class="stf-btn" style="margin-bottom:0" onclick="toggleHistogram()">HISTOGRAM</button>
         </div>
 
         <div class="ctrl">
@@ -1287,6 +1287,11 @@ const raf=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))
 function setLoad(m,p){document.getElementById('lmsg').textContent=m;document.getElementById('lfill').style.width=p+'%';}
 function secToHM(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h>0?`${h}h ${m}m`:`${m}m`;}
 
+// Set before calling loadFITS to indicate who triggered the load.
+// 'user_file' = user dropped/selected their own FITS.
+// 'sample'    = built-in sample loader (tracked separately in loadSampleFile).
+let _loadSource='user_file';
+
 async function loadFITS(buf){
   document.getElementById('drop-screen').style.display='none';
   document.getElementById('load-screen').style.display='flex';
@@ -1429,6 +1434,8 @@ async function loadFITS(buf){
   showTab('info');
   initLinearSteps();
   await raf();
+  if(_loadSource==='user_file') trackGA4('fits_file_loaded',{source_type:'user_file',device_class:getDeviceClass()});
+  _loadSource='user_file'; // reset to default
   allocScratch();lastStretchedR=historyOrigR;lastStretchedG=historyOrigG;lastStretchedB=historyOrigB;if(gl){if(tStarMask)gl.deleteTexture(tStarMask);tStarMask=mkTex(new Float32Array([0]),1,1);}sizeCanvas();drawHist();render();
   updatePassUI();
 }
@@ -2059,6 +2066,7 @@ function _computeAutoSTF(){
 function doAutoSTF(){
   resolvePreviewBeforeAction();  // exits preview first if active
   _computeAutoSTF();
+  trackGA4('auto_stretch_used',{stretch_mode:getCurrentStretchModeName(),device_class:getDeviceClass()});
   if(histVisible()) drawHist();render();
 }
 
@@ -2119,6 +2127,7 @@ function doAutoPreview(){
   // doAutoSTF() starts with resolvePreviewBeforeAction() which would
   // immediately exit the preview we just entered.
   _computeAutoSTF();
+  trackGA4('preview_stf_used',{stretch_mode:getCurrentStretchModeName(),device_class:getDeviceClass()});
   if(histVisible()) drawHist();
   render();
 }
@@ -2468,6 +2477,7 @@ function generateBGSamples(){
 function calculateBGModel(){
   fitBGModel(); // fits and uploads gradient textures
   if(!bgModel) return; // fitBGModel shows error status
+  trackGA4('background_model_calculated',{bg_algo:bgAlgo,device_class:getDeviceClass()});
   // Auto-show gradient visualisation
   gradVisActive=true;
   const gvb=document.getElementById('bg-grad-btn');
@@ -2782,6 +2792,7 @@ async function applyBGCorrection(){
   btn.disabled=true;
   if(denoiseApplied) invalidateDenoise();
   unlockAfterBGApply();
+  trackGA4('background_correction_applied',{bg_algo:bgAlgo,device_class:getDeviceClass()});
 }
 
 async function undoBGCorrection(){
@@ -3281,6 +3292,7 @@ async function doApply(){
   updatePassUI();
   hideApplyAnim();
 
+  trackGA4('stretch_pass_applied',{stretch_mode:getCurrentStretchModeName(),pass_index:currentPass,device_class:getDeviceClass()});
   btn.disabled=false;
   btn.textContent='⊕  APPLY STRETCH  —  BAKE & CONTINUE';
 }
@@ -3314,6 +3326,7 @@ async function undoToPass(targetPass){
   updatePassUI();
   hideApplyAnim();
 
+  trackGA4('stretch_undo_used',{stretch_mode:getCurrentStretchModeName(),pass_index:currentPass,device_class:getDeviceClass()});
   btn.disabled=false;
   btn.textContent='⊕  APPLY STRETCH  —  BAKE & CONTINUE';
 }
@@ -3338,6 +3351,7 @@ function doExport(){
       const dt=(document.getElementById('m-date').textContent||'').replace(/-/g,'');
       a.download=`${on}_${dt}_processed.png`;a.click();
       URL.revokeObjectURL(a.href);
+      trackGA4('export_png',{export_type:'png',device_class:getDeviceClass()});
       Z.level=sz;Z.cx=scx;Z.cy=scy;
       cv.width=ow;cv.height=oh;sizeCanvas();render();
       btn.textContent='EXPORT FULL RES PNG';btn.disabled=false;
@@ -3692,6 +3706,7 @@ async function applyLinearDenoise(){
   const sum=document.getElementById('lin-pipeline-summary');
   if(sum) sum.textContent='Background corrected · Channels neutralized · Stats refreshed · Denoise applied.';
   btn.textContent='APPLY DENOISE';btn.disabled=false;
+  trackGA4('linear_denoise_applied',{device_class:getDeviceClass()});
 }
 
 async function undoLinearDenoise(){
@@ -3783,7 +3798,9 @@ async function loadSampleFile(){
     }
     const buf=await new Blob(chunks).arrayBuffer();
     statusEl.textContent='';
+    _loadSource='sample';
     loadFITS(buf);
+    trackGA4('sample_file_loaded',{source_type:'sample',device_class:getDeviceClass()});
   } catch(err){
     statusEl.style.color='var(--dim)';
     statusEl.textContent='Sample file not found at ./fits-studio-sample-m42.fits — place it alongside index.html';
@@ -3868,6 +3885,57 @@ dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');ha
 // GA only loads after explicit user acceptance. If declined or not
 // yet decided, no GA scripts are injected and no cookies are set.
 // ═══════════════════════════════════════════════════════════════════
+// ── Histogram open/close helper ─────────────────────────────────────
+function toggleHistogram(){
+  const hf=document.getElementById('hist-float');
+  const wasHidden=hf.classList.contains('hidden');
+  hf.classList.toggle('hidden');
+  if(wasHidden){
+    // Just became visible — draw and track
+    drawHist();
+    trackGA4('histogram_opened',{device_class:getDeviceClass()});
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PRODUCT ANALYTICS — GA4 MILESTONE EVENTS
+// ═══════════════════════════════════════════════════════════════════
+// Only milestone events are tracked (file load, pipeline steps, export).
+// Slider-level telemetry is intentionally omitted: oninput fires hundreds
+// of times per second and would produce noise, not signal, while also
+// degrading frame performance and hitting GA4 rate limits.
+// All tracking calls are gated behind the existing consent check.
+// If GA4 is unavailable or consent is denied, every call fails silently.
+// No filenames, object names, or FITS metadata content is ever sent.
+// ═══════════════════════════════════════════════════════════════════
+
+// ── Central tracking helper ──────────────────────────────────────────
+function trackGA4(eventName, params={}){
+  try{
+    if(localStorage.getItem(CONSENT_KEY)!=='accepted') return;
+    if(typeof window.gtag!=='function') return;
+    window.gtag('event',eventName,params);
+  } catch(e){ /* fail silently */ }
+}
+
+// ── Device classifier ────────────────────────────────────────────────
+// Returns "tablet" for iPad/tablet, "mobile" for phone-width viewports,
+// "desktop" for everything else. Kept intentionally simple — no UA parsing.
+function getDeviceClass(){
+  const w=window.innerWidth;
+  const hasCoarse=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches;
+  if(hasCoarse && w>=600) return 'tablet';
+  if(hasCoarse && w<600)  return 'mobile';
+  return 'desktop';
+}
+
+// ── Current stretch mode name helper ─────────────────────────────────
+function getCurrentStretchModeName(){
+  if(P.mode===0) return 'mtf';
+  if(P.mode===1) return 'asinh';
+  return 'ghs';
+}
+
 const GA_ID='G-JGRE8CEP0N';
 const CONSENT_KEY='fits_studio_ga_consent';
 
