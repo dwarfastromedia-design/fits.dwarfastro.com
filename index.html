@@ -583,9 +583,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
           <span class="hist-float-title">HISTOGRAM · NORMALISED · LOG Y</span>
           <div class="hist-ch-row">
             <button class="hch on-L" id="hch-L" onclick="toggleHistCh('L')">LUM</button>
-            <button class="hch" id="hch-R" onclick="toggleHistCh('R')">RED</button>
-            <button class="hch" id="hch-G" onclick="toggleHistCh('G')">GRN</button>
-            <button class="hch" id="hch-B" onclick="toggleHistCh('B')">BLU</button>
+            <button class="hch on-R" id="hch-R" onclick="toggleHistCh('R')">RED</button>
+            <button class="hch on-G" id="hch-G" onclick="toggleHistCh('G')">GRN</button>
+            <button class="hch on-B" id="hch-B" onclick="toggleHistCh('B')">BLU</button>
           </div>
         </div>
         <button id="hist-close" onclick="document.getElementById('hist-float').classList.toggle('hidden')" title="Hide">✕</button>
@@ -1307,7 +1307,7 @@ const P={bp:0,mwp:1.0,mmt:.490,aD:0,gD:0,gB:0,gSP:.005,gLP:0,gHP:1.0,ht:0,rl:0,w
 const Z={level:1,cx:.5,cy:.5};
 let NW=0,NH=0,gl,prog,locs={},tR,tG,tB;
 let hSampR=[],hSampG=[],hSampB=[],hSampL=[];
-let histChActive=new Set(['L']),histDrag=null,histPeakVal=0,histFootVal=0,histSpikeEdgeVal=0;
+let histChActive=new Set(['L','R','G','B']),histDrag=null,histPeakVal=0,histFootVal=0,histSpikeEdgeVal=0;
 // Cached histogram bins — rebuilt only when sample data changes, not on every render
 let histBins={L:null,R:null,G:null,B:null};
 let histBinsGlobalMax=1;
@@ -1789,9 +1789,29 @@ function drawHist(){
 
   ctx.fillStyle='#080808';ctx.fillRect(0,0,W,H);
 
-  const lineColors={L:'rgba(200,200,200,1)',R:'rgba(220,80,80,1)',G:'rgba(60,190,80,1)',B:'rgba(70,130,220,1)'};
-  const fillColors={L:'rgba(200,200,200,.07)',R:'rgba(220,80,80,.09)',G:'rgba(60,190,80,.09)',B:'rgba(70,130,220,.09)'};
-  const globalMax=histBinsGlobalMax;
+  // Visible Y-scale: computed from active channels only so a single
+  // channel always fills the full height and RGB stay readable with LUM.
+  let visibleMax=1;
+  for(const ch of histChActive){
+    const bins=histBins[ch];
+    if(!bins) continue;
+    for(let i=0;i<HIST_NB;i++) if(bins[i]>visibleMax) visibleMax=bins[i];
+  }
+
+  // Per-channel styling — LUM is dimmer/thinner so RGB lines show through
+  const lineColors={
+    L:'rgba(255,255,255,1)',    // white luminance
+    R:'rgba(230,70,70,1)',       // vivid red
+    G:'rgba(50,200,80,1)',       // vivid green
+    B:'rgba(70,140,230,1)'       // vivid blue
+  };
+  const fillColors={
+    L:'rgba(200,200,200,.07)',
+    R:'rgba(230,70,70,.09)',
+    G:'rgba(50,200,80,.09)',
+    B:'rgba(70,140,230,.09)'
+  };
+  const lineWidths={L:1.5,R:1.8,G:1.8,B:1.8};
 
   // Grid
   ctx.strokeStyle='rgba(37,37,37,.6)';ctx.lineWidth=1;
@@ -1806,7 +1826,7 @@ function drawHist(){
 
   const bpX=hValToX(P.bp,W);
 
-  // Render each active channel from cached bins — no sample-array traversal
+  // Draw LUM first (background), then RGB on top so colour lines are never buried
   for(const ch of ['L','B','G','R']){
     if(!histChActive.has(ch)) continue;
     const bins=histBins[ch];
@@ -1814,7 +1834,7 @@ function drawHist(){
     const pts=[];
     for(let i=0;i<HIST_NB;i++){
       const x=(i+0.5)/HIST_NB*W;
-      const h=bins[i]>0?(Math.log(bins[i]+1)/Math.log(globalMax+1))*(H-6):0;
+      const h=bins[i]>0?(Math.log(bins[i]+1)/Math.log(visibleMax+1))*(H-6):0;
       pts.push({x,y:H-h});
     }
     ctx.beginPath();ctx.moveTo(Math.max(bpX,0),H);
@@ -1824,7 +1844,7 @@ function drawHist(){
     ctx.fillStyle=fillColors[ch];ctx.fill();
     ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
     for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);
-    ctx.strokeStyle=lineColors[ch];ctx.lineWidth=1.5;ctx.lineJoin='round';ctx.stroke();
+    ctx.strokeStyle=lineColors[ch];ctx.lineWidth=lineWidths[ch];ctx.lineJoin='round';ctx.stroke();
   }
 
   // ── TRANSFORM CURVE (GHS mode) ──────────────────────────────────
@@ -1971,10 +1991,13 @@ function toggleHistCh(ch){
   const btn=document.getElementById('hch-'+ch);
   if(!btn) return;
   if(histChActive.has(ch)){
-    // Only deactivate if at least one other channel stays active
-    if(histChActive.size>1){
-      histChActive.delete(ch);
-      btn.className='hch';
+    histChActive.delete(ch);
+    btn.className='hch';
+    // Auto-reenable LUM if every channel was just turned off
+    if(histChActive.size===0){
+      histChActive.add('L');
+      const lb=document.getElementById('hch-L');
+      if(lb) lb.className='hch on-L';
     }
   } else {
     histChActive.add(ch);
@@ -1991,6 +2014,7 @@ function toggleHistCh(ch){
 
   handle.addEventListener('pointerdown',e=>{
     if(e.target.id==='hist-close') return;
+    if(e.target.classList.contains('hch')) return; // let channel buttons receive their own click
     handle.setPointerCapture(e.pointerId);
     dragging=true;
     const r=panel.getBoundingClientRect();
