@@ -5,20 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>FITS Studio for DWARF 3 | Browser FITS Processing by DwarfAstro</title>
-<meta name="description" content="Browser-based FITS processing for stacked DWARF 3 astrophotography. Background extraction, channel neutralization, MTF, Asinh, and GHS stretching, white balance controls, and full-resolution PNG export. No installation, no cloud, no account.">
+<meta name="description" content="Browser-based FITS processing for stacked DWARF 3 astrophotography. Background extraction, channel neutralization, MTF, Asinh, and GHS stretching, background color noise reduction, white balance controls, and full-resolution PNG export. No installation, no cloud, no account.">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://fits.dwarfastro.com/">
 
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="FITS Studio for DWARF 3 | Browser FITS Processing by DwarfAstro">
-<meta property="og:description" content="Browser-based FITS processing for stacked DWARF 3 astrophotography. Background extraction, channel neutralization, MTF, Asinh, and GHS stretching, white balance controls, and full-resolution PNG export.">
+<meta property="og:description" content="Browser-based FITS processing for stacked DWARF 3 astrophotography. Background extraction, channel neutralization, MTF, Asinh, and GHS stretching, background color noise reduction, white balance controls, and full-resolution PNG export.">
 <meta property="og:url" content="https://fits.dwarfastro.com/">
 
 <!-- Twitter / X -->
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="FITS Studio for DWARF 3 | Browser FITS Processing by DwarfAstro">
-<meta name="twitter:description" content="Browser-based FITS processing for stacked DWARF 3 astrophotography. Background extraction, channel neutralization, MTF, Asinh, and GHS stretching, white balance controls, and full-resolution PNG export.">
+<meta name="twitter:description" content="Browser-based FITS processing for stacked DWARF 3 astrophotography. Background extraction, channel neutralization, MTF, Asinh, and GHS stretching, background color noise reduction, white balance controls, and full-resolution PNG export.">
 
 <!-- SoftwareApplication structured data -->
 <script type="application/ld+json">
@@ -31,7 +31,7 @@
   "applicationCategory": "MultimediaApplication",
   "operatingSystem": "Web",
   "browserRequirements": "Desktop Chrome or Firefox with WebGL2 support",
-  "description": "Browser-based FITS processing for stacked DWARF 3 astrophotography. Includes background extraction, channel neutralization, MTF, Asinh, and GHS stretching, white balance controls, and full-resolution PNG export.",
+  "description": "Browser-based FITS processing for stacked DWARF 3 astrophotography. Includes background extraction, channel neutralization, MTF, Asinh, and GHS stretching, background color noise reduction, white balance controls, and full-resolution PNG export.",
   "featureList": [
     "Background extraction with polynomial and TPS-RBF gradient models",
     "Automatic channel neutralization",
@@ -39,6 +39,7 @@
     "MTF stretch",
     "Asinh stretch",
     "GHS stretch",
+    "Background color noise reduction",
     "White balance adjustment",
     "Full-resolution PNG export",
     "Built-in sample FITS file"
@@ -125,7 +126,7 @@
       "name": "What stretch tools are included in FITS Studio?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "FITS Studio includes three stretch modes: MTF (Midtone Transfer Function) for straightforward contrast shaping, Asinh for smooth highlight compression that tends to preserve star colour well, and GHS (Generalised Hyperbolic Stretch) for precise control over faint detail and highlight protection. All three support multi-pass apply with full undo history."
+        "text": "FITS Studio includes three stretch modes: MTF (Midtone Transfer Function) for straightforward contrast shaping, Asinh for smooth highlight compression that tends to preserve star colour well, and GHS (Generalised Hyperbolic Stretch) for precise control over faint detail and highlight protection. All three support multi-pass apply with full undo history. An optional Background Color Noise Reduction control desaturates only the darkest background pixels to reduce red/green/blue speckle after stretching."
       }
     }
   ]
@@ -207,7 +208,7 @@ body{background:var(--bg);color:var(--txt);display:flex;flex-direction:column}
 .hist-ch-row{display:flex;gap:4px}
 .hch{padding:5px 10px;background:transparent;border:1px solid var(--bdr);border-radius:3px;font-family:var(--mono);font-size:14px;color:var(--dim);cursor:pointer;letter-spacing:.04em;transition:.12s}
 .hch:hover{border-color:var(--sub)}
-.hch.on-L{border-color:#888;color:#aaa}
+.hch.on-L{border-color:#fff;color:#fff}
 .hch.on-R{border-color:#c05050;color:#d07070}
 .hch.on-G{border-color:#50a050;color:#70c070}
 .hch.on-B{border-color:#5070b0;color:#7090c0}
@@ -268,6 +269,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   position:relative;z-index:20;pointer-events:all;
 }
 .mode-row{display:flex;gap:6px;margin-bottom:14px}
+.stretch-mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.stretch-mode-card{background:var(--card);border:1px solid var(--bdr);border-radius:6px;padding:9px 8px;text-align:left;cursor:pointer;transition:.13s;width:100%}
+.stretch-mode-card:hover{border-color:var(--acc);background:rgba(249,115,22,.06)}
+.stretch-mode-card.on{border-color:var(--acc);background:rgba(249,115,22,.10)}
+.mode-title{display:block;font-family:var(--mono);font-size:14px;color:var(--txt);letter-spacing:.04em;margin-bottom:3px}
+.mode-desc{display:block;font-size:11px;color:var(--dim);line-height:1.35}
 .mde{flex:1;padding:10px 4px;background:var(--card);border:1px solid var(--bdr);border-radius:5px;font-family:var(--mono);font-size:16px;color:var(--dim);cursor:pointer;text-align:center;letter-spacing:.05em;transition:.12s}
 .mde:hover{border-color:var(--acc);color:var(--txt)}
 .mde.on{border-color:var(--acc);color:var(--acc);background:rgba(249,115,22,.09)}
@@ -547,13 +554,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 
       <article class="faq-item">
         <h3>What stretch tools are included in FITS Studio?</h3>
-        <p>FITS Studio includes three stretch modes: MTF (Midtone Transfer Function) for straightforward contrast shaping, Asinh for smooth highlight compression that tends to preserve star colour well, and GHS (Generalised Hyperbolic Stretch) for precise control over faint detail and highlight protection. All three support multi-pass apply with full undo history.</p>
+        <p>FITS Studio includes three stretch modes: MTF (Midtone Transfer Function) for straightforward contrast shaping, Asinh for smooth highlight compression that tends to preserve star colour well, and GHS (Generalised Hyperbolic Stretch) for precise control over faint detail and highlight protection. All three support multi-pass apply with full undo history. An optional Background Color Noise Reduction control desaturates only the darkest background pixels to reduce red/green/blue speckle after stretching.</p>
       </article>
     </div>
   </section>
 
   <div style="font-size:13px;color:var(--dim);text-align:center;line-height:1.8">
-    FITS Studio v4.1.14 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
+    FITS Studio v4.1.25 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
   </div>
 </div>
 </div>
@@ -772,10 +779,20 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
           <button class="stf-btn" style="margin-bottom:0;flex:1" onclick="doAutoSTF()">AUTO STRETCH</button>
           <button id="preview-stf-btn" class="stf-btn" style="margin-bottom:0;flex:1;background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.3);color:#7ac8f0" onclick="doAutoPreview()" title="Temporary Auto Stretch preview — not baked. Any slider move or action exits preview automatically.">PREVIEW STF</button>
         </div>
-        <div class="mode-row">
-          <button class="mde" id="m-mtf" onclick="setMode(0,this)">MTF</button>
-          <button class="mde" id="m-ash" onclick="setMode(1,this)">ASINH</button>
-          <button class="mde on" id="m-ghs" onclick="setMode(2,this)">GHS</button>
+        <div class="stretch-mode-grid">
+          <button class="stretch-mode-card" id="m-mtf" onclick="setMode(0,this)" title="MTF is a simple midtone stretch. Use it for small finishing contrast moves after the image is already close.">
+            <span class="mode-title">MTF</span>
+            <span class="mode-desc">Fast finishing contrast</span>
+          </button>
+          <button class="stretch-mode-card" id="m-ash" onclick="setMode(1,this)" title="Asinh lifts faint signal smoothly and can preserve star colour better than a harsh contrast stretch. Use it for a gentle first stretch.">
+            <span class="mode-title">Asinh</span>
+            <span class="mode-desc">Smooth colour-friendly lift</span>
+          </button>
+          <button class="stretch-mode-card on" id="m-ghs" onclick="setMode(2,this)" title="GHS gives the most control over faint detail, background, and highlights. Recommended for noisy galaxy data and most serious stretching.">
+            <span class="mode-title">GHS</span>
+            <span class="mode-desc">Best control for faint detail</span>
+          </button>
+
         </div>
 
         <!-- Target presets — GHS only, hidden in MTF/Asinh -->
@@ -789,10 +806,22 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
           <button class="stf-btn" style="margin-bottom:0" onclick="toggleHistogram()">HISTOGRAM</button>
         </div>
 
+        <!-- Confetti guidance -->
+        <div class="ch" style="padding:8px 10px;background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:4px;margin-bottom:10px;font-size:12px;line-height:1.6;color:var(--dim)">
+          <b style="color:var(--sub)">Background colour speckle?</b> Red/green/blue speckle in the background usually means the stretch is lifting RGB noise. Raise Background Clip slightly, reduce stretch strength, or use GHS with a conservative first pass.
+        </div>
+
         <div class="ctrl">
           <div class="cr"><span class="cn">Background Clip</span><span class="cv" id="v-bp">0.000</span></div>
           <div class="pm-row"><button class="pm-btn" onclick="stepSlider('bp',-1)">−</button><input type="range" id="i-bp" min="0" max="600" value="0" oninput="onBP(this.value)"><button class="pm-btn" onclick="stepSlider('bp',1)">+</button></div>
           <div class="ch">Drag the orange marker on the histogram. Raise until background turns clean black.</div>
+        </div>
+
+        <!-- Background Color Noise Reduction -->
+        <div class="ctrl">
+          <div class="cr"><span class="cn">BG Color Noise Reduction</span><span class="cv" id="v-bgnr">0%</span></div>
+          <div class="pm-row"><button class="pm-btn" onclick="stepSlider('bgnr',-5)">−</button><input type="range" id="i-bgnr" min="0" max="100" value="0" oninput="onBGNR(this.value)"><button class="pm-btn" onclick="stepSlider('bgnr',5)">+</button></div>
+          <div class="ch" title="Reduces red/green/blue speckle only in the darkest background. Use lightly; high values can make the sky look unnaturally grey.">Desaturates only the darkest background pixels to reduce RGB speckle. Start at 10–20 if the background shows coloured speckle after stretching. High values can make the sky look grey.</div>
         </div>
         <div id="c-mtf">
           <div class="ctrl">
@@ -842,6 +871,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
             <div class="ch">Pixels above HP are returned toward identity — protects galaxy cores and star colours. Drag yellow HP marker on histogram. Lower = more protection.</div>
           </div>
         </div>
+
         <div class="sep"></div>
         <div class="ctrl">
           <div class="cr"><span class="cn">Highlights</span><span class="cv" id="v-ht">0.00</span></div>
@@ -853,6 +883,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
           <div class="pm-row"><button class="pm-btn" onclick="stepSlider('rl',-1)">−</button><input type="range" id="i-rl" min="0" max="200" value="0" oninput="onRL(this.value)" onchange="onRLRelease(this.value)"><button class="pm-btn" onclick="stepSlider('rl',1)">+</button></div>
           <div class="ch">Smooth asymptotic cap. Final star shape control after Highlights.</div>
         </div>
+
       </div>
 
       <div class="pb">
@@ -1157,7 +1188,7 @@ const FS=`#version 300 es
 precision highp float;
 in vec2 uv;out vec4 o;
 uniform sampler2D tR,tG,tB,tGradR,tGradG,tGradB,tStarMask;
-uniform float bp,mwp,mmt,aD,gD,gB,gSP,gLP,gHP,ht,rl,wR,wG,wB,zoom,bgStr,bgGamma,bgMedR,bgMedG,bgMedB,bgGradActive;
+uniform float bp,mwp,mmt,aD,gD,gB,gSP,gLP,gHP,ht,rl,wR,wG,wB,zoom,bgStr,bgGamma,bgMedR,bgMedG,bgMedB,bgGradActive,u_bgnr;
 uniform vec2 view;
 uniform int mode,pal;
 
@@ -1261,6 +1292,7 @@ vec3 palHubble(vec3 c){
 }
 vec3 palCool(vec3 c){float l=dot(c,vec3(.3,.59,.11));return clamp(vec3(l*.46+c.r*.07,l*.72+c.g*.20,l*1.3+c.b*.43),0.,1.);}
 
+
 void main(){
   vec2 img=(uv-.5)/zoom+view;
   img=clamp(img,0.,1.);
@@ -1290,6 +1322,15 @@ void main(){
   else{sr=ghs(r);sg=ghs(g);sb=ghs(b);}
   sr=highlights(sr);sg=highlights(sg);sb=highlights(sb);
   vec3 col=clamp(starRolloff(vec3(sr,sg,sb),f),0.,1.);
+
+  // Background Color Noise Reduction — desaturates only darkest background pixels.
+  // Mask is in display space: pixels below L=0.06 get full suppression,
+  // pixels above L=0.22 are unaffected (stars, galaxies, nebulae preserved).
+  if(u_bgnr>0.0){
+    float Ldisp=dot(col,vec3(0.2126,0.7152,0.0722));
+    float bgMask=1.0-smoothstep(0.06,0.22,Ldisp);
+    col=mix(col,vec3(Ldisp),bgMask*u_bgnr);
+  }
   if(pal==1)col=palHubble(col);
   else if(pal==2)col=palCool(col);
   else if(pal==3){float l=dot(col,vec3(.299,.587,.114));col=vec3(l);}
@@ -1303,7 +1344,7 @@ void main(){
 // ═══════════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════════
-const P={bp:0,mwp:1.0,mmt:.490,aD:0,gD:0,gB:0,gSP:.005,gLP:0,gHP:1.0,ht:0,rl:0,wR:1,wG:1,wB:1,pal:0,mode:2};
+const P={bp:0,mwp:1.0,mmt:.490,aD:0,gD:0,gB:0,gSP:.005,gLP:0,gHP:1.0,ht:0,rl:0,wR:1,wG:1,wB:1,pal:0,mode:2,bgColorNR:0};
 const Z={level:1,cx:.5,cy:.5};
 let NW=0,NH=0,gl,prog,locs={},tR,tG,tB;
 let hSampR=[],hSampG=[],hSampB=[],hSampL=[];
@@ -1392,7 +1433,8 @@ function initGL(){
   if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
   prog=p;
   ['tR','tG','tB','tGradR','tGradG','tGradB','tStarMask','bp','mwp','mmt','aD','gD','gB','gSP','gLP','gHP',
-   'ht','rl','wR','wG','wB','zoom','bgStr','bgGamma','bgMedR','bgMedG','bgMedB','bgGradActive','view','mode','pal'].forEach(n=>{
+   'ht','rl','wR','wG','wB','zoom','bgStr','bgGamma','bgMedR','bgMedG','bgMedB','bgGradActive','u_bgnr','view','mode','pal',
+   ].forEach(n=>{
     locs[n]=gl.getUniformLocation(p,n);});
   locs.a=gl.getAttribLocation(p,'a');
   const buf=gl.createBuffer();
@@ -1433,6 +1475,7 @@ function render(){
   gl.uniform1f(locs.bgGradActive,bgModel?1.0:0.0);
   gl.uniform2f(locs.view,Z.cx,Z.cy);
   gl.uniform1i(locs.mode,P.mode);gl.uniform1i(locs.pal,P.pal);
+  gl.uniform1f(locs.u_bgnr,P.bgColorNR/100);
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
   if(bgSamples.length) drawSampleOverlay();
 }
@@ -1571,7 +1614,7 @@ async function loadFITS(buf){
   document.getElementById('c-mtf').style.display='none';
   document.getElementById('c-ash').style.display='none';
   document.getElementById('c-ghs').style.display='';
-  document.querySelectorAll('.mde').forEach((b,i)=>b.classList.toggle('on',i===2));
+  document.querySelectorAll('.stretch-mode-card').forEach((b,i)=>b.classList.toggle('on',i===2));
 
   setLoad('Uploading to GPU…',80);await raf();
   if(!initGL())return;
@@ -2095,6 +2138,7 @@ function stepSlider(key,dir){
     ghp:{min:0,max:1,step:.005,fn:v=>{P.gHP=v;syncSlider('i-ghp',Math.round(v*1000),'v-ghp',v.toFixed(3));scheduleHistDraw();render();}},
     ht: {min:0,max:1,step:.01,fn:v=>{P.ht=v;syncSlider('i-ht',Math.round(v*100),'v-ht',v.toFixed(2));render();}},
     rl: {min:0,max:2,step:.01,fn:v=>{P.rl=v;syncSlider('i-rl',Math.round(v*100),'v-rl',v.toFixed(2));if(lastStretchedR)buildAndUploadStarMask(lastStretchedR,lastStretchedG,lastStretchedB);render();}},
+    bgnr:{min:0,max:100,step:1,fn:v=>{P.bgColorNR=v;syncSlider('i-bgnr',Math.round(v),'v-bgnr',Math.round(v)+'%');render();}},
     wr: {min:.1,max:4,step:.02,fn:v=>{P.wR=v;syncSlider('i-wr',Math.round(v*100),'v-wr',v.toFixed(2));render();}},
     wg: {min:.1,max:4,step:.02,fn:v=>{P.wG=v;syncSlider('i-wg',Math.round(v*100),'v-wg',v.toFixed(2));render();}},
     wb: {min:.1,max:4,step:.02,fn:v=>{P.wB=v;syncSlider('i-wb',Math.round(v*100),'v-wb',v.toFixed(2));render();}},
@@ -2113,13 +2157,16 @@ function stepSlider(key,dir){
 function setMode(m,btn){
   resolvePreviewBeforeAction();
   P.mode=m;
-  document.querySelectorAll('.mde').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.stretch-mode-card').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
   document.getElementById('c-mtf').style.display=m===0?'':'none';
   document.getElementById('c-ash').style.display=m===1?'':'none';
   document.getElementById('c-ghs').style.display=m===2?'':'none';
   document.getElementById('ghs-presets').style.display=m===2?'':'none';
-  if(histVisible()) drawHist();render();
+
+  // Do NOT call render() here — switching mode must not change the image preview.
+  // The canvas updates only when the user interacts with a slider in the new mode.
+  if(histVisible()) drawHist();
 }
 // ── TARGET PRESETS ───────────────────────────────────────────────
 function applyPreset(type){
@@ -2130,7 +2177,7 @@ function applyPreset(type){
   // Switch to GHS if not already
   if(P.mode!==2){
     P.mode=2;
-    document.querySelectorAll('.mde').forEach((b,i)=>b.classList.toggle('on',i===2));
+    document.querySelectorAll('.stretch-mode-card').forEach((b,i)=>b.classList.toggle('on',i===2));
     document.getElementById('c-mtf').style.display='none';
     document.getElementById('c-ash').style.display='none';
     document.getElementById('c-ghs').style.display='';
@@ -2177,6 +2224,7 @@ function onGLP(v){exitPreviewIfActive();P.gLP=parseFloat(v)/1000;document.getEle
 function onGHP(v){exitPreviewIfActive();P.gHP=parseFloat(v)/1000;document.getElementById('v-ghp').textContent=P.gHP.toFixed(3);scheduleHistDraw();render();}
 function onHT(v){exitPreviewIfActive();P.ht=v/100;document.getElementById('v-ht').textContent=P.ht.toFixed(2);render();}
 function onRL(v){exitPreviewIfActive();P.rl=v/100;document.getElementById('v-rl').textContent=P.rl.toFixed(2);render();}
+function onBGNR(v){exitPreviewIfActive();P.bgColorNR=+v;document.getElementById('v-bgnr').textContent=Math.round(v)+'%';render();}
 // On slider release: rebuild star mask from last stretched data so preview updates.
 // This is the key wiring that makes the rl slider actually show an effect.
 function onRLRelease(v){
@@ -2184,6 +2232,7 @@ function onRLRelease(v){
   if(lastStretchedR) buildAndUploadStarMask(lastStretchedR,lastStretchedG,lastStretchedB);
   render();
 }
+
 function onWB(){exitPreviewIfActive();
   P.wR=document.getElementById('i-wr').value/100;
   P.wG=document.getElementById('i-wg').value/100;
@@ -2405,6 +2454,10 @@ function showTab(id){
 function clampZ(){const hw=.5/Z.level;Z.cx=Math.max(hw,Math.min(1-hw,Z.cx));Z.cy=Math.max(hw,Math.min(1-hw,Z.cy));}
 function updZlbl(){const l=document.getElementById('lbl-zoom');if(Z.level<=1){l.style.display='none';return;}l.style.display='block';l.textContent=`${Z.level.toFixed(1)}×`;}
 function resetZoom(){Z.level=1;Z.cx=.5;Z.cy=.5;updZlbl();render();}
+
+
+
+
 
 ;(function(){
   const cv=document.getElementById('gl');
@@ -3079,7 +3132,8 @@ function snapParams(){
     mode:P.mode, bp:P.bp, mwp:P.mwp, mmt:P.mmt,
     aD:P.aD,
     gD:P.gD, gB:P.gB, gSP:P.gSP, gLP:P.gLP, gHP:P.gHP,
-    ht:P.ht, rl:P.rl, wR:P.wR, wG:P.wG, wB:P.wB, pal:P.pal
+    ht:P.ht, rl:P.rl, wR:P.wR, wG:P.wG, wB:P.wB, pal:P.pal,
+    bgColorNR:P.bgColorNR,
   };
 }
 
@@ -3092,6 +3146,7 @@ function describePass(p){
   else if(p.mode===1) detail=`D=${dFmt(p.aD)}`;
   else detail=`SP=${p.gSP.toFixed(3)} D=${dFmt(p.gD)} b=${p.gB.toFixed(1)} HP=${p.gHP.toFixed(2)}`;
   if(p.bp>0.001) detail+=` BP=${p.bp.toFixed(3)}`;
+  if(p.bgColorNR>0) detail+=` BGNR${Math.round(p.bgColorNR)}`;
   return {m, detail};
 }
 
@@ -3217,6 +3272,31 @@ function applyStretchCPU(src, dst, p, scale=1.0){
   }
 }
 
+// ── COLOR-SAFE STRETCH — CPU BAKE ─────────────────────────────────────
+// simultaneously. WB scaling is applied inline before luminance computation.
+// p.csBlack/csWhite/csBgMedian/csBgSigma must be pre-resolved from snapParams.
+
+// ── BACKGROUND COLOR NOISE REDUCTION — CPU BAKE ─────────────────────
+// Mirrors the GLSL BGNR block exactly. Operates on already-stretched RGB.
+// Mask is in display space: dark background gets desaturated, signal is preserved.
+// Same thresholds as shader: smoothstep(0.06, 0.22, L).
+function applyBGNRCPU(dR,dG,dB,amount){
+  if(amount<=0) return;
+  const n=dR.length;
+  const amt=Math.min(1,Math.max(0,amount));
+  for(let i=0;i<n;i++){
+    const r=dR[i],g=dG[i],b=dB[i];
+    const L=0.2126*r+0.7152*g+0.0722*b;
+    // bgMask: 1 at dark background, 0 at midtones/signal
+    const bgMask=1-_smoothstep(0.06,0.22,L);
+    if(bgMask<1e-4) continue;
+    const blend=bgMask*amt;
+    dR[i]=r*(1-blend)+L*blend;
+    dG[i]=g*(1-blend)+L*blend;
+    dB[i]=b*(1-blend)+L*blend;
+  }
+}
+
 // ── STAR-MASKED ROLLOFF (CPU bake path + mask texture builder) ──────
 // Three-term star mask: compactness × brightness × structure-rejection.
 // All transitions are smooth (smoothstep). No hard thresholds.
@@ -3337,6 +3417,8 @@ function replayFromCheckpointToPass(targetPass){
     applyStretchCPU(srcB,dstB,p,p.wB);
     // Star-masked rolloff post-pass (all three channels together)
     if(p.rl>1e-4) applyStarRolloffCPU(dstR,dstG,dstB,p.rl);
+    // Background color noise reduction — last so it operates on final display values
+    if(p.bgColorNR>0) applyBGNRCPU(dstR,dstG,dstB,p.bgColorNR/100);
     // Ping-pong
     [srcR,dstR]=[dstR,srcR];
     [srcG,dstG]=[dstG,srcG];
@@ -3393,7 +3475,16 @@ function updatePassUI(){
   counter.textContent=historyStack.length===0
     ?'NO PASSES APPLIED YET'
     :`PASS ${currentPass} OF ${historyStack.length}`;
-  log.innerHTML=historyStack.map((entry,i)=>{
+  // Step 0 is always visible — it represents the linear base before any stretch.
+  // Clicking its undo arrow reloads historyOrigR/G/B directly.
+  const step0Active=currentPass===0;
+  const step0Html=`<div class="hlog-entry${step0Active?' active':''}" title="Revert to linear image before any stretch">
+    <span class="hlog-num">00</span>
+    <span class="hlog-mode">BASE</span>
+    <span class="hlog-params">Linear image — pre-stretch</span>
+    <button class="hlog-undo" onclick="undoToPass(0)" ${step0Active?'disabled':''}>↩</button>
+  </div>`;
+  log.innerHTML=step0Html+historyStack.map((entry,i)=>{
     const {m,detail}=describePass(entry.params);
     const isActive=i<currentPass;
     return `<div class="hlog-entry${isActive?' active':''}" title="Undo back to after pass ${i+1}">
@@ -3409,12 +3500,12 @@ function updatePassUI(){
 function resetSlidersToIdentity(){
   P.bp=0;P.mwp=1;P.mmt=.490;P.aD=0;
   P.gD=0;P.gB=0;P.gHP=1.0;P.gLP=0;
-  P.ht=0;P.rl=0;P.wR=1;P.wG=1;P.wB=1;
+  P.ht=0;P.rl=0;P.wR=1;P.wG=1;P.wB=1;P.bgColorNR=0;
   const sp=Math.max(.001,Math.min(.5,histFootVal));
   P.gSP=sp;
   [['i-bp',0],['i-mt',0],['i-mwp',1000],['i-ash',0],['i-gd',0],['i-gb',0],
    ['i-gsp',Math.round(sp*1000)],['i-glp',0],['i-ghp',1000],
-   ['i-ht',0],['i-rl',0],['i-wr',100],['i-wg',100],['i-wb',100]]
+   ['i-ht',0],['i-rl',0],['i-wr',100],['i-wg',100],['i-wb',100],['i-bgnr',0]]
     .forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.value=v;});
   [['v-bp','0.000'],['v-mt','0.490'],['v-mwp','1.000'],['v-ash','0.00'],['v-gd','0.00'],
    ['v-gb','0.0'],['v-gsp',sp.toFixed(3)],['v-glp','0.000'],['v-ghp','1.000'],
@@ -3472,6 +3563,7 @@ async function doApply(){
   lastStretchedB=new Float32Array(outB);
   buildAndUploadStarMask(outR,outG,outB);
   if(snap.rl>1e-4) applyStarRolloffCPU(outR,outG,outB,snap.rl);
+  if(snap.bgColorNR>0) applyBGNRCPU(outR,outG,outB,snap.bgColorNR/100);
 
   buildHistSamples(outR,outG,outB);
   replaceMainTextures(outR,outG,outB);
@@ -3506,20 +3598,25 @@ async function undoToPass(targetPass){
   const btn=document.getElementById('apply-btn');
   btn.disabled=true;
   btn.textContent='REPLAYING…';
-  showApplyAnim('REPLAYING PASSES…');
+  showApplyAnim(targetPass===0?'RESTORING LINEAR BASE…':'REPLAYING PASSES…');
   await raf();await raf();
 
-  const result=replayFromCheckpointToPass(targetPass);
+  let rr,rg,rb;
+  if(targetPass===0){
+    // Step 0: restore original linear data directly — no replay needed
+    rr=historyOrigR; rg=historyOrigG; rb=historyOrigB;
+  } else {
+    const result=replayFromCheckpointToPass(targetPass);
+    rr=result.r; rg=result.g; rb=result.b;
+  }
 
-  // Store replayed pixel data and build star mask.
-  // result already has rolloff applied per-pass inside replay; we store it
-  // for rl slider rebuilds (star structure remains identifiable post-rolloff).
-  lastStretchedR=new Float32Array(result.r);
-  lastStretchedG=new Float32Array(result.g);
-  lastStretchedB=new Float32Array(result.b);
-  buildAndUploadStarMask(result.r,result.g,result.b);
-  buildHistSamples(result.r,result.g,result.b);
-  replaceMainTextures(result.r,result.g,result.b);
+  // Store data and build star mask.
+  lastStretchedR=new Float32Array(rr);
+  lastStretchedG=new Float32Array(rg);
+  lastStretchedB=new Float32Array(rb);
+  buildAndUploadStarMask(rr,rg,rb);
+  buildHistSamples(rr,rg,rb);
+  replaceMainTextures(rr,rg,rb);
 
   currentPass=targetPass;
   resetSlidersToIdentity();
@@ -4059,7 +4156,7 @@ function resetAll(){
     .forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
   document.querySelectorAll('.pb2').forEach((b,i)=>b.classList.toggle('on',i===0));
   // GHS is default mode
-  document.querySelectorAll('.mde').forEach((b,i)=>b.classList.toggle('on',i===2));
+  document.querySelectorAll('.stretch-mode-card').forEach((b,i)=>b.classList.toggle('on',i===2));
   ['c-mtf','c-ash','c-ghs'].forEach((id,i)=>document.getElementById(id).style.display=i===2?'':'none');
   // Keep histogram hidden on reset — user must toggle it explicitly
   document.getElementById('hist-float').classList.add('hidden');
