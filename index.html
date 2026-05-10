@@ -56,6 +56,7 @@
   },
   "isAccessibleForFree": true
 }
+
 </script>
 
 <!-- FAQPage structured data -->
@@ -208,6 +209,7 @@ body{background:var(--bg);color:var(--txt);display:flex;flex-direction:column}
 .hist-ch-row{display:flex;gap:4px}
 .hch{padding:5px 10px;background:transparent;border:1px solid var(--bdr);border-radius:3px;font-family:var(--mono);font-size:14px;color:var(--dim);cursor:pointer;letter-spacing:.04em;transition:.12s}
 .hch:hover{border-color:var(--sub)}
+.hch.on-A{border-color:var(--acc);color:var(--acc)}
 .hch.on-L{border-color:#fff;color:#fff}
 .hch.on-R{border-color:#c05050;color:#d07070}
 .hch.on-G{border-color:#50a050;color:#70c070}
@@ -321,13 +323,38 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 #bg-str-lbl{font-family:var(--mono);font-size:16px;color:var(--acc)}
 
 /* APPLY + HISTORY */
-/* Apply animation bar */
+/* v5.5: diagnostic debug overlay (Shift+D, D, Escape) */
+#debug-overlay-cv{position:absolute;top:0;left:0;pointer-events:none;z-index:7;display:none;image-rendering:pixelated}
+#debug-overlay-cv.on{display:block}
+#debug-label{position:absolute;top:14px;left:14px;z-index:8;font-family:var(--mono);font-size:12px;color:#fff;background:rgba(0,0,0,.78);padding:8px 14px;border-radius:4px;letter-spacing:.08em;display:none;border:1px solid rgba(122,200,240,.4);pointer-events:none;line-height:1.4;max-width:60%}
+#debug-label.on{display:block}
+#debug-label .dbg-hint{display:block;font-size:10px;color:#aaa;margin-top:4px;letter-spacing:.04em}
+
+/* v5.3: indeterminate orbital animation. No fake progress bar that stalls. */
 #apply-anim{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-  z-index:20;text-align:center;pointer-events:none}
-#apply-anim.on{display:block}
-#apply-anim-bar{width:280px;height:3px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden;margin-top:10px}
-#apply-anim-fill{height:100%;width:0%;background:var(--acc);border-radius:2px;transition:width .3s}
-#apply-anim-label{font-family:var(--mono);font-size:14px;color:var(--acc);letter-spacing:.07em}
+  z-index:20;text-align:center;pointer-events:none;
+  background:rgba(13,13,18,.88);backdrop-filter:blur(8px);
+  padding:22px 36px 18px;border-radius:8px;border:1px solid rgba(249,115,22,.3)}
+#apply-anim.on{display:flex;flex-direction:column;align-items:center}
+#apply-anim-label{font-family:var(--mono);font-size:13px;color:var(--acc);letter-spacing:.08em;margin-top:14px}
+.orbit-system{position:relative;width:120px;height:120px}
+.orbit-star{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;
+  border-radius:50%;background:radial-gradient(circle,#fff 0%,#ffb060 45%,rgba(249,115,22,0) 100%);
+  box-shadow:0 0 14px rgba(249,115,22,.7),0 0 28px rgba(249,115,22,.35);
+  animation:starPulse 1.6s ease-in-out infinite}
+.orbit{position:absolute;border:1px solid rgba(255,255,255,.08);border-radius:50%}
+.orbit-1{width:50px;height:50px;left:35px;top:35px;animation:orbitSpin 3.2s linear infinite}
+.orbit-2{width:80px;height:80px;left:20px;top:20px;animation:orbitSpin 5.4s linear infinite reverse}
+.orbit-3{width:114px;height:114px;left:3px;top:3px;animation:orbitSpin 8.5s linear infinite}
+.planet{position:absolute;top:-3px;left:50%;width:6px;height:6px;margin-left:-3px;border-radius:50%}
+.orbit-1 .planet{background:#7ac8f0;box-shadow:0 0 6px rgba(122,200,240,.8)}
+.orbit-2 .planet{background:#fbbf24;box-shadow:0 0 6px rgba(251,191,36,.8)}
+.orbit-3 .planet{background:#f87171;box-shadow:0 0 6px rgba(248,113,113,.8)}
+@keyframes starPulse{
+  0%,100%{box-shadow:0 0 14px rgba(249,115,22,.7),0 0 28px rgba(249,115,22,.35);transform:scale(1)}
+  50%{box-shadow:0 0 22px rgba(249,115,22,.95),0 0 40px rgba(249,115,22,.5);transform:scale(1.12)}
+}
+@keyframes orbitSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
 #apply-btn{width:100%;padding:13px;background:rgba(249,115,22,.18);border:2px solid var(--acc);border-radius:6px;color:var(--acc);font-family:var(--mono);font-size:16px;letter-spacing:.07em;cursor:pointer;transition:.15s;margin-bottom:10px;display:block;text-align:center;font-weight:700}
 #apply-btn:hover{background:rgba(249,115,22,.3)}
@@ -434,11 +461,100 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .faq-item:last-child{border-bottom:1px solid var(--bdr)}
 .faq-item h3{font-family:var(--mono);font-size:14px;color:var(--txt);letter-spacing:.04em;margin-bottom:10px;font-weight:600}
 .faq-item p{font-size:15px;color:var(--sub);line-height:1.7;max-width:720px}
+
+/* ── ENHANCE TAB ─────────────────────────────────────────────────── */
+.enh-section{margin-bottom:14px}
+.enh-section summary{font-family:var(--mono);font-size:11px;color:var(--acc);letter-spacing:.12em;text-transform:uppercase;cursor:pointer;padding:8px 0;user-select:none;list-style:none}
+.enh-section summary::-webkit-details-marker{display:none}
+.enh-section[open] summary{margin-bottom:6px}
+.enh-sep{border:none;border-top:1px solid var(--bdr);margin:10px 0}
+.enh-apply-row{display:flex;gap:6px;margin-top:12px}
+.enh-apply-btn{flex:1;padding:8px 0;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.5);border-radius:5px;color:var(--acc);font-family:var(--mono);font-size:10px;letter-spacing:.1em;cursor:pointer;transition:.15s}
+.enh-apply-btn:hover{background:rgba(249,115,22,.28)}
+.enh-reset-btn{padding:7px 14px;background:transparent;border:1px solid var(--bdr);border-radius:4px;color:var(--dim);font-family:var(--mono);font-size:10px;letter-spacing:.08em;cursor:pointer;transition:.12s}
+.enh-reset-btn:hover{border-color:var(--sub);color:var(--sub)}
+/* Curve editor */
+.cv-mode-row{display:flex;gap:4px;margin-bottom:8px}
+.cv-mode-btn{flex:1;padding:5px 0;background:transparent;border:1px solid var(--bdr);border-radius:3px;color:var(--dim);font-family:var(--mono);font-size:11px;cursor:pointer;transition:.12s;letter-spacing:.04em}
+.cv-mode-btn.on{border-color:var(--acc);color:var(--acc)}
+.cv-preset-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.cv-preset-btn{padding:4px 8px;background:transparent;border:1px solid var(--bdr);border-radius:3px;color:var(--dim);font-family:var(--mono);font-size:10px;cursor:pointer;letter-spacing:.04em;transition:.12s}
+.cv-preset-btn:hover{border-color:var(--sub);color:var(--sub)}
+
+/* ── ADVANCED CURVES ────────────────────────────────────────── */
+.curve-ch-btn{flex:1;padding:6px 0;background:transparent;border:1px solid var(--bdr);border-radius:3px;color:var(--dim);font-family:var(--mono);font-size:12px;cursor:pointer;transition:.12s;letter-spacing:.04em}
+.curve-ch-btn.on{border-color:var(--acc);color:var(--acc);background:rgba(249,115,22,.09)}
+.curve-ch-btn:hover:not(.on){border-color:var(--sub);color:var(--sub)}
+.cv-pre-btn{padding:4px 9px;background:transparent;border:1px solid var(--bdr);border-radius:3px;color:var(--dim);font-family:var(--mono);font-size:10px;cursor:pointer;letter-spacing:.04em;transition:.12s}
+.cv-pre-btn:hover{border-color:var(--sub);color:var(--sub)}
+
+/* ── FLOATING CURVES PANEL ──────────────────────────────────── */
+#curves-float{
+  position:absolute;
+  right:16px;bottom:44px;
+  width:360px;height:420px;
+  min-width:240px;min-height:300px;
+  max-width:680px;max-height:580px;
+  background:rgba(8,8,8,.93);
+  border:1px solid var(--bdr);
+  border-radius:8px;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  box-shadow:0 8px 32px rgba(0,0,0,.6);
+  user-select:none;
+  z-index:11;
+  overflow:hidden;
+  display:flex;flex-direction:column;
+}
+#curves-float.hidden{display:none}
+#curves-drag-handle{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;border-bottom:1px solid var(--bdr);
+  cursor:move;flex-shrink:0;touch-action:none;
+}
+#curves-resize-grip{
+  position:absolute;right:0;bottom:0;width:22px;height:22px;
+  cursor:nwse-resize;touch-action:none;z-index:20;
+  background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,.18) 40%,rgba(255,255,255,.18) 52%,transparent 52%,transparent 64%,rgba(255,255,255,.18) 64%,rgba(255,255,255,.18) 76%,transparent 76%);
+}
+#curves-close{background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;line-height:1;padding:0 2px}
+#curves-close:hover{color:var(--txt)}
+#curve-canvas{width:100%;flex:1;min-height:0;display:block;cursor:crosshair;touch-action:none;background:#0a0a0e}
+/* ── ENHANCE HISTORY LOG ─────────────────────────────────────── */
+#enh-hist-log{max-height:130px;overflow-y:auto;border:1px solid var(--bdr);border-radius:5px;background:var(--card)}
+#enh-hist-log::-webkit-scrollbar{width:3px}
+#enh-hist-log::-webkit-scrollbar-thumb{background:var(--bdr)}
+
+/* ── HAMBURGER MENU ─────────────────────────────────────────── */
+#hamburger-btn{background:none;border:1px solid var(--bdr);border-radius:5px;color:var(--sub);cursor:pointer;padding:5px 9px;font-size:17px;line-height:1;transition:.12s;flex-shrink:0}
+#hamburger-btn:hover{border-color:var(--acc);color:var(--acc)}
+#hamburger-menu{display:none;position:absolute;top:calc(100% + 6px);left:0;background:var(--card);border:1px solid var(--bdr);border-radius:7px;min-width:168px;z-index:500;box-shadow:0 8px 28px rgba(0,0,0,.65);overflow:hidden}
+.hmenu-item{display:block;width:100%;padding:10px 16px;background:none;border:none;color:var(--sub);font-family:var(--mono);font-size:13px;letter-spacing:.04em;cursor:pointer;text-align:left;transition:.12s;white-space:nowrap}
+.hmenu-item:hover{background:rgba(249,115,22,.08);color:var(--acc)}
+.hmenu-sep{height:1px;background:var(--bdr);margin:3px 0}
+/* ── FITS INFO MODAL ─────────────────────────────────────────── */
+#fits-info-modal{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.82)}
+#fits-info-modal .fi-scroll{height:100%;overflow-y:auto;padding:24px 16px}
+#fits-info-modal .fi-card{max-width:860px;margin:0 auto;background:var(--sur);border:1px solid var(--bdr);border-radius:12px;overflow:hidden}
+#fits-info-modal .fi-hdr{display:flex;justify-content:space-between;align-items:center;padding:13px 20px;border-bottom:1px solid var(--bdr);background:var(--card)}
+#fits-info-modal .fi-title{font-family:var(--mono);font-size:13px;color:var(--acc);letter-spacing:.12em;text-transform:uppercase}
+#fits-info-close{background:none;border:none;color:var(--dim);cursor:pointer;font-size:18px;line-height:1;padding:2px 8px}
+#fits-info-close:hover{color:var(--txt)}
 </style>
 </head>
 <body>
 
 <div id="hdr">
+  <div id="hamburger-wrap" style="position:relative;flex-shrink:0">
+    <button id="hamburger-btn" onclick="toggleHamburger()" title="Menu">☰</button>
+    <nav id="hamburger-menu" role="menu">
+      <button class="hmenu-item" onclick="hambLoad()">📂&nbsp; Load FITS</button>
+      <button class="hmenu-item" onclick="hambExport()">⬇&nbsp; Export PNG</button>
+      <button class="hmenu-item" onclick="hambZoom()">⤢&nbsp; Zoom Fit</button>
+      <div class="hmenu-sep"></div>
+      <button class="hmenu-item" onclick="hambInfo()">ℹ&nbsp; FITS Info</button>
+    </nav>
+  </div>
   <div class="logo">FITS STUDIO <span style="color:var(--dim);font-size:11px;letter-spacing:.08em">by DwarfAstro</span></div>
   <div id="meta">
     <span><b>OBJ</b><span id="m-obj">—</span></span>
@@ -560,7 +676,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   </section>
 
   <div style="font-size:13px;color:var(--dim);text-align:center;line-height:1.8">
-    FITS Studio v4.1.25 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
+    FITS Studio v5.5 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
   </div>
 </div>
 </div>
@@ -576,10 +692,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     <canvas id="gl"></canvas>
     <canvas id="sample-cv"></canvas>
     <div id="apply-anim">
+      <div class="orbit-system">
+        <div class="orbit orbit-3"><div class="planet"></div></div>
+        <div class="orbit orbit-2"><div class="planet"></div></div>
+        <div class="orbit orbit-1"><div class="planet"></div></div>
+        <div class="orbit-star"></div>
+      </div>
       <div id="apply-anim-label">APPLYING STRETCH…</div>
-      <div id="apply-anim-bar"><div id="apply-anim-fill"></div></div>
     </div>
     <canvas id="grad-vis-cv" style="position:absolute;top:0;left:0;pointer-events:none;z-index:4;display:none;opacity:.82;border-radius:4px"></canvas>
+    <canvas id="debug-overlay-cv"></canvas>
+    <div id="debug-label">DEBUG: STAR MASK</div>
     <div class="ov" id="lbl-tip">SCROLL TO ZOOM  ·  DRAG TO PAN</div>
     <div class="ov" id="lbl-zoom"></div>
 
@@ -605,17 +728,50 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         <span class="hal">(ADU 65535)  1.0 →</span>
       </div>
     </div>
+
+    <!-- FLOATING CURVES -->
+    <div id="curves-float" class="hidden">
+      <div id="curves-drag-handle">
+        <div class="hist-handle-left">
+          <span class="hist-float-title">CURVES · LRGB</span>
+          <div style="display:flex;gap:4px">
+            <button class="hch on-A" id="cvch-ALL" onclick="setCurveChannel('ALL')" title="Adjust all channels together">ALL</button>
+            <button class="hch" id="cvch-L" onclick="setCurveChannel('L')">L</button>
+            <button class="hch" id="cvch-R" onclick="setCurveChannel('R')">R</button>
+            <button class="hch" id="cvch-G" onclick="setCurveChannel('G')">G</button>
+            <button class="hch" id="cvch-B" onclick="setCurveChannel('B')">B</button>
+          </div>
+        </div>
+        <button id="curves-close" onclick="document.getElementById('curves-float').classList.add('hidden')" title="Hide">✕</button>
+      </div>
+      <div id="curve-ch-help" style="padding:4px 12px 5px;font-size:12px;color:var(--dim);font-family:var(--sans);flex-shrink:0">Brightness and contrast without directly changing color balance.</div>
+      <canvas id="curve-canvas" title="Click to add · Drag to move · Dbl-click interior to remove"></canvas>
+      <div id="curves-resize-grip" title="Drag to resize"></div>
+      <div style="padding:8px 12px;flex-shrink:0;border-top:1px solid var(--bdr)">
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
+          <button class="cv-pre-btn" onclick="applyCurvePreset('reset')">Reset</button>
+          <button class="cv-pre-btn" onclick="applyCurvePreset('soft')">Soft Contrast</button>
+          <button class="cv-pre-btn" onclick="applyCurvePreset('deepsky')">Deep Sky</button>
+          <button class="cv-pre-btn" onclick="applyCurvePreset('core')">Protect Core</button>
+          <button class="cv-pre-btn" onclick="applyCurvePreset('lift')">Lift Shadows</button>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sec" style="flex:1;margin-bottom:0;font-size:12px;padding:8px" onclick="applyCurvesOnly()">APPLY CURVES</button>
+          <button class="btn btn-mute" style="flex:0 0 auto;margin-bottom:0;padding:8px 12px;font-size:12px" onclick="resetCurves()">RESET</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <div id="panel">
     <div id="tab-bar">
-      <button class="tab-btn" id="tb-info" onclick="showTab('info')">FITS INFO</button>
       <button class="tab-btn" id="tb-bg" onclick="showTab('bg')">LINEAR</button>
       <button class="tab-btn on" id="tb-proc" onclick="showTab('proc')">STRETCH</button>
+      <button class="tab-btn" id="tb-enhance" onclick="showTab('enhance')">ENHANCE</button>
       <button class="tab-btn" id="tb-guide" onclick="showTab('guide')">GUIDE</button>
     </div>
 
-    <div class="tab-content" id="tab-info"></div>
 
     <div class="tab-content" id="tab-bg" style="padding:12px">
 
@@ -777,6 +933,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 
         <div style="display:flex;gap:6px;margin-bottom:12px">
           <button class="stf-btn" style="margin-bottom:0;flex:1" onclick="doAutoSTF()">AUTO STRETCH</button>
+          <input type="number" id="stf-target" min="0.05" max="0.40" step="0.01" value="0.15" onchange="P.stfTarget=Math.max(0.05,Math.min(0.40,parseFloat(this.value)||0.15))" style="width:62px;background:var(--card);border:1px solid var(--bdr);color:var(--txt);font-family:var(--mono);font-size:11px;padding:6px 4px;border-radius:3px;text-align:center" title="Target post-stretch median brightness (0.05-0.40). Default 0.15.">
           <button id="preview-stf-btn" class="stf-btn" style="margin-bottom:0;flex:1;background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.3);color:#7ac8f0" onclick="doAutoPreview()" title="Temporary Auto Stretch preview — not baked. Any slider move or action exits preview automatically.">PREVIEW STF</button>
         </div>
         <div class="stretch-mode-grid">
@@ -846,18 +1003,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         <div id="c-ghs" style="display:none">
           <div class="ctrl">
             <div class="cr"><span class="cn">Stretch Point SP</span><span class="cv" id="v-gsp">0.005</span></div>
-            <div class="pm-row"><button class="pm-btn" onclick="stepSlider('gsp',-1)">−</button><input type="range" id="i-gsp" min="1" max="500" value="5" oninput="onGSP(this.value)"><button class="pm-btn" onclick="stepSlider('gsp',1)">+</button></div>
+            <div class="pm-row"><button class="pm-btn" onclick="stepSlider('gsp',-1)">−</button><input type="range" id="i-gsp" min="1" max="200" value="5" oninput="onGSP(this.value)" title="0.001 to 0.200"><button class="pm-btn" onclick="stepSlider('gsp',1)">+</button></div>
             <div class="ch">Place just left of where the histogram data begins to rise. Green marker shows recommended position. Drag the blue marker on the histogram.</div>
           </div>
           <div class="ctrl">
             <div class="cr"><span class="cn">Stretch D</span><span class="cv" id="v-gd">0.00</span></div>
-            <div class="pm-row"><button class="pm-btn" onclick="stepSlider('gd',-1)">−</button><input type="range" id="i-gd" min="0" max="200" value="0" oninput="onGD(this.value)"><button class="pm-btn" onclick="stepSlider('gd',1)">+</button></div>
+            <div class="pm-row"><button class="pm-btn" onclick="stepSlider('gd',-1)">−</button><input type="range" id="i-gd" min="0" max="200" value="0" oninput="onGD(this.value)" title="0 to 30, log-mapped"><button class="pm-btn" onclick="stepSlider('gd',1)">+</button></div>
             <div class="ch">Overall stretch strength. Increase until you can see your target. Stop before stars bloat.</div>
           </div>
           <button onclick="doApply()" style="width:100%;padding:8px 0;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.5);border-radius:5px;color:var(--acc);font-family:var(--mono);font-size:10px;letter-spacing:.1em;cursor:pointer;margin-bottom:12px;transition:.15s" onmouseover="this.style.background='rgba(249,115,22,.28)'" onmouseout="this.style.background='rgba(249,115,22,.15)'">⊕  APPLY THIS PASS</button>
           <div class="ctrl">
             <div class="cr"><span class="cn">Local Intensity b</span><span class="cv" id="v-gb">0.0</span></div>
-            <div class="pm-row"><button class="pm-btn" onclick="stepSlider('gb',-1)">−</button><input type="range" id="i-gb" min="-50" max="150" value="0" oninput="onGB(this.value)"><button class="pm-btn" onclick="stepSlider('gb',1)">+</button></div>
+            <div class="pm-row"><button class="pm-btn" onclick="stepSlider('gb',-1)">−</button><input type="range" id="i-gb" min="-100" max="100" value="0" oninput="onGB(this.value)" title="-10 to +10, symmetric"><button class="pm-btn" onclick="stepSlider('gb',1)">+</button></div>
             <div class="ch">Negative = log/Asinh behaviour. 0 = pure GHS. 1–6 = contrast focused at SP. 8–15 = very concentrated at SP for initial linear stretches.</div>
           </div>
           <div class="ctrl">
@@ -925,15 +1082,111 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         <div class="ch" style="margin-top:8px">Bakes current stretch into pixel data and resets sliders to identity. Click any pass in the log to undo back to that point.</div>
       </div>
 
-      <div class="pb">
-        <div class="pl">Export &amp; View</div>
-        <button class="btn btn-acc" id="exp-btn" onclick="doExport()">EXPORT FULL RES PNG</button>
-        <button class="btn btn-mute" onclick="resetZoom()">RESET ZOOM  (double-click image)</button>
-        <button class="btn btn-mute" onclick="resetAll()">← LOAD ANOTHER FILE</button>
+
+    </div>
+
+        <div class="tab-content" id="tab-enhance">
+      <div style="padding:14px 16px">
+
+        <!-- Toolbar -->
+        <div style="display:flex;gap:6px;margin-bottom:14px">
+          <button class="stf-btn" style="flex:1;margin-bottom:0" onclick="toggleHistogram()">HISTOGRAM</button>
+          <button class="stf-btn" style="flex:1;margin-bottom:0;background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.3);color:#7ac8f0" onclick="toggleCurves()">CURVES</button>
+        </div>
+
+        <!-- v5.2 Item 11: Reduce Noise (independent pass) -->
+        <div style="font-family:var(--mono);font-size:11px;color:var(--acc);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px">Reduce Noise</div>
+        <div class="ctrl">
+          <div class="cr"><span class="cn">Strength</span><span class="cv" id="v-fin-dns">0</span></div>
+          <input type="range" id="i-fin-dns" min="0" max="100" value="0" oninput="onDnsAmt(this.value)">
+          <div class="ch">Wavelet soft-threshold on display-space noise. Stars and bright cores protected.</div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:10px;margin-bottom:18px">
+          <button id="dns-apply-btn" class="btn btn-acc" style="flex:1;margin-bottom:0" onclick="applyDenoiseOnly()">APPLY DENOISE</button>
+          <button class="btn btn-mute" style="flex:0 0 auto;margin-bottom:0;padding:12px 16px" onclick="resetDenoise()">RESET</button>
+        </div>
+
+        <!-- v5.2 Item 13: Local Contrast (independent pass) -->
+        <div style="font-family:var(--mono);font-size:11px;color:var(--acc);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px">Local Contrast</div>
+        <div class="ctrl">
+          <div class="cr"><span class="cn">Strength</span><span class="cv" id="v-fin-local">0</span></div>
+          <input type="range" id="i-fin-local" min="0" max="100" value="0" oninput="onLcAmt(this.value)">
+          <div class="ch">Boosts large-scale features (dust lanes, filaments) using wavelet scale 3. Stars protected, deep background untouched.</div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:10px;margin-bottom:18px">
+          <button id="lc-apply-btn" class="btn btn-acc" style="flex:1;margin-bottom:0" onclick="applyLocalContrastOnly()">APPLY LOCAL</button>
+          <button class="btn btn-mute" style="flex:0 0 auto;margin-bottom:0;padding:12px 16px" onclick="resetLocalContrast()">RESET</button>
+        </div>
+
+        <!-- Quick Preset -->
+        <div class="ctrl" style="margin-bottom:16px">
+          <div class="cr"><span class="cn">Quick Preset</span></div>
+          <select id="fin-preset" onchange="applyFinishPreset(this.value)" style="width:100%;background:var(--card);border:1px solid var(--bdr);color:var(--txt);font-family:var(--mono);font-size:12px;padding:6px 8px;border-radius:4px">
+            <option value="">— choose preset —</option>
+            <option value="natural">Natural</option>
+            <option value="galaxy">Galaxy</option>
+            <option value="nebula">Nebula</option>
+            <option value="bortle6">Bortle 6</option>
+            <option value="lunar">Lunar</option>
+          </select>
+        </div>
+
+        <!-- AstroClarity Finish -->
+        <div style="font-family:var(--mono);font-size:11px;color:var(--acc);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px">AstroClarity Finish</div>
+
+        <div class="ctrl">
+          <div class="cr"><span class="cn">Structure</span><span class="cv" id="v-fin-struct">0</span></div>
+          <input type="range" id="i-fin-struct" min="0" max="100" value="0" oninput="onFinSlider('struct',this.value)">
+          <div class="ch">Enhances nebula texture, galaxy arms, and dust lanes. Start with 10–25.</div>
+        </div>
+
+        <div class="ctrl">
+          <div class="cr"><span class="cn">Sharpness</span><span class="cv" id="v-fin-sharp">0</span></div>
+          <input type="range" id="i-fin-sharp" min="0" max="100" value="0" oninput="onFinSlider('sharp',this.value)">
+          <div class="ch">Fine detail sharpening. Use lightly to avoid crunchy stars.</div>
+        </div>
+
+        <div class="ctrl">
+          <div class="cr"><span class="cn">Dehaze / Pop</span><span class="cv" id="v-fin-dehaze">0</span></div>
+          <input type="range" id="i-fin-dehaze" min="0" max="100" value="0" oninput="onFinSlider('dehaze',this.value)">
+          <div class="ch">Adds broad midtone contrast to washed-out stretched images. Does not replace Background Extraction.</div>
+        </div>
+
+        <div class="ctrl">
+          <div class="cr"><span class="cn">Saturation</span><span class="cv" id="v-fin-sat">0</span></div>
+          <input type="range" id="i-fin-sat" min="-50" max="50" value="0" oninput="onFinSlider('sat',this.value)">
+          <div class="ch">Boosts object color while protecting the dark sky.</div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin:12px 0">
+          <input type="checkbox" id="fin-protect" checked onchange="P.finProtect=this.checked;render()" style="accent-color:var(--acc)">
+          <span style="font-size:14px;color:var(--sub)">Protect stars and background</span>
+        </div>
+
+        <div style="display:flex;gap:6px;margin-top:14px">
+          <button class="btn btn-acc" style="flex:1;margin-bottom:0" onclick="applyFinishOnly()">APPLY FINISH</button>
+          <button class="btn btn-mute" style="flex:0 0 auto;margin-bottom:0;padding:12px 16px" onclick="resetFinish()">RESET</button>
+        </div>
+
+        <!-- Pass history + undo/redo -->
+        <div style="margin-top:16px;border-top:1px solid var(--bdr);padding-top:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+            <span style="font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.08em">PASS HISTORY</span>
+            <div style="display:flex;gap:4px">
+              <button id="enh-undo-btn" class="btn btn-mute" style="padding:5px 12px;font-size:11px;margin-bottom:0;letter-spacing:.05em" onclick="undoToPass(Math.max(0,currentPass-1))" disabled>↩ UNDO</button>
+              <button id="enh-redo-btn" class="btn btn-mute" style="padding:5px 12px;font-size:11px;margin-bottom:0;letter-spacing:.05em" onclick="redoEnhance()" disabled>REDO ↪</button>
+            </div>
+          </div>
+          <div id="enh-hist-log"></div>
+        </div>
+
+        <div class="ch" style="margin-top:10px;padding:8px 10px;background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:4px">
+          Use Enhance after stretching. These controls are for final polish only. Small values usually work best.
+        </div>
       </div>
     </div>
 
-    <div class="tab-content" id="tab-guide">
+        <div class="tab-content" id="tab-guide">
       <div class="guide-step">
         <div class="step-num">01 — WHAT FITS STUDIO DOES</div>
         <div class="step-title">A browser-based processor for stacked Dwarf 3 FITS files</div>
@@ -1189,19 +1442,28 @@ precision highp float;
 in vec2 uv;out vec4 o;
 uniform sampler2D tR,tG,tB,tGradR,tGradG,tGradB,tStarMask;
 uniform float bp,mwp,mmt,aD,gD,gB,gSP,gLP,gHP,ht,rl,wR,wG,wB,zoom,bgStr,bgGamma,bgMedR,bgMedG,bgMedB,bgGradActive,u_bgnr;
+uniform float u_pedR,u_pedG,u_pedB; // Item 6: per-channel pedestal
+uniform float u_finStruct,u_finSharp,u_finDehaze,u_finSat,u_finProtect,u_finBgMed,u_finBgSig,u_finAny;
+uniform float u_finDns,u_finLocal; // v5.2: denoise + local contrast strengths
+uniform float u_sigScale1,u_sigScale2,u_sigScale3; // per-scale wavelet sigmas
+uniform sampler2D u_detailW3;     // wavelet scale 3 detail map — unit 10
+uniform sampler2D u_detailMed;  // wavelet scale 2 (structure) — unit 7
+uniform sampler2D u_detailFine; // wavelet scale 1 (sharpness) — unit 8
+uniform float u_curvesActive;
+uniform sampler2D u_curveLUT;   // 256×4 R32F: L/R/G/B rows — unit 9
 uniform vec2 view;
 uniform int mode,pal;
 
 /* Viridis colormap — perceptually uniform, blue→teal→green→yellow */
 vec3 palViridis(vec3 c){
-  float t=dot(c,vec3(.299,.587,.114));
+  float t=dot(c,vec3(.2126,.7152,.0722));
   vec3 a=mix(vec3(.267,.005,.329),vec3(.128,.566,.551),smoothstep(0.,.5,t));
   vec3 b=mix(vec3(.128,.566,.551),vec3(.993,.906,.144),smoothstep(.5,1.,t));
   return clamp(mix(a,b,step(.5,t)),0.,1.);
 }
 /* Heat — black→red→orange→yellow→white */
 vec3 palHeat(vec3 c){
-  float t=dot(c,vec3(.299,.587,.114));
+  float t=dot(c,vec3(.2126,.7152,.0722));
   float r=clamp(t*3.,0.,1.);
   float g=clamp(t*3.-1.,0.,1.);
   float b=clamp(t*3.-2.,0.,1.);
@@ -1209,7 +1471,7 @@ vec3 palHeat(vec3 c){
 }
 /* Green+ — boosts green channel, useful for Ha-dominated Bortle 6 data */
 vec3 palGreenPlus(vec3 c){
-  float l=dot(c,vec3(.299,.587,.114));
+  float l=dot(c,vec3(.2126,.7152,.0722));
   return clamp(vec3(c.r*.7+l*.25,c.g*1.25+l*.1,c.b*.7+l*.2),0.,1.);
 }
 
@@ -1223,37 +1485,62 @@ float ash(float x){
   if(aD<.001)return s;
   return asinh(aD*s)/asinh(aD);
 }
+// Item 17 + 19: GHS with C1 continuity at SP, LP, HP.
+// b parameter applies to both sides for consistent control.
+// SP transition zone (eps) blends lower and upper sections via smoothstep
+// so the function is C1 everywhere — no kink at SP.
+float _ghsBTransform(float xn, float b){
+  if(b>0.001) return xn*(1.+b)/(1.+b*xn);
+  if(b<-0.001){float nb=-b;return log(1.+nb*xn)/max(log(1.+nb),1e-6);}
+  return xn;
+}
+float _ghsLower(float xc, float D, float b, float sp, float lp){
+  float xn=sp>0.?xc/sp:0.;
+  float xb=_ghsBTransform(xn,b);
+  float sn=asinh(D*xb)/max(asinh(D),1e-6);
+  // Item 17: smoothstep LP blend (C1 at LP, was linear/C0)
+  float lpN=sp>0.?lp/sp:0.;
+  if(lpN>0.001){
+    float w=smoothstep(0.,lpN,xn);
+    sn=mix(xn,sn,w);
+  }
+  return clamp(sn,0.,1.)*sp;
+}
+float _ghsUpper(float xc, float D, float b, float sp, float hp){
+  float xn=(xc-sp)/max(1.-sp,1e-5);
+  // Item 17: b parameter applies to upper section too (was lower-only)
+  float xb=_ghsBTransform(xn,b);
+  float sn=log(1.+D*xb)/max(log(1.+D),1e-6);
+  // Item 17: smoothstep HP blend (C1 at HP)
+  float hpN=(hp-sp)/max(1.-sp,1e-5);
+  if(hpN<0.999){
+    float w=1.-smoothstep(hpN,1.,xn);
+    sn=mix(xn,sn,w);
+  }
+  return sp+clamp(sn,0.,1.)*max(1.-sp,0.);
+}
 float ghs(float x){
   float xc=max(x-bp,0.)/max(1.-bp,1e-4);
   if(gD<.001)return xc;
   float sp=clamp(gSP,1e-5,1.-1e-5);
   float lp=clamp(gLP,0.,sp);
   float hp=clamp(gHP,sp,1.);
-  float D=gD;
-  float b=gB;
-  float stretched;
-  if(xc<=sp){
-    float xn=sp>0.?xc/sp:0.;
-    float xb;
-    if(b>0.001){xb=xn*(1.+b)/(1.+b*xn);}
-    else if(b<-0.001){float nb=-b;xb=log(1.+nb*xn)/max(log(1.+nb),1e-6);}
-    else{xb=xn;}
-    float sn=asinh(D*xb)/max(asinh(D),1e-6);
-    float lpN=sp>0.?lp/sp:0.;
-    if(xn<lpN&&lpN>0.001){float t=xn/lpN;sn=mix(xn,sn,t);}
-    stretched=clamp(sn,0.,1.)*sp;
-  }else{
-    float xn=(xc-sp)/max(1.-sp,1e-5);
-    float sn=log(1.+D*xn)/max(log(1.+D),1e-6);
-    float hpN=(hp-sp)/max(1.-sp,1e-5);
-    if(xn>hpN&&hpN<0.999){float t=(xn-hpN)/max(1.-hpN,1e-5);sn=mix(sn,xn,t);}
-    stretched=sp+clamp(sn,0.,1.)*max(1.-sp,0.);
-  }
-  return clamp(stretched,0.,1.);
+  float D=gD, b=gB;
+  // Item 17: smooth transition zone around SP for C1 continuity
+  float eps=min(0.04,min(sp*0.5,(1.-sp)*0.5));
+  float spLo=sp-eps, spHi=sp+eps;
+  if(xc<=spLo) return clamp(_ghsLower(xc,D,b,sp,lp),0.,1.);
+  if(xc>=spHi) return clamp(_ghsUpper(xc,D,b,sp,hp),0.,1.);
+  float t=(xc-spLo)/(2.*eps);
+  float w=smoothstep(0.,1.,t);
+  return clamp(mix(_ghsLower(xc,D,b,sp,lp),_ghsUpper(xc,D,b,sp,hp),w),0.,1.);
 }
 float highlights(float x){
-  if(ht<.001||x<=.5)return x;
-  return .5+pow((x-.5)/.5,1.+ht*3.)*.5;
+  // Item 7: smooth Reinhard knee, C-infinity continuous everywhere.
+  // ht=0 is identity. Larger ht compresses highlights more aggressively
+  // without introducing a derivative discontinuity at any value.
+  if(ht<.001) return x;
+  return x/(1.+ht*x*x);
 }
 /* Star Roll-off — uses precomputed star mask texture (same mask as CPU bake).
    Mask is built from compactness + brightness + structure terms on CPU,
@@ -1263,9 +1550,11 @@ vec3 starRolloff(vec3 c, vec2 maskUV){
   if(rl<1e-4) return c;
   float mask=texture(tStarMask,maskUV).r;
   if(mask<1e-4) return c;
-  float lum=dot(c,vec3(.299,.587,.114));
+  float lum=dot(c,vec3(.2126,.7152,.0722));
   if(lum<1e-7) return c;
-  float lumRolled=lum/(1.+rl*lum);
+  // Item 9: gate rolloff strength on luminance so faint stars stay untouched
+  float localStrength=rl*smoothstep(0.55,0.95,lum);
+  float lumRolled=lum/(1.+localStrength*lum);
   float ratio=mix(1.0,lumRolled/lum,mask);
   return c*ratio;
 }
@@ -1277,7 +1566,7 @@ vec3 palHubble(vec3 c){
      teal shift as before. Transition is smooth via haFrac. */
   float ha=c.r;
   float oiii=.5*(c.g+c.b);
-  float lum=dot(c,vec3(.299,.587,.114));
+  float lum=dot(c,vec3(.2126,.7152,.0722));
   /* haFrac: 0=broadband, 1=strong Ha-dominated dual-band */
   float haFrac=clamp((c.r-oiii-.05)*5.,0.,1.);
   /* SHO remap: Ha→R-orange, Ha/OIII mix→G-gold, OIII→B-teal */
@@ -1298,9 +1587,9 @@ void main(){
   img=clamp(img,0.,1.);
   vec2 f=vec2(img.x,1.-img.y);
   /* Background gradient subtraction — real-time preview */
-  float r=max(texture(tR,f).r - texture(tGradR,f).r*bgStr, 0.);
-  float g=max(texture(tG,f).r - texture(tGradG,f).r*bgStr, 0.);
-  float b=max(texture(tB,f).r - texture(tGradB,f).r*bgStr, 0.);
+  float r=max(texture(tR,f).r - texture(tGradR,f).r*bgStr - u_pedR, 0.);
+  float g=max(texture(tG,f).r - texture(tGradG,f).r*bgStr - u_pedG, 0.);
+  float b=max(texture(tB,f).r - texture(tGradB,f).r*bgStr - u_pedB, 0.);
   /* BG gamma preview — non-zero only when user is in BG tab with preview on */
   if(bgGamma>0.01){
     /* PREVIEW ONLY — reads texture pixels, never mutates linear working arrays.
@@ -1331,9 +1620,111 @@ void main(){
     float bgMask=1.0-smoothstep(0.06,0.22,Ldisp);
     col=mix(col,vec3(Ldisp),bgMask*u_bgnr);
   }
+  // ── ASTROCLARITY FINISH ─────────────────────────────────────────────
+  if(u_finAny>0.5){
+    float Lf=dot(col,vec3(0.2126,0.7152,0.0722));
+    float bg=u_finBgMed,sig=max(u_finBgSig,1e-4);
+    float sigMask=smoothstep(bg+1.5*sig,bg+6.0*sig,Lf);
+    float starM=texture(tStarMask,f).r;
+    float starProt=1.0-0.85*starM;
+    float hiProt=1.0-smoothstep(0.75,0.98,Lf);
+    float finMask=u_finProtect>0.5?sigMask*starProt:sigMask;
+    float satMask=sigMask*(1.0-0.7*starM);
+    // v5.2 Item 11: Display-space denoise via W1 wavelet soft-threshold.
+    // Removes noise (|W1| < 1.5*sigW1) from luminance. Stars and highlights protected.
+    if(u_finDns>0.001){
+      float det1=texture(u_detailFine,f).r;
+      float det1S=sign(det1)*max(0.0,abs(det1)-u_sigScale1*1.5);
+      float noise=det1-det1S;
+      float dnsMask=(1.0-0.7*starM)*(1.0-smoothstep(0.7,0.95,Lf));
+      float Lcleaned=Lf-(u_finDns/100.0)*noise*dnsMask;
+      float ratio=clamp(Lcleaned/max(Lf,1e-6),0.7,1.3);
+      col=clamp(col*ratio,0.0,1.0);
+      Lf=dot(col,vec3(0.2126,0.7152,0.0722));
+    }
+    // v5.2 Item 13: Multi-scale local contrast via W3 wavelet boost.
+    // Targets large-scale features (16-32 px): dust lanes, nebula filaments, galaxy arms.
+    // Mid-luminance gating keeps stars and deep background untouched.
+    if(u_finLocal>0.001){
+      float det3=texture(u_detailW3,f).r;
+      float det3S=sign(det3)*max(0.0,abs(det3)-u_sigScale3);
+      float midMask=sigMask*(1.0-smoothstep(0.7,0.92,Lf));
+      float L2=clamp(Lf+det3S*(u_finLocal/100.0)*0.8*midMask,0.0,1.0);
+      float ratio=clamp(L2/max(Lf,1e-6),0.6,1.6);
+      col=clamp(col*ratio,0.0,1.0);
+      Lf=dot(col,vec3(0.2126,0.7152,0.0722));
+    }
+    if(u_finStruct>0.001){
+      // Item 12: soft-threshold via wavelet scale 2 sigma
+      float det=texture(u_detailMed,f).r;
+      float detS=sign(det)*max(0.0,abs(det)-u_sigScale2);
+      float L2=clamp(Lf+detS*(u_finStruct/100.0)*1.2*finMask,0.0,1.0);
+      float ratio=clamp(L2/max(Lf,1e-6),0.5,1.8);
+      col=clamp(col*ratio,0.0,1.0);
+      Lf=dot(col,vec3(0.2126,0.7152,0.0722));
+    }
+    if(u_finSharp>0.001){
+      // Item 12: soft-threshold via wavelet scale 1 sigma
+      float det=texture(u_detailFine,f).r;
+      float detS=sign(det)*max(0.0,abs(det)-u_sigScale1);
+      float L2=clamp(Lf+detS*(u_finSharp/100.0)*0.6*finMask*hiProt,0.0,1.0);
+      float ratio=clamp(L2/max(Lf,1e-6),0.75,1.35);
+      col=clamp(col*ratio,0.0,1.0);
+      Lf=dot(col,vec3(0.2126,0.7152,0.0722));
+    }
+    if(u_finDehaze>0.001){
+      // Signal-weighted bell-curve lift.
+      // protects background (finMask≈0), stars (hiProt≈0), sky floor.
+      // bellCurve = L*(1-L)*4 peaks at L=0.5, zero at 0 and 1.
+      float popS=u_finDehaze/100.0;
+      float objMask=finMask*hiProt; // combined: signal × star-protect × highlight-protect
+      float bellCurve=Lf*(1.0-Lf)*4.0;
+      float Ldelta=Lf*popS*0.30*bellCurve*objMask;
+      float L2=clamp(Lf+Ldelta,0.0,1.0);
+      float ratio=clamp(L2/max(Lf,1e-6),0.92,1.30);
+      col=clamp(col*ratio,0.0,1.0);
+      Lf=dot(col,vec3(0.2126,0.7152,0.0722));
+    }
+    if(abs(u_finSat)>0.001){
+      // Item 8: hue-preserving saturation. Scale chroma vector and
+      // back off if any channel would exceed 1.0 — this preserves the
+      // hue exactly instead of asymmetrically clipping single channels.
+      float satS=u_finSat/50.0;
+      float f=1.0+satS*satMask;
+      vec3 chroma=col-vec3(Lf);
+      vec3 scaled=vec3(Lf)+chroma*f;
+      // Compute the largest channel value; if >1, scale chroma down
+      // until the max equals 1, preserving relative ratios.
+      float maxV=max(scaled.r,max(scaled.g,scaled.b));
+      float minV=min(scaled.r,min(scaled.g,scaled.b));
+      if(maxV>1.0){
+        float fAdj=(1.0-Lf)/max(maxV-Lf,1e-6);
+        scaled=vec3(Lf)+chroma*f*fAdj;
+      }
+      if(minV<0.0){
+        float fAdj=Lf/max(Lf-minV,1e-6);
+        scaled=vec3(Lf)+chroma*f*fAdj;
+      }
+      col=clamp(scaled,0.0,1.0);
+    }
+  }
+  // ── ADVANCED CURVES ──────────────────────────────────────────────────
+  if(u_curvesActive>0.5){
+    // L curve — luminance-preserving ratio rescale
+    float Lc=dot(col,vec3(0.2126,0.7152,0.0722));
+    float uL=(Lc*255.0+0.5)/256.0;
+    float L2=texture(u_curveLUT,vec2(uL,0.125)).r;
+    float ratio=clamp(L2/max(Lc,1e-6),0.25,4.0);
+    col=clamp(col*ratio,0.0,1.0);
+    // R, G, B channel curves
+    col.r=texture(u_curveLUT,vec2((col.r*255.0+0.5)/256.0,0.375)).r;
+    col.g=texture(u_curveLUT,vec2((col.g*255.0+0.5)/256.0,0.625)).r;
+    col.b=texture(u_curveLUT,vec2((col.b*255.0+0.5)/256.0,0.875)).r;
+    col=clamp(col,0.0,1.0);
+  }
   if(pal==1)col=palHubble(col);
   else if(pal==2)col=palCool(col);
-  else if(pal==3){float l=dot(col,vec3(.299,.587,.114));col=vec3(l);}
+  else if(pal==3){float l=dot(col,vec3(.2126,.7152,.0722));col=vec3(l);}
   else if(pal==4)col=palViridis(col);
   else if(pal==5)col=palHeat(col);
   else if(pal==6)col=palGreenPlus(col);
@@ -1344,7 +1735,11 @@ void main(){
 // ═══════════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════════
-const P={bp:0,mwp:1.0,mmt:.490,aD:0,gD:0,gB:0,gSP:.005,gLP:0,gHP:1.0,ht:0,rl:0,wR:1,wG:1,wB:1,pal:0,mode:2,bgColorNR:0};
+const P={bp:0,mwp:1.0,mmt:.490,aD:0,gD:0,gB:0,gSP:.005,gLP:0,gHP:1.0,ht:0,rl:0,wR:1,wG:1,wB:1,pal:0,mode:2,bgColorNR:0,pedR:0,pedG:0,pedB:0,
+  // ── AstroClarity Finish — default 0 / true ──
+  finStruct:0, finSharp:0, finDehaze:0, finSat:0, finProtect:true,
+  finDns:0, finLocal:0,                  // v5.2: denoise + local contrast strengths
+  stfTarget:0.15};                       // v5.2 Item 15: user-adjustable auto-STF target
 const Z={level:1,cx:.5,cy:.5};
 let NW=0,NH=0,gl,prog,locs={},tR,tG,tB;
 let hSampR=[],hSampG=[],hSampB=[],hSampL=[];
@@ -1353,6 +1748,22 @@ let histChActive=new Set(['L','R','G','B']),histDrag=null,histPeakVal=0,histFoot
 let histBins={L:null,R:null,G:null,B:null};
 let histBinsGlobalMax=1;
 let histBinsDirty=true;
+let histBgSigma=0.01; // background sigma estimate, updated in buildHistSamples
+
+// ── ASTROCLARITY FINISH STATE ──────────────────────────────────────────
+let tDetailMed=null;   // wavelet scale 2 detail texture (structure) — unit 7
+let tDetailFine=null;  // wavelet scale 1 detail texture (sharpness) — unit 8
+let finDetailDirty=true;
+let finSigW1=1e-3;     // Item 12: per-scale wavelet sigma for sharpness soft-threshold
+let finSigW2=1e-3;     // Item 12: per-scale wavelet sigma for structure soft-threshold
+let finSigW3=1e-3;     // v5.2: per-scale wavelet sigma for local contrast soft-threshold
+let tDetailW3=null;    // wavelet scale 3 detail texture (local contrast) — unit 10
+
+// ── ADVANCED CURVES STATE ───────────────────────────────────────────
+let curvePts={ALL:[[0,0],[1,1]],L:[[0,0],[1,1]],R:[[0,0],[1,1]],G:[[0,0],[1,1]],B:[[0,0],[1,1]]};
+let currentCurveChannel='ALL';
+let tCurveLUT=null;    // 256×4 R32F: rows 0-3 = L,R,G,B
+let curvesActive=false; // true when any channel has a non-identity curve
 
 // ── BACKGROUND EXTRACTION STATE ────────────────────────────────────
 const BG_GRAD_W=256,BG_GRAD_H=144; // gradient texture resolution
@@ -1433,7 +1844,12 @@ function initGL(){
   if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
   prog=p;
   ['tR','tG','tB','tGradR','tGradG','tGradB','tStarMask','bp','mwp','mmt','aD','gD','gB','gSP','gLP','gHP',
-   'ht','rl','wR','wG','wB','zoom','bgStr','bgGamma','bgMedR','bgMedG','bgMedB','bgGradActive','u_bgnr','view','mode','pal',
+   'ht','rl','wR','wG','wB','zoom','bgStr','bgGamma','bgMedR','bgMedG','bgMedB','bgGradActive','u_bgnr',
+   'u_pedR','u_pedG','u_pedB',
+   'u_finStruct','u_finSharp','u_finDehaze','u_finSat','u_finProtect',
+   'u_finBgMed','u_finBgSig','u_finAny','u_detailMed','u_detailFine','u_detailW3',
+   'u_sigScale1','u_sigScale2','u_sigScale3','u_finDns','u_finLocal',
+   'u_curvesActive','u_curveLUT','view','mode','pal',
    ].forEach(n=>{
     locs[n]=gl.getUniformLocation(p,n);});
   locs.a=gl.getAttribLocation(p,'a');
@@ -1445,6 +1861,15 @@ function initGL(){
   return true;
 }
 function mkTex(data,w,h){
+  // NEAREST — used for image planes and LUTs: exact texel lookup, no interpolation bleed
+  const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.R32F,w,h,0,gl.RED,gl.FLOAT,data);
+  [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T].forEach(p=>gl.texParameteri(gl.TEXTURE_2D,p,gl.CLAMP_TO_EDGE));
+  [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER].forEach(p=>gl.texParameteri(gl.TEXTURE_2D,p,gl.NEAREST));
+  return t;
+}
+function mkTexLinear(data,w,h){
+  // LINEAR — used for gradients, detail maps, star mask: smooth spatial fields
   const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);
   gl.texImage2D(gl.TEXTURE_2D,0,gl.R32F,w,h,0,gl.RED,gl.FLOAT,data);
   [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T].forEach(p=>gl.texParameteri(gl.TEXTURE_2D,p,gl.CLAMP_TO_EDGE));
@@ -1468,6 +1893,10 @@ function render(){
   gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,tGradG||tG);gl.uniform1i(locs.tGradG,4);
   gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,tGradB||tB);gl.uniform1i(locs.tGradB,5);
   gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,tStarMask||tR);gl.uniform1i(locs.tStarMask,6);
+  gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D,tDetailMed||tR);gl.uniform1i(locs.u_detailMed,7);
+  gl.activeTexture(gl.TEXTURE8);gl.bindTexture(gl.TEXTURE_2D,tDetailFine||tR);gl.uniform1i(locs.u_detailFine,8);
+  gl.activeTexture(gl.TEXTURE10);gl.bindTexture(gl.TEXTURE_2D,tDetailW3||tR);gl.uniform1i(locs.u_detailW3,10);
+  gl.activeTexture(gl.TEXTURE9);gl.bindTexture(gl.TEXTURE_2D,tCurveLUT||tR);gl.uniform1i(locs.u_curveLUT,9);
   gl.uniform1f(locs.zoom,Z.level);
   gl.uniform1f(locs.bgStr,(bgApplied||!tGradR)?0:bgStrength);
   gl.uniform1f(locs.bgGamma,bgGammaVal);
@@ -1476,6 +1905,19 @@ function render(){
   gl.uniform2f(locs.view,Z.cx,Z.cy);
   gl.uniform1i(locs.mode,P.mode);gl.uniform1i(locs.pal,P.pal);
   gl.uniform1f(locs.u_bgnr,P.bgColorNR/100);
+  gl.uniform1f(locs.u_curvesActive,curvesActive?1.0:0.0);
+  gl.uniform1f(locs.u_pedR,P.pedR||0);gl.uniform1f(locs.u_pedG,P.pedG||0);gl.uniform1f(locs.u_pedB,P.pedB||0);
+  gl.uniform1f(locs.u_sigScale1,finSigW1);
+  gl.uniform1f(locs.u_sigScale2,finSigW2);
+  gl.uniform1f(locs.u_sigScale3,finSigW3);
+  gl.uniform1f(locs.u_finDns,P.finDns||0);gl.uniform1f(locs.u_finLocal,P.finLocal||0);
+  // AstroClarity Finish uniforms
+  const _finAny=(P.finStruct>0||P.finSharp>0||P.finDehaze>0||P.finSat!==0||P.finDns>0||P.finLocal>0)?1.0:0.0;
+  gl.uniform1f(locs.u_finStruct,P.finStruct);gl.uniform1f(locs.u_finSharp,P.finSharp);
+  gl.uniform1f(locs.u_finDehaze,P.finDehaze);gl.uniform1f(locs.u_finSat,P.finSat);
+  gl.uniform1f(locs.u_finProtect,P.finProtect?1.0:0.0);
+  gl.uniform1f(locs.u_finBgMed,histPeakVal);gl.uniform1f(locs.u_finBgSig,Math.max(1e-4,histBgSigma));
+  gl.uniform1f(locs.u_finAny,_finAny);
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
   if(bgSamples.length) drawSampleOverlay();
 }
@@ -1501,9 +1943,11 @@ function pct(arr,...ps){
   return ps.map(p=>s[Math.max(0,Math.min(s.length-1,Math.floor(p*s.length)))]);
 }
 function normInPlace(arr,lo,hi){const r=hi-lo||1;for(let i=0;i<arr.length;i++) arr[i]=(arr[i]-lo)/r;}
-function sToD(v){return v===0?0:0.1*Math.pow(5000,v/200);}
-function dFmt(d){return d<0.01?'0.00':d<10?d.toFixed(2):d<100?d.toFixed(1):Math.round(d).toString();}
-function dToSlider(d){return d<0.01?0:Math.max(0,Math.min(200,Math.round(200*Math.log(d/0.1)/Math.log(5000))));}
+// Item 19: recalibrated D slider mapping. Slider 0..200 → D 0..30 via
+// log mapping where slider midpoint (100) gives D ~4.6, useful working range.
+function sToD(v){return v===0?0:Math.exp(v/200*Math.log(31))-1;}
+function dFmt(d){return d<0.01?'0.00':d<10?d.toFixed(2):d.toFixed(1);}
+function dToSlider(d){return d<0.01?0:Math.max(0,Math.min(200,Math.round(200*Math.log(d+1)/Math.log(31))));}
 
 // Histogram X-axis range — defined here so loadFITS can use them for peak detection
 const HLO=-0.05,HHI=1.6;
@@ -1573,7 +2017,7 @@ async function loadFITS(buf){
   hSampR=[];hSampG=[];hSampB=[];hSampL=[];
   for(let i=0;i<plG.length;i+=hs){
     hSampR.push(plR[i]);hSampG.push(plG[i]);hSampB.push(plB[i]);
-    hSampL.push((plR[i]+plG[i]+plB[i])/3);
+    hSampL.push(0.2126*plR[i]+0.7152*plG[i]+0.0722*plB[i]);
   }
   [hSampR,hSampG,hSampB,hSampL].forEach(a=>a.sort((a,b)=>a-b));
   histBinsDirty=true; // mark bins stale so all channels rebuild on first drawHist
@@ -1599,9 +2043,15 @@ async function loadFITS(buf){
   // All sliders to identity. SP defaults to histogram foot — just left of where data begins.
   P.bp=0;P.mwp=1.0;P.mmt=.490;P.aD=0;
   P.gD=0;P.gB=0;
-  P.gSP=Math.max(.001,Math.min(.5,histFootVal));
+  P.gSP=Math.max(.001,Math.min(.2,histFootVal));
   P.gLP=0;P.gHP=1.0;
   P.ht=0;P.rl=0;P.wR=1;P.wG=1;P.wB=1;P.mode=2;
+  // v5.1 + v5.2: pedestals, new pass strengths, and STF target user setting
+  P.pedR=0;P.pedG=0;P.pedB=0;
+  P.finDns=0;P.finLocal=0;
+  P.stfTarget=0.15;
+  // Also sync STF target input if present
+  const stfIn=document.getElementById('stf-target');if(stfIn) stfIn.value='0.15';
   // Sync SP slider
   const spSliderVal=Math.min(500,Math.max(1,Math.round(P.gSP*1000)));
   syncSlider('i-gsp',spSliderVal,'v-gsp',P.gSP.toFixed(3));
@@ -1654,11 +2104,13 @@ async function loadFITS(buf){
   setLoad('Rendering…',96);await raf();
   document.getElementById('load-screen').style.display='none';
   document.getElementById('app').style.display='flex';
-  showTab('info');
+  showTab('bg');
   initLinearSteps();
   await raf();
-  allocScratch();lastStretchedR=historyOrigR;lastStretchedG=historyOrigG;lastStretchedB=historyOrigB;if(gl){if(tStarMask)gl.deleteTexture(tStarMask);tStarMask=mkTex(new Float32Array([0]),1,1);}sizeCanvas();drawHist();render();
+  allocScratch();lastStretchedR=historyOrigR;lastStretchedG=historyOrigG;lastStretchedB=historyOrigB;if(gl){if(tStarMask)gl.deleteTexture(tStarMask);tStarMask=mkTex(new Float32Array([0]),1,1);linearStarMask=null;linearStarMaskDirty=true;}sizeCanvas();drawHist();render();
   updatePassUI();
+  // Initialize Enhance tab textures after file load
+  onEnhanceReady();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1675,7 +2127,7 @@ function buildInfoTab(kw,cards,st){
   ];
   const allPass=v.every(x=>x.pass);
   const kvRow=(l,val)=>`<tr><td>${l}</td><td>${val||'—'}</td></tr>`;
-  document.getElementById('tab-info').innerHTML=`
+  document.getElementById('fits-info-content').innerHTML=`
     <div style="padding:14px 16px;border-bottom:1px solid var(--bdr)">
       <div class="pl" style="margin-bottom:11px">DWARF 3 VERIFICATION</div>
       <div class="verdict-block">
@@ -1753,30 +2205,57 @@ new ResizeObserver(()=>{if(gl&&tR){sizeCanvas();render();if(bgSamples.length)dra
 function hValToX(val,W){return(val-HLO)/(HHI-HLO)*W;}
 function hXToVal(px,W){return HLO+px/W*(HHI-HLO);}
 
-// JS-side GHS evaluation for transform curve overlay
-function ghsJS(xc){
-  if(P.gD<.001)return xc;
-  const sp=Math.max(P.gSP,1e-5),lp=Math.min(P.gLP,sp),hp=Math.max(P.gHP,sp);
-  const D=P.gD,b=P.gB;
-  let s;
-  if(xc<=sp){
-    const xn=sp>0?xc/sp:0;
-    let xb;
-    if(b>0.001){xb=xn*(1+b)/(1+b*xn);}
-    else if(b<-0.001){const nb=-b;xb=Math.log(1+nb*xn)/Math.max(Math.log(1+nb),1e-9);}
-    else xb=xn;
-    let sn=Math.asinh(D*xb)/Math.max(Math.asinh(D),1e-9);
-    const lpN=sp>0?lp/sp:0;
-    if(xn<lpN&&lpN>0.001)sn=xn/lpN*sn+(1-xn/lpN)*xn;
-    s=Math.max(0,Math.min(1,sn))*sp;
-  } else {
-    const xn=(xc-sp)/Math.max(1-sp,1e-9);
-    let sn=Math.log(1+D*xn)/Math.max(Math.log(1+D),1e-9);
-    const hpN=(hp-sp)/Math.max(1-sp,1e-9);
-    if(xn>hpN&&hpN<0.999){const t=(xn-hpN)/Math.max(1-hpN,1e-9);sn=sn*(1-t)+xn*t;}
-    s=sp+Math.max(0,Math.min(1,sn))*Math.max(1-sp,0);
+
+// Item 17: GHS JS helpers — shared by ghsJS (overlay) and applyStretchCPU.
+function _ghsBTransform(xn,b){
+  if(b>0.001) return xn*(1+b)/(1+b*xn);
+  if(b<-0.001){const nb=-b;return Math.log(1+nb*xn)/Math.max(Math.log(1+nb),1e-9);}
+  return xn;
+}
+function _ghsLower(xc,D,b,sp,lp){
+  const xn=sp>0?xc/sp:0;
+  const xb=_ghsBTransform(xn,b);
+  let sn=Math.asinh(D*xb)/Math.max(Math.asinh(D),1e-9);
+  const lpN=sp>0?lp/sp:0;
+  if(lpN>0.001){
+    const w=_smoothstep01(0,lpN,xn);
+    sn=xn*(1-w)+sn*w;
   }
-  return Math.max(0,Math.min(1,s));
+  return Math.max(0,Math.min(1,sn))*sp;
+}
+function _ghsUpper(xc,D,b,sp,hp){
+  const xn=(xc-sp)/Math.max(1-sp,1e-9);
+  const xb=_ghsBTransform(xn,b); // b applies here too now
+  let sn=Math.log(1+D*xb)/Math.max(Math.log(1+D),1e-9);
+  const hpN=(hp-sp)/Math.max(1-sp,1e-9);
+  if(hpN<0.999){
+    const w=1-_smoothstep01(hpN,1,xn);
+    sn=xn*(1-w)+sn*w;
+  }
+  return sp+Math.max(0,Math.min(1,sn))*Math.max(1-sp,0);
+}
+function _smoothstep01(e0,e1,x){
+  const t=Math.min(1,Math.max(0,(x-e0)/Math.max(e1-e0,1e-9)));
+  return t*t*(3-2*t);
+}
+function _ghsCPU(xc,D,b,sp,lp,hp){
+  // Item 17: smooth blend zone around SP for C1 continuity
+  const eps=Math.min(0.04,Math.min(sp*0.5,(1-sp)*0.5));
+  const spLo=sp-eps, spHi=sp+eps;
+  if(xc<=spLo) return Math.max(0,Math.min(1,_ghsLower(xc,D,b,sp,lp)));
+  if(xc>=spHi) return Math.max(0,Math.min(1,_ghsUpper(xc,D,b,sp,hp)));
+  const t=(xc-spLo)/(2*eps);
+  const w=_smoothstep01(0,1,t);
+  const yL=_ghsLower(xc,D,b,sp,lp);
+  const yU=_ghsUpper(xc,D,b,sp,hp);
+  return Math.max(0,Math.min(1,yL*(1-w)+yU*w));
+}
+
+// JS-side GHS evaluation for transform curve overlay (delegates to shared _ghsCPU)
+function ghsJS(xc){
+  if(P.gD<.001) return xc;
+  const sp=Math.max(P.gSP,1e-5),lp=Math.min(P.gLP,sp),hp=Math.max(P.gHP,sp);
+  return _ghsCPU(xc,P.gD,P.gB,sp,lp,hp);
 }
 
 // ── HISTOGRAM BIN CACHE ──────────────────────────────────────────────
@@ -2019,7 +2498,7 @@ histCv.addEventListener('pointermove',e=>{
   } else if(histDrag==='wp'){
     P.mwp=Math.max(P.bp+.01,Math.min(1,val));syncSlider('i-mwp',Math.round(P.mwp*1000),'v-mwp',P.mwp.toFixed(3));
   } else if(histDrag==='sp'){
-    P.gSP=Math.max(.001,Math.min(.5,val));syncSlider('i-gsp',Math.round(P.gSP*1000),'v-gsp',P.gSP.toFixed(3));
+    P.gSP=Math.max(.001,Math.min(.2,val));syncSlider('i-gsp',Math.round(P.gSP*1000),'v-gsp',P.gSP.toFixed(3));
   } else if(histDrag==='lp'){
     P.gLP=Math.max(0,Math.min(P.gSP,val));syncSlider('i-glp',Math.round(P.gLP*1000),'v-glp',P.gLP.toFixed(3));
   } else if(histDrag==='hp'){
@@ -2131,10 +2610,10 @@ function stepSlider(key,dir){
     mt: {min:.010,max:.490,step:.002,fn:v=>{P.mmt=v;syncSlider('i-mt',Math.max(0,Math.min(480,Math.round((0.490-v)*(480/0.480)))),'v-mt',v.toFixed(3));render();}},
     mwp:{min:.05,max:1,step:.005,fn:v=>{P.mwp=v;syncSlider('i-mwp',Math.round(v*1000),'v-mwp',v.toFixed(3));scheduleHistDraw();render();}},
     ash:{logScale:true,fn:v=>{P.aD=v;syncSlider('i-ash',dToSlider(v),'v-ash',dFmt(v));render();}},
-    gsp:{min:.001,max:.5,step:.001,fn:v=>{P.gSP=v;syncSlider('i-gsp',Math.round(v*1000),'v-gsp',v.toFixed(3));scheduleHistDraw();render();}},
+    gsp:{min:.001,max:.2,step:.001,fn:v=>{P.gSP=v;syncSlider('i-gsp',Math.round(v*1000),'v-gsp',v.toFixed(3));scheduleHistDraw();render();}},
     gd: {logScale:true,fn:v=>{P.gD=v;syncSlider('i-gd',dToSlider(v),'v-gd',dFmt(v));render();}},
-    gb: {min:-5,max:15,step:.1,fn:v=>{P.gB=v;syncSlider('i-gb',Math.round(v*10),'v-gb',v.toFixed(1));render();}},
-    glp:{min:0,max:.5,step:.001,fn:v=>{P.gLP=v;syncSlider('i-glp',Math.round(v*1000),'v-glp',v.toFixed(3));scheduleHistDraw();render();}},
+    gb: {min:-10,max:10,step:.1,fn:v=>{P.gB=v;syncSlider('i-gb',Math.round(v*10),'v-gb',v.toFixed(1));render();}}, // Item 19: symmetric range
+    glp:{min:0,max:.2,step:.001,fn:v=>{P.gLP=v;syncSlider('i-glp',Math.round(v*1000),'v-glp',v.toFixed(3));scheduleHistDraw();render();}},
     ghp:{min:0,max:1,step:.005,fn:v=>{P.gHP=v;syncSlider('i-ghp',Math.round(v*1000),'v-ghp',v.toFixed(3));scheduleHistDraw();render();}},
     ht: {min:0,max:1,step:.01,fn:v=>{P.ht=v;syncSlider('i-ht',Math.round(v*100),'v-ht',v.toFixed(2));render();}},
     rl: {min:0,max:2,step:.01,fn:v=>{P.rl=v;syncSlider('i-rl',Math.round(v*100),'v-rl',v.toFixed(2));if(lastStretchedR)buildAndUploadStarMask(lastStretchedR,lastStretchedG,lastStretchedB);render();}},
@@ -2185,9 +2664,9 @@ function applyPreset(type){
   if(type==='nebula'){
     // Bright emission nebulae: high b concentrates stretch at foot, D moderate
     // Good for Orion, Rosette, Lagoon — strong signal, just need to lift background
-    P.gSP=sp; P.gB=12; P.gD=sToD(60); P.gLP=0; P.gHP=1.0;
+    P.gSP=sp; P.gB=8; P.gD=sToD(110); P.gLP=0; P.gHP=1.0; // clamped to new -10..10 range
     syncSlider('i-gsp',Math.round(sp*1000),'v-gsp',sp.toFixed(3));
-    syncSlider('i-gb',120,'v-gb','12.0');
+    syncSlider('i-gb',80,'v-gb','8.0');
     syncSlider('i-gd',60,'v-gd',dFmt(P.gD));
     syncSlider('i-glp',0,'v-glp','0.000');
     syncSlider('i-ghp',1000,'v-ghp','1.000');
@@ -2203,9 +2682,9 @@ function applyPreset(type){
   } else if(type==='faint'){
     // Faint/IFN targets: conservative D for first pass, very high b focuses on foot
     // Expect to run multiple passes — each stretches a small amount further
-    P.gSP=sp; P.gB=15; P.gD=sToD(35); P.gLP=0; P.gHP=1.0;
+    P.gSP=sp; P.gB=10; P.gD=sToD(60); P.gLP=0; P.gHP=1.0; // clamped to new -10..10 range
     syncSlider('i-gsp',Math.round(sp*1000),'v-gsp',sp.toFixed(3));
-    syncSlider('i-gb',150,'v-gb','15.0');
+    syncSlider('i-gb',100,'v-gb','10.0');
     syncSlider('i-gd',35,'v-gd',dFmt(P.gD));
     syncSlider('i-glp',0,'v-glp','0.000');
     syncSlider('i-ghp',1000,'v-ghp','1.000');
@@ -2219,7 +2698,7 @@ function onMWP(v){exitPreviewIfActive();P.mwp=v/1000;document.getElementById('v-
 function onAsh(v){exitPreviewIfActive();P.aD=sToD(parseFloat(v));document.getElementById('v-ash').textContent=dFmt(P.aD);render();}
 function onGSP(v){exitPreviewIfActive();P.gSP=v/1000;document.getElementById('v-gsp').textContent=P.gSP.toFixed(3);scheduleHistDraw();render();}
 function onGD(v){exitPreviewIfActive();P.gD=sToD(parseFloat(v));document.getElementById('v-gd').textContent=dFmt(P.gD);render();}
-function onGB(v){exitPreviewIfActive();P.gB=parseFloat(v)/10;document.getElementById('v-gb').textContent=P.gB.toFixed(1);render();}
+function onGB(v){exitPreviewIfActive();P.gB=parseFloat(v)/10;document.getElementById('v-gb').textContent=P.gB.toFixed(1);render();} // Item 19: slider -100..100 → b -10..10
 function onGLP(v){exitPreviewIfActive();P.gLP=parseFloat(v)/1000;document.getElementById('v-glp').textContent=P.gLP.toFixed(3);scheduleHistDraw();render();}
 function onGHP(v){exitPreviewIfActive();P.gHP=parseFloat(v)/1000;document.getElementById('v-ghp').textContent=P.gHP.toFixed(3);scheduleHistDraw();render();}
 function onHT(v){exitPreviewIfActive();P.ht=v/100;document.getElementById('v-ht').textContent=P.ht.toFixed(2);render();}
@@ -2249,13 +2728,15 @@ function setPal(i,btn){P.pal=i;document.querySelectorAll('.pb2').forEach(b=>b.cl
 function _computeAutoSTF(){
   if(!hSampL.length) return;
 
-  // ── Per-channel sky floor neutralization (Option A) ───────────────
-  // Green is the reference channel — most populated, least LP-biased.
-  // Compute per-channel medians and MADs from sorted histogram samples.
+  // ── Per-channel pedestal subtraction (Item 6) ─────────────────────
+  // Each channel may have a different sky floor due to LP gradients
+  // or filter response. Subtracting per-channel pedestals BEFORE the
+  // stretch ensures all three channels enter the stretch with the
+  // same effective floor — eliminating residual deep-shadow colour
+  // cast that the old single-BP-plus-WB approach could not remove.
   const nR=hSampR.length, nG=hSampG.length, nB=hSampB.length;
   const medR=hSampR[Math.floor(nR/2)], medG=hSampG[Math.floor(nG/2)], medB=hSampB[Math.floor(nB/2)];
 
-  // MAD for each channel to find the BP (background clip point)
   function channelMAD(samp,med){
     const devs=new Float32Array(samp.length);
     for(let i=0;i<samp.length;i++) devs[i]=Math.abs(samp[i]-med);
@@ -2265,23 +2746,22 @@ function _computeAutoSTF(){
   const madG=channelMAD(hSampG,medG);
   const madB=channelMAD(hSampB,medB);
 
-  // Per-channel BP: median − 1.5×MAD, clamped to safe range
-  const bpR=Math.max(0,Math.min(.45,medR-1.5*madR));
-  const bpG=Math.max(0,Math.min(.45,medG-1.5*madG));
-  const bpB=Math.max(0,Math.min(.45,medB-1.5*madB));
+  // Per-channel pedestal: median − 1.5×MAD per channel, clamped
+  const pedR=Math.max(0,Math.min(.45,medR-1.5*madR));
+  const pedG=Math.max(0,Math.min(.45,medG-1.5*madG));
+  const pedB=Math.max(0,Math.min(.45,medB-1.5*madB));
+  P.pedR=pedR; P.pedG=pedG; P.pedB=pedB;
 
-  // Use green BP as the single P.bp (reference channel drives the clip slider)
-  P.bp=bpG;
-  syncSlider('i-bp',Math.round(P.bp*1000),'v-bp',P.bp.toFixed(3));
+  // Single BP slider remains for user override; auto-STF leaves it at 0
+  // because the pedestals already removed the per-channel offsets.
+  P.bp=0;
+  syncSlider('i-bp',0,'v-bp','0.000');
 
-  // Derive WB scalars so that after WB*channel, the effective sky floor
-  // equals the green sky floor. This neutralizes the brownish LP cast.
-  // Sky above BP for each channel after its own BP removal:
-  const skyR=Math.max(medR-bpR,1e-6);
-  const skyG=Math.max(medG-bpG,1e-6);
-  const skyB=Math.max(medB-bpB,1e-6);
-  // Scale R and B so their post-BP sky signal matches green's post-BP sky.
-  // Clamp to [0.5, 2.0] to avoid wild corrections on noisy short stacks.
+  // White balance scalars: now that pedestals align floors, WB only
+  // needs to balance the sky NOISE level (tighter than the old approach).
+  const skyR=Math.max(medR-pedR,1e-6);
+  const skyG=Math.max(medG-pedG,1e-6);
+  const skyB=Math.max(medB-pedB,1e-6);
   P.wR=Math.max(0.5,Math.min(2.0,skyG/skyR));
   P.wG=1.0;
   P.wB=Math.max(0.5,Math.min(2.0,skyG/skyB));
@@ -2289,8 +2769,11 @@ function _computeAutoSTF(){
   syncSlider('i-wg',100,'v-wg','1.00');
   syncSlider('i-wb',Math.round(P.wB*100),'v-wb',P.wB.toFixed(2));
 
+  // Reuse names below so existing code following this block continues to work
+  const bpG=pedG;
+
   // ── Stretch solve — driven by green channel (reference) ───────────
-  const mNorm=Math.max((medG-bpG)/Math.max(1-bpG,1e-4),0.001), tgt=0.15;
+  const mNorm=Math.max((medG-bpG)/Math.max(1-bpG,1e-4),0.001), tgt=P.stfTarget||0.15; // Item 15
 
   if(P.mode===0){
     const m=mNorm*(1-tgt)/(mNorm+tgt-2*mNorm*tgt);
@@ -2302,15 +2785,54 @@ function _computeAutoSTF(){
     for(let i=0;i<80;i++){D=(lo+hi)/2;(Math.asinh(D*mNorm)/Math.asinh(D)<tgt)?lo=D:hi=D;}
     P.aD=D;syncSlider('i-ash',dToSlider(D),'v-ash',dFmt(D));
   }else{
-    P.gSP=Math.max(.001,Math.min(.4,histFootVal>0?histFootVal:mNorm));
-    P.gB=0;
-    const tn=Math.min(.99,tgt/Math.max(P.gSP,.001));
-    let lo=0.1,hi=2000,D=50;
-    if(tn<1){for(let i=0;i<80;i++){D=(lo+hi)/2;(Math.asinh(D*.5)/Math.asinh(D)<tn)?lo=D:hi=D;}P.gD=D;}
-    else P.gD=100;
-    syncSlider('i-gsp',Math.min(500,Math.round(P.gSP*1000)),'v-gsp',P.gSP.toFixed(3));
-    syncSlider('i-gb',0,'v-gb','0.0');
+    // Item 18: joint (D, b) auto-solver. Search D first by bisection on
+    // post-stretch median = tgt, then refine b by coordinate descent.
+    // Constrains D to [0,30] (Item 19's recalibrated working range).
+    P.gSP=Math.max(.001,Math.min(.2,histFootVal>0?histFootVal:mNorm));
+    const sp=P.gSP, lp=0, hp=1.0;
+    function _evalGhsAt(xc,D,b){return _ghsCPU(xc,D,b,sp,lp,hp);}
+    function _solveDForB(b){
+      // Bisect D so that ghs(median_input)=tgt. median_input = mNorm*(1-bp)+bp = mNorm
+      // here is the channel-space normalised median that maps to tgt post-stretch.
+      let lo=0.01, hi=30;
+      for(let i=0;i<60;i++){
+        const D=(lo+hi)/2;
+        if(_evalGhsAt(mNorm,D,b)<tgt) lo=D; else hi=D;
+      }
+      return (lo+hi)/2;
+    }
+    function _residualForB(b){
+      const D=_solveDForB(b);
+      // Target: tgt at median, but also try to keep histFoot near sp post-stretch.
+      // Score = |y(median) - tgt| + 0.3*|y(footInput) - sp|
+      const yM=_evalGhsAt(mNorm,D,b);
+      const fIn=Math.max(0,(histFootVal-bpG)/Math.max(1-bpG,1e-4));
+      const yF=_evalGhsAt(fIn,D,b);
+      return Math.abs(yM-tgt)+0.3*Math.abs(yF-sp);
+    }
+    // Coordinate descent on b in [-2, 8] (sane working range)
+    let bestB=0, bestR=_residualForB(0);
+    for(const bTry of [-1,-0.5,0,0.5,1,2,3,4,6,8]){
+      const r=_residualForB(bTry);
+      if(r<bestR){bestR=r;bestB=bTry;}
+    }
+    // Refine bestB with one bisection-like step
+    for(const dB of [0.5,0.25,0.1]){
+      for(const bTry of [bestB-dB,bestB+dB]){
+        if(bTry>=-2&&bTry<=8){
+          const r=_residualForB(bTry);
+          if(r<bestR){bestR=r;bestB=bTry;}
+        }
+      }
+    }
+    P.gB=bestB;
+    P.gD=_solveDForB(bestB);
+    P.gLP=0; P.gHP=1.0;
+    syncSlider('i-gsp',Math.min(200,Math.round(P.gSP*1000)),'v-gsp',P.gSP.toFixed(3));
+    syncSlider('i-gb',Math.round(P.gB*10),'v-gb',P.gB.toFixed(1));
     syncSlider('i-gd',dToSlider(P.gD),'v-gd',dFmt(P.gD));
+    syncSlider('i-glp',0,'v-glp','0.000');
+    syncSlider('i-ghp',1000,'v-ghp','1.000');
   }
 }
 
@@ -2337,8 +2859,8 @@ function exitPreviewIfActive(){ resolvePreviewBeforeAction(); }
 // IDs/selectors of every interactive element to disable during preview lock.
 // Sliders already handled by exitPreviewIfActive; these are the button/tab controls.
 const PREVIEW_LOCK_SELECTORS=[
-  '#tb-info','#tb-bg','#tb-proc','#tb-guide',   // tab buttons
-  '#apply-btn','#exp-btn',                        // apply + export
+  '#tb-bg','#tb-proc','#tb-guide',   // tab buttons
+  '#apply-btn',                         // apply
   '#m-mtf','#m-ash','#m-ghs',                    // mode buttons
   '.pre-btn','.stf-btn',                          // preset + AUTO STRETCH + PREVIEW STF
   'input[type=range]',                            // all sliders
@@ -2433,6 +2955,15 @@ function showTab(id){
     if(gb){gb.classList.remove('on');gb.textContent='GAMMA VIEW';}
     requestAnimationFrame(()=>{if(histVisible())drawHist();});
   }
+  if(id==='enhance'){
+    // Entering Enhance tab — rebuild detail maps, draw curve editor
+    if(tR&&finDetailDirty) uploadDetailMaps();
+    requestAnimationFrame(()=>{
+      const pc=document.getElementById('fin-protect');
+      if(pc) pc.checked=P.finProtect;
+      drawCurveEditor();
+    });
+  }
   if(id==='bg'){
     // Entering BG tab — auto-activate gamma lift so image is visible
     bgGammaVal=0.28;
@@ -2444,7 +2975,7 @@ function showTab(id){
     const gb=document.getElementById('bg-gamma-btn');
     if(gb){gb.classList.add('on');gb.textContent='GAMMA ON';}
   }
-  if(id==='info'||id==='guide') bgGammaVal=0;
+  if(id==='guide') bgGammaVal=0;
   requestAnimationFrame(()=>{render();if(bgSamples.length)drawSampleOverlay();});
 }
 
@@ -2621,7 +3152,7 @@ function initGradTextures(){
   const zero=new Float32Array([0]);
   if(gl){
     [tGradR,tGradG,tGradB].forEach(t=>{if(t)gl.deleteTexture(t);});
-    tGradR=mkTex(zero,1,1);tGradG=mkTex(zero,1,1);tGradB=mkTex(zero,1,1);
+    tGradR=mkTexLinear(zero,1,1);tGradG=mkTexLinear(zero,1,1);tGradB=mkTexLinear(zero,1,1);
   }
 }
 
@@ -2682,7 +3213,7 @@ function generateBGSamples(){
       for(let py=y0;py<y1;py++){
         for(let px=x0;px<x1;px++){
           const i=py*bgDsW+px;
-          lumVals.push(0.299*bgDsR[i]+0.587*bgDsG[i]+0.114*bgDsB[i]);
+          lumVals.push(0.2126*bgDsR[i]+0.7152*bgDsG[i]+0.0722*bgDsB[i]);
         }
       }
       lumVals.sort((a,b)=>a-b);
@@ -2766,12 +3297,58 @@ function polyTerms(x,y,d){
   return[1,x,y,x*x,x*y,y*y,x*x*x,x*x*y,x*y*y,y*y*y]; // d===3
 }
 
+// Item 5: Robust polynomial fit via sigma-clipping IRLS.
+// Strategy: ordinary LS first, compute residuals, flag samples whose
+// |residual| exceeds 2.5*MAD as outliers, refit excluding them, repeat
+// once. This rejects samples that landed on faint stars / nebula edges
+// without requiring the user to manually deselect them.
+function _olsPolyFit(A,b,k){
+  const AtA=Array.from({length:k},(_,i)=>Array.from({length:k},(_,j)=>A.reduce((s,r)=>s+r[i]*r[j],0)));
+  const Atb=Array.from({length:k},(_,i)=>A.reduce((s,r,ri)=>s+r[i]*b[ri],0));
+  return solveLinear(AtA,Atb);
+}
+function _polyResiduals(coeffs,A,vals){
+  const res=new Float32Array(vals.length);
+  for(let i=0;i<vals.length;i++){
+    let pred=0;
+    for(let j=0;j<coeffs.length;j++) pred+=coeffs[j]*A[i][j];
+    res[i]=vals[i]-pred;
+  }
+  return res;
+}
+function _madOfArray(arr){
+  const sorted=[...arr].map(Math.abs).sort((a,b)=>a-b);
+  return sorted[Math.floor(sorted.length/2)]||0;
+}
 function fitPolynomial(acc,vals,degree){
   const k=polyTerms(0,0,degree).length;
   const A=acc.map(s=>polyTerms(s.x,s.y,degree));
-  const AtA=Array.from({length:k},(_,i)=>Array.from({length:k},(_,j)=>A.reduce((s,r)=>s+r[i]*r[j],0)));
-  const Atb=Array.from({length:k},(_,i)=>A.reduce((s,r,ri)=>s+r[i]*vals[ri],0));
-  return solveLinear(AtA,Atb);
+  // Pass 1 — OLS on all samples
+  let coeffs=_olsPolyFit(A,vals,k);
+  // Two iterations of sigma clipping (k=2.5)
+  for(let iter=0;iter<2;iter++){
+    const res=_polyResiduals(coeffs,A,vals);
+    const mad=_madOfArray(res);
+    const sig=Math.max(1e-9,1.4826*mad);
+    const threshold=2.5*sig;
+    // Build inlier-only fit inputs
+    const A_in=[], v_in=[];
+    let outliers=0;
+    for(let i=0;i<vals.length;i++){
+      if(Math.abs(res[i])<=threshold){A_in.push(A[i]);v_in.push(vals[i]);}
+      else outliers++;
+    }
+    // Stop if too few inliers (need at least k+2)
+    if(A_in.length<k+2) break;
+    // Stop if no outliers found (converged)
+    if(outliers===0) break;
+    coeffs=_olsPolyFit(A_in,v_in,k);
+    // Tag the original sample objects with outlier status (for UI later)
+    for(let i=0;i<acc.length;i++){
+      acc[i]._fitOutlier=Math.abs(res[i])>threshold;
+    }
+  }
+  return coeffs;
 }
 
 function evalPoly(coeffs,x,y,degree){
@@ -2854,9 +3431,9 @@ function evalGradSurface(ch){
 function uploadGradTextures(){
   if(!gl||!bgModel) return;
   [tGradR,tGradG,tGradB].forEach(t=>{if(t)gl.deleteTexture(t);});
-  tGradR=mkTex(evalGradSurface('R'),BG_GRAD_W,BG_GRAD_H);
-  tGradG=mkTex(evalGradSurface('G'),BG_GRAD_W,BG_GRAD_H);
-  tGradB=mkTex(evalGradSurface('B'),BG_GRAD_W,BG_GRAD_H);
+  tGradR=mkTexLinear(evalGradSurface('R'),BG_GRAD_W,BG_GRAD_H);
+  tGradG=mkTexLinear(evalGradSurface('G'),BG_GRAD_W,BG_GRAD_H);
+  tGradB=mkTexLinear(evalGradSurface('B'),BG_GRAD_W,BG_GRAD_H);
   render();
 }
 
@@ -3025,6 +3602,7 @@ async function applyBGCorrection(){
   // Re-upload textures via shared helper and reset gradient to zero (baked in now)
   replaceMainTextures(historyOrigR,historyOrigG,historyOrigB);
   bgApplied=true;
+  invalidateStarMask(); // Item 2: linear data changed → recompute mask
   initGradTextures(); // zero out gradient — correction is baked
   bgModel=null;bgSamples=[];bgGammaVal=0;
   gradVisActive=false;
@@ -3134,11 +3712,49 @@ function snapParams(){
     gD:P.gD, gB:P.gB, gSP:P.gSP, gLP:P.gLP, gHP:P.gHP,
     ht:P.ht, rl:P.rl, wR:P.wR, wG:P.wG, wB:P.wB, pal:P.pal,
     bgColorNR:P.bgColorNR,
+    // AstroClarity Finish params
+    finStruct:P.finStruct, finSharp:P.finSharp, finDehaze:P.finDehaze,
+    pedR:P.pedR||0, pedG:P.pedG||0, pedB:P.pedB||0,
+    finSat:P.finSat, finProtect:P.finProtect,
+    finDns:P.finDns, finLocal:P.finLocal,  // v5.2 snapshot for replay
+    passType:'stretch',
+    curvePts:{
+      ALL:JSON.parse(JSON.stringify(curvePts.ALL||[[0,0],[1,1]])),
+      L:JSON.parse(JSON.stringify(curvePts.L)),
+      R:JSON.parse(JSON.stringify(curvePts.R)),
+      G:JSON.parse(JSON.stringify(curvePts.G)),
+      B:JSON.parse(JSON.stringify(curvePts.B)),
+    },
   };
 }
 
 // Summarise a params snapshot for the log display
 function describePass(p){
+  if(p.passType==='denoise'){
+    return {m:'DENOISE', detail:`amt ${Math.round(p.finDns||0)}`};
+  }
+  if(p.passType==='localcontrast'){
+    return {m:'LOCAL', detail:`amt ${Math.round(p.finLocal||0)}`};
+  }
+  if(p.passType==='curves'){
+    const mods=[];
+    if(p.curvePts){
+      if(!isIdentityCurve(p.curvePts.ALL||[[0,0],[1,1]])) mods.push('ALL');
+      if(!isIdentityCurve(p.curvePts.L)) mods.push('L');
+      if(!isIdentityCurve(p.curvePts.R)) mods.push('R');
+      if(!isIdentityCurve(p.curvePts.G)) mods.push('G');
+      if(!isIdentityCurve(p.curvePts.B)) mods.push('B');
+    }
+    return {m:'CURVES', detail:mods.length?mods.join('/'):'custom'};
+  }
+  if(p.passType==='finish'){
+    const parts=[];
+    if((p.finStruct||0)>0) parts.push(`Structure ${Math.round(p.finStruct)}`);
+    if((p.finSharp||0)>0)  parts.push(`Sharp ${Math.round(p.finSharp)}`);
+    if((p.finDehaze||0)>0) parts.push(`Pop ${Math.round(p.finDehaze)}`);
+    if((p.finSat||0)!==0)  parts.push(`Sat ${p.finSat>0?'+':''}${Math.round(p.finSat)}`);
+    return {m:'FINISH', detail:parts.join(' · ')||'polish'};
+  }
   const modes=['MTF','ASINH','GHS'];
   const m=modes[p.mode]||'?';
   let detail='';
@@ -3170,6 +3786,7 @@ function replaceMainTextures(r,g,b){
   tR=mkTex(r,NW,NH);
   tG=mkTex(g,NW,NH);
   tB=mkTex(b,NW,NH);
+  finDetailDirty=true; // detail maps stale after image changes
 }
 
 // Checkpoint helpers
@@ -3219,10 +3836,11 @@ function resetStretchHistoryFromBase(){
 // CPU-side per-channel GHS/MTF/Asinh — mirrors shader exactly.
 // src: input Float32Array, dst: pre-allocated output Float32Array
 // scale: white-balance multiplier applied inline (no .map() allocation)
-function applyStretchCPU(src, dst, p, scale=1.0){
+function applyStretchCPU(src, dst, p, scale=1.0, pedestal=0){
   const n=src.length;
   for(let i=0;i<n;i++){
-    let x=src[i]*scale;
+    // Item 6: per-channel pedestal subtraction before bp clamp
+    let x=Math.max(0,src[i]-pedestal)*scale;
     let v=0;
     if(p.mode===0){
       // MTF
@@ -3236,7 +3854,7 @@ function applyStretchCPU(src, dst, p, scale=1.0){
       if(p.aD<0.001) v=s;
       else v=Math.asinh(p.aD*s)/Math.asinh(p.aD);
     } else {
-      // GHS
+      // Item 17: GHS C1 with b on both sides — mirrors GPU ghs() exactly.
       const xc=Math.max(x-p.bp,0)/Math.max(1-p.bp,1e-4);
       if(p.gD<0.001){v=xc;}
       else {
@@ -3244,37 +3862,1396 @@ function applyStretchCPU(src, dst, p, scale=1.0){
         const lp=Math.min(p.gLP,sp);
         const hp=Math.max(p.gHP,sp);
         const D=p.gD, b=p.gB;
-        let s;
-        if(xc<=sp){
-          const xn=sp>0?xc/sp:0;
-          let xb;
-          if(b>0.001) xb=xn*(1+b)/(1+b*xn);
-          else if(b<-0.001){const nb=-b;xb=Math.log(1+nb*xn)/Math.max(Math.log(1+nb),1e-9);}
-          else xb=xn;
-          let sn=Math.asinh(D*xb)/Math.max(Math.asinh(D),1e-9);
-          const lpN=sp>0?lp/sp:0;
-          if(xn<lpN&&lpN>0.001) sn=xn/lpN*sn+(1-xn/lpN)*xn;
-          s=Math.max(0,Math.min(1,sn))*sp;
-        } else {
-          const xn=(xc-sp)/Math.max(1-sp,1e-9);
-          let sn=Math.log(1+D*xn)/Math.max(Math.log(1+D),1e-9);
-          const hpN=(hp-sp)/Math.max(1-sp,1e-9);
-          if(xn>hpN&&hpN<0.999){const t=(xn-hpN)/Math.max(1-hpN,1e-9);sn=sn*(1-t)+xn*t;}
-          s=sp+Math.max(0,Math.min(1,sn))*Math.max(1-sp,0);
-        }
-        v=Math.max(0,Math.min(1,s));
+        v=_ghsCPU(xc,D,b,sp,lp,hp);
       }
     }
-    // Highlights
-    if(p.ht>0.001&&v>0.5) v=0.5+Math.pow((v-0.5)/0.5,1+p.ht*3)*0.5;
+    // Item 7: smooth Reinhard highlights knee, mirrors GPU exactly.
+    if(p.ht>0.001) v=v/(1+p.ht*v*v);
     // Roll-off is applied as a post-pass via applyStarRolloffCPU (not per-channel)
     dst[i]=Math.max(0,Math.min(1,v));
   }
 }
 
-// ── COLOR-SAFE STRETCH — CPU BAKE ─────────────────────────────────────
-// simultaneously. WB scaling is applied inline before luminance computation.
-// p.csBlack/csWhite/csBgMedian/csBgSigma must be pre-resolved from snapParams.
+// ═══════════════════════════════════════════════════════════════════
+// ASTROCLARITY FINISH — CPU PIPELINE (mirrors GPU shader for bake parity)
+// ═══════════════════════════════════════════════════════════════════
+
+// Item 4: à trous wavelet decomposition with B3 spline kernel [1,4,6,4,1]/16.
+// Generates detail planes at 1, 2, 4, 8, ... pixel scales by inserting holes
+// (zeros) between kernel coefficients on each successive pass.
+// Mirror padding at boundaries avoids edge ringing.
+//
+//   W_j = A_{j-1} - A_j  where A_j = atrous_blur(A_{j-1}, stride=2^(j-1))
+//
+// For finish processing we use:
+//   W1 (1-2 px features)  → sharpness slider
+//   W2 (4-8 px features)  → structure slider
+//
+// Item 12: per-scale sigma estimated as 1.4826 * MAD(|W_j|) and used as the
+// soft-threshold floor in both CPU and shader branches, so noise at each
+// scale is never amplified by the structure or sharpness controls.
+
+function _atrousMirror(x,n){
+  if(x<0) return -x;
+  if(x>=n) return 2*n-x-2;
+  return x;
+}
+function _atrousRowPass(src,dst,w,h,stride){
+  const c0=1/16, c1=4/16, c2=6/16;
+  for(let y=0;y<h;y++){
+    const row=y*w;
+    for(let x=0;x<w;x++){
+      const x_2=_atrousMirror(x-2*stride,w);
+      const x_1=_atrousMirror(x-stride,w);
+      const x_p1=_atrousMirror(x+stride,w);
+      const x_p2=_atrousMirror(x+2*stride,w);
+      dst[row+x]=c0*src[row+x_2]+c1*src[row+x_1]+c2*src[row+x]+c1*src[row+x_p1]+c0*src[row+x_p2];
+    }
+  }
+}
+function _atrousColPass(src,dst,w,h,stride){
+  const c0=1/16, c1=4/16, c2=6/16;
+  for(let x=0;x<w;x++){
+    for(let y=0;y<h;y++){
+      const y_2=_atrousMirror(y-2*stride,h);
+      const y_1=_atrousMirror(y-stride,h);
+      const y_p1=_atrousMirror(y+stride,h);
+      const y_p2=_atrousMirror(y+2*stride,h);
+      dst[y*w+x]=c0*src[y_2*w+x]+c1*src[y_1*w+x]+c2*src[y*w+x]+c1*src[y_p1*w+x]+c0*src[y_p2*w+x];
+    }
+  }
+}
+
+// Returns {W1, W2, W3, smooth} — three detail planes plus residual smooth.
+function buildAtrousScales(lum,w,h){
+  const n=w*h;
+  let A=new Float32Array(lum);
+  const tmp=new Float32Array(n);
+  const next=new Float32Array(n);
+  const W=[];
+  for(let s=1;s<=3;s++){
+    const stride=1<<(s-1); // 1, 2, 4
+    _atrousRowPass(A,tmp,w,h,stride);
+    _atrousColPass(tmp,next,w,h,stride);
+    const detail=new Float32Array(n);
+    for(let i=0;i<n;i++) detail[i]=A[i]-next[i];
+    W.push(detail);
+    A=new Float32Array(next);
+  }
+  return {W1:W[0],W2:W[1],W3:W[2],smooth:A};
+}
+
+// Per-scale sigma via MAD of absolute values.
+function scaleSigma(scale){
+  const n=scale.length;
+  // Subsample for speed; mask values do not need the full image to estimate noise.
+  const stride=Math.max(1,Math.floor(n/40000));
+  const sample=[];
+  for(let i=0;i<n;i+=stride) sample.push(Math.abs(scale[i]));
+  sample.sort((a,b)=>a-b);
+  const mad=sample[Math.floor(sample.length/2)];
+  return Math.max(1e-6,1.4826*mad);
+}
+
+// Build wavelet scales + sigmas in one call. Used by uploadDetailMaps,
+// applyFinishOnly, and replayFromCheckpointToPass.
+function buildAtrousFinishData(r,g,b){
+  const n=r.length;
+  const lum=new Float32Array(n);
+  for(let i=0;i<n;i++) lum[i]=Math.max(0,0.2126*r[i]+0.7152*g[i]+0.0722*b[i]);
+  const sc=buildAtrousScales(lum,NW,NH);
+  return { W1:sc.W1, W2:sc.W2, W3:sc.W3,
+           sigW1:scaleSigma(sc.W1), sigW2:scaleSigma(sc.W2), sigW3:scaleSigma(sc.W3) };
+}
+
+// Backward-compat shim: callers that still pass a radius are routed to wavelets.
+// Radius <=2 → W1 (sharpness). Radius >2 → W2 (structure).
+// This keeps old replay snapshots working without code changes.
+function buildDetailMap(r,g,b,radius){
+  const data=buildAtrousFinishData(r,g,b);
+  return radius<=2?data.W1:data.W2;
+}
+
+// Item 4: upload wavelet-based detail maps + cache per-scale sigmas
+// (sigmas are pushed to the shader as u_sigScale1 / u_sigScale2 in render()).
+function uploadDetailMaps(r,g,b){
+  if(!gl) return;
+  const sR=r||lastStretchedR||historyOrigR;
+  const sG=g||lastStretchedG||historyOrigG;
+  const sB=b||lastStretchedB||historyOrigB;
+  if(!sR) return;
+  const data=buildAtrousFinishData(sR,sG,sB);
+  if(tDetailMed)  gl.deleteTexture(tDetailMed);
+  if(tDetailFine) gl.deleteTexture(tDetailFine);
+  if(tDetailW3)   gl.deleteTexture(tDetailW3);
+  tDetailMed=mkTexLinear(data.W2,NW,NH);   // structure → scale 2 (4-8 px)
+  tDetailFine=mkTexLinear(data.W1,NW,NH);  // sharpness → scale 1 (1-2 px)
+  tDetailW3=mkTexLinear(data.W3,NW,NH);    // local contrast → scale 3 (16-32 px)
+  finSigW1=data.sigW1;
+  finSigW2=data.sigW2;
+  finSigW3=data.sigW3;
+  finDetailDirty=false;
+}
+
+
+// v5.2 Item 11: Display-space denoise CPU bake — mirrors GPU shader exactly.
+// Removes wavelet-scale-1 noise from luminance, with star/highlight protection.
+// Uses the cached linear-space star mask (Item 2) for star protection.
+function applyDenoiseCPU(dR,dG,dB,p,W1){
+  const n=dR.length;
+  const amt=(p.finDns||0)/100;
+  if(amt<=0) return;
+  const sigW1=finSigW1; // already cached from buildAtrousFinishData call
+  const starMask=getStarMask();
+  for(let i=0;i<n;i++){
+    let r=dR[i],g=dG[i],b=dB[i];
+    const Lf=0.2126*r+0.7152*g+0.0722*b;
+    const det=W1[i];
+    const detS=Math.sign(det)*Math.max(0,Math.abs(det)-sigW1*1.5);
+    const noise=det-detS;
+    const starM=starMask[i]||0;
+    const hiProt=1-_smoothstep(0.7,0.95,Lf);
+    const dnsMask=(1-0.7*starM)*hiProt;
+    const Lcleaned=Lf-amt*noise*dnsMask;
+    const ratio=Math.min(1.3,Math.max(0.7,Lcleaned/Math.max(Lf,1e-6)));
+    dR[i]=Math.min(1,r*ratio);
+    dG[i]=Math.min(1,g*ratio);
+    dB[i]=Math.min(1,b*ratio);
+  }
+}
+
+// v5.2 Item 13: Multi-scale local contrast CPU bake — uses wavelet scale 3.
+// Boosts large-scale features (16-32 px) — dust lanes, nebula filaments —
+// in mid-luminance regions. Stars and deep background are protected.
+function applyLocalContrastCPU(dR,dG,dB,p,W3){
+  const n=dR.length;
+  const amt=(p.finLocal||0)/100;
+  if(amt<=0) return;
+  const sigW3=finSigW3;
+  const bg=histPeakVal,sig=Math.max(histBgSigma,1e-4);
+  for(let i=0;i<n;i++){
+    let r=dR[i],g=dG[i],b=dB[i];
+    const Lf=0.2126*r+0.7152*g+0.0722*b;
+    const det=W3[i];
+    const detS=Math.sign(det)*Math.max(0,Math.abs(det)-sigW3);
+    const sigMask=_smoothstep(bg+1.5*sig,bg+6*sig,Lf);
+    const midMask=sigMask*(1-_smoothstep(0.7,0.92,Lf));
+    const L2=Math.min(1,Math.max(0,Lf+detS*amt*0.8*midMask));
+    const ratio=Math.min(1.6,Math.max(0.6,L2/Math.max(Lf,1e-6)));
+    dR[i]=Math.min(1,r*ratio);
+    dG[i]=Math.min(1,g*ratio);
+    dB[i]=Math.min(1,b*ratio);
+  }
+}
+
+// Apply the full AstroClarity Finish pipeline in-place on dR/dG/dB.
+// Mirrors the GPU shader section exactly — same math, same order.
+function applyFinishCPU(dR,dG,dB,p,detMed,detFine){
+  const n=dR.length;
+  const bg=histPeakVal,sig=Math.max(histBgSigma,1e-4);
+  const struct=(p.finStruct||0)/100;
+  const sharp=(p.finSharp||0)/100;
+  const dehaze=(p.finDehaze||0)/100;
+  const sat=(p.finSat||0)/50;
+  const protect=p.finProtect!==false;
+  const hasAny=struct>0||sharp>0||dehaze>0||Math.abs(sat)>0;
+  if(!hasAny) return;
+  const starMask=getStarMask(); // Item 2: cached linear-space mask
+  for(let i=0;i<n;i++){
+    let r=dR[i],g=dG[i],b=dB[i];
+    let L=0.2126*r+0.7152*g+0.0722*b;
+    const sigMask=_smoothstep(bg+1.5*sig,bg+6.0*sig,L);
+    const starM=starMask[i];
+    const starProt=1.0-0.85*starM;
+    const hiProt=1.0-_smoothstep(0.75,0.98,L);
+    const finMask=protect?sigMask*starProt:sigMask;
+    const satMaskV=sigMask*(1.0-0.7*starM);
+    if(struct>0&&detMed){
+      // Item 12: soft-threshold using wavelet scale 2 sigma
+      const det=detMed[i];
+      const detS=Math.sign(det)*Math.max(0,Math.abs(det)-finSigW2);
+      const L2=Math.min(1,Math.max(0,L+detS*struct*1.2*finMask));
+      const ratio=Math.min(1.8,Math.max(0.5,L2/Math.max(L,1e-6)));
+      r=Math.min(1,r*ratio);g=Math.min(1,g*ratio);b=Math.min(1,b*ratio);
+      L=0.2126*r+0.7152*g+0.0722*b;
+    }
+    if(sharp>0&&detFine){
+      // Item 12: soft-threshold using wavelet scale 1 sigma
+      const det=detFine[i];
+      const detS=Math.sign(det)*Math.max(0,Math.abs(det)-finSigW1);
+      const L2=Math.min(1,Math.max(0,L+detS*sharp*0.6*finMask*hiProt));
+      const ratio=Math.min(1.35,Math.max(0.75,L2/Math.max(L,1e-6)));
+      r=Math.min(1,r*ratio);g=Math.min(1,g*ratio);b=Math.min(1,b*ratio);
+      L=0.2126*r+0.7152*g+0.0722*b;
+    }
+    if(dehaze>0){
+      // Mirrors GPU formula exactly
+      const objMask=finMask*hiProt;
+      const bellCurve=L*(1.0-L)*4.0;
+      const Ldelta=L*dehaze*0.30*bellCurve*objMask;
+      const L2=Math.min(1,Math.max(0,L+Ldelta));
+      const ratio=Math.min(1.30,Math.max(0.92,L2/Math.max(L,1e-6)));
+      r=Math.min(1,r*ratio);g=Math.min(1,g*ratio);b=Math.min(1,b*ratio);
+      L=0.2126*r+0.7152*g+0.0722*b;
+    }
+    if(Math.abs(sat)>0){
+      // Item 8: hue-preserving saturation, mirrors GPU exactly
+      const f=1.0+sat*satMaskV;
+      const cr=r-L, cg=g-L, cb=b-L;
+      let rs=L+cr*f, gs=L+cg*f, bs=L+cb*f;
+      const maxV=Math.max(rs,Math.max(gs,bs));
+      const minV=Math.min(rs,Math.min(gs,bs));
+      if(maxV>1){
+        const fAdj=(1-L)/Math.max(maxV-L,1e-6);
+        rs=L+cr*f*fAdj; gs=L+cg*f*fAdj; bs=L+cb*f*fAdj;
+      }
+      if(minV<0){
+        const fAdj=L/Math.max(L-minV,1e-6);
+        rs=L+cr*f*fAdj; gs=L+cg*f*fAdj; bs=L+cb*f*fAdj;
+      }
+      r=Math.min(1,Math.max(0,rs));
+      g=Math.min(1,Math.max(0,gs));
+      b=Math.min(1,Math.max(0,bs));
+    }
+    dR[i]=r;dG[i]=g;dB[i]=b;
+  }
+}
+
+// Bake the current finish settings as a separate history pass.
+// Uses passType='finish' so replay handles it correctly.
+// Sliders reset to zero after baking to prevent double-application.
+async function applyFinishOnly(){
+  const hasEffect=P.finStruct>0||P.finSharp>0||P.finDehaze>0||P.finSat!==0;
+  if(!hasEffect||!tR||!historyOrigR) return;
+  const applyBtn=document.querySelector('#tab-enhance .btn-acc');
+  if(applyBtn){applyBtn.disabled=true;applyBtn.textContent='APPLYING…';}
+  showApplyAnim('APPLYING FINISH…');
+  await raf();await raf();
+  const snap=snapParams();
+  snap.passType='finish';
+  // Get current working pixel data
+  let srcR,srcG,srcB;
+  if(currentPass===0){
+    srcR=new Float32Array(historyOrigR);
+    srcG=new Float32Array(historyOrigG);
+    srcB=new Float32Array(historyOrigB);
+  } else {
+    const w=replayFromCheckpointToPass(currentPass);
+    srcR=new Float32Array(w.r);srcG=new Float32Array(w.g);srcB=new Float32Array(w.b);
+  }
+  // Item 4: wavelet scales + sigmas
+  const data=buildAtrousFinishData(srcR,srcG,srcB);
+  finSigW1=data.sigW1; finSigW2=data.sigW2;
+  applyFinishCPU(srcR,srcG,srcB,snap,data.W2,data.W1);
+  lastStretchedR=new Float32Array(srcR);
+  lastStretchedG=new Float32Array(srcG);
+  lastStretchedB=new Float32Array(srcB);
+  buildAndUploadStarMask(srcR,srcG,srcB);
+  buildHistSamples(srcR,srcG,srcB);
+  replaceMainTextures(srcR,srcG,srcB);
+  // Add to history
+  historyStack=historyStack.slice(0,currentPass);
+  historyCheckpoints=historyCheckpoints.filter(cp=>cp.passIndex<=currentPass);
+  historyStack.push({params:snap,passType:'finish'});
+  currentPass=historyStack.length;
+  if(currentPass%CHECKPOINT_INTERVAL===0){
+    historyCheckpoints.push(makeCheckpoint(currentPass,srcR,srcG,srcB));
+    pruneCheckpoints();
+  }
+  // Reset sliders to zero — prevents double-application on re-entry
+  resetFinish();
+  // Upload detail maps from baked image (finish is now 0 so no visual change)
+  uploadDetailMaps(srcR,srcG,srcB);
+  if(histVisible()) drawHist();
+  render();updatePassUI();hideApplyAnim();
+  trackGA4('finish_pass_applied',{device_class:getDeviceClass()});
+  if(applyBtn){applyBtn.disabled=false;applyBtn.textContent='APPLY FINISH';}
+}
+
+// v5.2 Item 11: Bake denoise as a separate history pass (passType='denoise').
+async function applyDenoiseOnly(){
+  if((P.finDns||0)<=0||!tR||!historyOrigR) return;
+  const applyBtn=document.querySelector('#dns-apply-btn');
+  if(applyBtn){applyBtn.disabled=true;applyBtn.textContent='APPLYING…';}
+  showApplyAnim('APPLYING DENOISE…');
+  await raf();await raf();
+  const snap=snapParams();
+  snap.passType='denoise';
+  let srcR,srcG,srcB;
+  if(currentPass===0){
+    srcR=new Float32Array(historyOrigR);srcG=new Float32Array(historyOrigG);srcB=new Float32Array(historyOrigB);
+  } else {
+    const w=replayFromCheckpointToPass(currentPass);
+    srcR=new Float32Array(w.r);srcG=new Float32Array(w.g);srcB=new Float32Array(w.b);
+  }
+  const data=buildAtrousFinishData(srcR,srcG,srcB);
+  finSigW1=data.sigW1;finSigW2=data.sigW2;finSigW3=data.sigW3;
+  applyDenoiseCPU(srcR,srcG,srcB,snap,data.W1);
+  lastStretchedR=new Float32Array(srcR);lastStretchedG=new Float32Array(srcG);lastStretchedB=new Float32Array(srcB);
+  buildAndUploadStarMask(srcR,srcG,srcB);
+  buildHistSamples(srcR,srcG,srcB);
+  replaceMainTextures(srcR,srcG,srcB);
+  historyStack=historyStack.slice(0,currentPass);
+  historyCheckpoints=historyCheckpoints.filter(cp=>cp.passIndex<=currentPass);
+  historyStack.push({params:snap,passType:'denoise'});
+  currentPass=historyStack.length;
+  if(currentPass%CHECKPOINT_INTERVAL===0){
+    historyCheckpoints.push(makeCheckpoint(currentPass,srcR,srcG,srcB));
+    pruneCheckpoints();
+  }
+  resetDenoise();
+  if(histVisible()) drawHist();
+  render();updatePassUI();hideApplyAnim();
+  trackGA4('denoise_pass_applied',{device_class:getDeviceClass()});
+  if(applyBtn){applyBtn.disabled=false;applyBtn.textContent='APPLY DENOISE';}
+}
+function resetDenoise(){
+  P.finDns=0;
+  syncSlider('i-fin-dns',0,'v-fin-dns','0');
+  render();
+}
+
+// v5.2 Item 13: Bake local contrast as a separate history pass (passType='localcontrast').
+async function applyLocalContrastOnly(){
+  if((P.finLocal||0)<=0||!tR||!historyOrigR) return;
+  const applyBtn=document.querySelector('#lc-apply-btn');
+  if(applyBtn){applyBtn.disabled=true;applyBtn.textContent='APPLYING…';}
+  showApplyAnim('APPLYING LOCAL CONTRAST…');
+  await raf();await raf();
+  const snap=snapParams();
+  snap.passType='localcontrast';
+  let srcR,srcG,srcB;
+  if(currentPass===0){
+    srcR=new Float32Array(historyOrigR);srcG=new Float32Array(historyOrigG);srcB=new Float32Array(historyOrigB);
+  } else {
+    const w=replayFromCheckpointToPass(currentPass);
+    srcR=new Float32Array(w.r);srcG=new Float32Array(w.g);srcB=new Float32Array(w.b);
+  }
+  const data=buildAtrousFinishData(srcR,srcG,srcB);
+  finSigW1=data.sigW1;finSigW2=data.sigW2;finSigW3=data.sigW3;
+  applyLocalContrastCPU(srcR,srcG,srcB,snap,data.W3);
+  lastStretchedR=new Float32Array(srcR);lastStretchedG=new Float32Array(srcG);lastStretchedB=new Float32Array(srcB);
+  buildAndUploadStarMask(srcR,srcG,srcB);
+  buildHistSamples(srcR,srcG,srcB);
+  replaceMainTextures(srcR,srcG,srcB);
+  historyStack=historyStack.slice(0,currentPass);
+  historyCheckpoints=historyCheckpoints.filter(cp=>cp.passIndex<=currentPass);
+  historyStack.push({params:snap,passType:'localcontrast'});
+  currentPass=historyStack.length;
+  if(currentPass%CHECKPOINT_INTERVAL===0){
+    historyCheckpoints.push(makeCheckpoint(currentPass,srcR,srcG,srcB));
+    pruneCheckpoints();
+  }
+  resetLocalContrast();
+  if(histVisible()) drawHist();
+  render();updatePassUI();hideApplyAnim();
+  trackGA4('localcontrast_pass_applied',{device_class:getDeviceClass()});
+  if(applyBtn){applyBtn.disabled=false;applyBtn.textContent='APPLY LOCAL';}
+}
+function resetLocalContrast(){
+  P.finLocal=0;
+  syncSlider('i-fin-local',0,'v-fin-local','0');
+  render();
+}
+
+// Slider input handlers
+function onDnsAmt(v){exitPreviewIfActive();P.finDns=parseFloat(v);document.getElementById('v-fin-dns').textContent=Math.round(P.finDns);render();}
+function onLcAmt(v){exitPreviewIfActive();P.finLocal=parseFloat(v);document.getElementById('v-fin-local').textContent=Math.round(P.finLocal);render();}
+
+// Reset all four finish sliders to zero
+function resetFinish(){
+  P.finStruct=0;P.finSharp=0;P.finDehaze=0;P.finSat=0;
+  ['struct','sharp','dehaze','sat'].forEach(k=>{
+    const sl=document.getElementById('i-fin-'+k);
+    const lb=document.getElementById('v-fin-'+k);
+    if(sl) sl.value=0;
+    if(lb) lb.textContent='0';
+  });
+  const sel=document.getElementById('fin-preset');if(sel) sel.value='';
+  render();
+}
+
+// oninput handler for all four finish sliders
+function onFinSlider(key,v){
+  const val=parseFloat(v);
+  if(key==='struct')      P.finStruct=val;
+  else if(key==='sharp')  P.finSharp=val;
+  else if(key==='dehaze') P.finDehaze=val;
+  else if(key==='sat')    P.finSat=val;
+  const lb=document.getElementById('v-fin-'+key);
+  if(lb) lb.textContent=Math.round(val);
+  render();
+}
+
+// Preset values — conservative per spec
+const FIN_PRESETS={
+  natural:{finStruct:12,finSharp:5, finDehaze:5, finSat:5 },
+  galaxy: {finStruct:22,finSharp:8, finDehaze:10,finSat:5 },
+  nebula: {finStruct:15,finSharp:3, finDehaze:6, finSat:10},
+  bortle6:{finStruct:12,finSharp:3, finDehaze:12,finSat:6 },
+  lunar:  {finStruct:25,finSharp:15,finDehaze:8, finSat:0 },
+};
+function applyFinishPreset(key){
+  const p=FIN_PRESETS[key];if(!p) return;
+  Object.assign(P,p);
+  ['struct','sharp','dehaze','sat'].forEach(k=>{
+    const fk='fin'+k.charAt(0).toUpperCase()+k.slice(1);
+    const sl=document.getElementById('i-fin-'+k);
+    const lb=document.getElementById('v-fin-'+k);
+    if(sl) sl.value=p[fk]||0;
+    if(lb) lb.textContent=Math.round(p[fk]||0);
+  });
+  if(tR) uploadDetailMaps();
+  render();
+}
+
+// Called after file load — init safe fallback detail textures and curve LUT
+function onEnhanceReady(){
+  if(!gl) return;
+  if(!tDetailMed)  tDetailMed=mkTex(new Float32Array([0]),1,1);
+  if(!tDetailFine) tDetailFine=mkTex(new Float32Array([0]),1,1);
+  if(!tDetailW3)   tDetailW3=mkTex(new Float32Array([0]),1,1);
+  uploadCurveLUT(); // identity LUT on first load
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+// ADVANCED CURVES — LRGB MONOTONE CUBIC INTERPOLATION
+// ═══════════════════════════════════════════════════════════════════
+
+// Monotone cubic spline (Fritsch-Carlson). Returns function(x)→y.
+// ── Curve interpolation (v5.4) ────────────────────────────────────
+// Default is linear. Monotone cubic is retained below under the
+// 'smooth' mode so callers can opt in later without re-deriving the math.
+let curveInterpolationMode='linear';
+
+// Sanitize a curve point array. Always returns a valid array containing
+// at least [[0,0],[1,1]]; sorts by x; clamps x/y to [0,1]; removes
+// near-duplicate x values; forces the endpoints to be exactly [0,0] and [1,1].
+function sanitizeCurvePts(pts){
+  let arr=(Array.isArray(pts)?pts:[])
+    .filter(p=>Array.isArray(p)&&p.length===2&&
+               typeof p[0]==='number'&&typeof p[1]==='number'&&
+               !isNaN(p[0])&&!isNaN(p[1]))
+    .map(p=>[Math.max(0,Math.min(1,p[0])),Math.max(0,Math.min(1,p[1]))]);
+  arr.sort((a,b)=>a[0]-b[0]);
+  // Drop near-duplicate x (keep the first)
+  const dedup=[];
+  for(const p of arr){
+    if(dedup.length===0||p[0]-dedup[dedup.length-1][0]>1e-4) dedup.push(p);
+  }
+  // Force [0,0] endpoint
+  if(dedup.length===0||dedup[0][0]>1e-4) dedup.unshift([0,0]);
+  else dedup[0]=[0,0];
+  // Force [1,1] endpoint
+  if(dedup[dedup.length-1][0]<1-1e-4) dedup.push([1,1]);
+  else dedup[dedup.length-1]=[1,1];
+  return dedup;
+}
+
+// Linear interpolation at x. Caller may pass an unsorted/unsanitized
+// array; we tolerate this and run sanitization. For tight inner loops
+// (LUT building) prefer linearEvalFn which sanitizes once.
+function linearCurveEval(pts,x){
+  const arr=sanitizeCurvePts(pts);
+  if(x<=arr[0][0]) return Math.max(0,Math.min(1,arr[0][1]));
+  if(x>=arr[arr.length-1][0]) return Math.max(0,Math.min(1,arr[arr.length-1][1]));
+  let lo=0,hi=arr.length-2;
+  while(lo<hi){
+    const mid=(lo+hi+1)>>1;
+    if(arr[mid][0]<=x) lo=mid; else hi=mid-1;
+  }
+  const x0=arr[lo][0],y0=arr[lo][1],x1=arr[lo+1][0],y1=arr[lo+1][1];
+  const t=(x-x0)/Math.max(x1-x0,1e-9);
+  return Math.max(0,Math.min(1,y0+t*(y1-y0)));
+}
+
+// Return a closure x → y. Sanitizes once, then binary-searches per call.
+function linearEvalFn(pts){
+  const arr=sanitizeCurvePts(pts);
+  return x=>{
+    if(x<=arr[0][0]) return Math.max(0,Math.min(1,arr[0][1]));
+    if(x>=arr[arr.length-1][0]) return Math.max(0,Math.min(1,arr[arr.length-1][1]));
+    let lo=0,hi=arr.length-2;
+    while(lo<hi){
+      const mid=(lo+hi+1)>>1;
+      if(arr[mid][0]<=x) lo=mid; else hi=mid-1;
+    }
+    const x0=arr[lo][0],y0=arr[lo][1],x1=arr[lo+1][0],y1=arr[lo+1][1];
+    const t=(x-x0)/Math.max(x1-x0,1e-9);
+    return Math.max(0,Math.min(1,y0+t*(y1-y0)));
+  };
+}
+
+// Choose interpolation based on curveInterpolationMode. Both branches
+// sanitize input. Used by drawCurve and buildCurveLUT so preview and
+// bake stay byte-identical.
+function curveEvalFn(pts){
+  if(curveInterpolationMode==='smooth') return monoCubic(sanitizeCurvePts(pts));
+  return linearEvalFn(pts);
+}
+
+function monoCubic(pts){
+  const n=pts.length;
+  if(n<2) return x=>x;
+  if(n===2) return x=>{
+    const t=(x-pts[0][0])/(pts[1][0]-pts[0][0]||1e-9);
+    return pts[0][1]+Math.max(0,Math.min(1,t))*(pts[1][1]-pts[0][1]);
+  };
+  const dx=[],dy=[],m=[];
+  for(let i=0;i<n-1;i++){dx[i]=pts[i+1][0]-pts[i][0]||1e-9;dy[i]=pts[i+1][1]-pts[i][1];m[i]=dy[i]/dx[i];}
+  const t=[m[0]];
+  for(let i=1;i<n-1;i++) t[i]=m[i-1]*m[i]<=0?0:(m[i-1]+m[i])/2;
+  t[n-1]=m[n-2];
+  for(let i=0;i<n-1;i++){
+    if(Math.abs(m[i])<1e-9){t[i]=0;t[i+1]=0;continue;}
+    const a=t[i]/m[i],b=t[i+1]/m[i],mag=a*a+b*b;
+    if(mag>9){const s=3/Math.sqrt(mag);t[i]=s*a*m[i];t[i+1]=s*b*m[i];}
+  }
+  return x=>{
+    if(x<=pts[0][0]) return pts[0][1];
+    if(x>=pts[n-1][0]) return pts[n-1][1];
+    let lo=0,hi=n-2;
+    while(lo<hi-1){const mid=(lo+hi)>>1;pts[mid][0]<=x?lo=mid:hi=mid;}
+    const h=dx[lo],s=(x-pts[lo][0])/h,s2=s*s,s3=s2*s;
+    return (2*s3-3*s2+1)*pts[lo][1]+(s3-2*s2+s)*h*t[lo]+(-2*s3+3*s2)*pts[lo+1][1]+(s3-s2)*h*t[lo+1];
+  };
+}
+
+// Returns true when pts is exactly [[0,0],[1,1]] (identity)
+function isIdentityCurve(pts){
+  return pts.length===2&&pts[0][0]===0&&pts[0][1]===0&&pts[1][0]===1&&pts[1][1]===1;
+}
+
+// Build a 256-entry Float32Array LUT from control points
+function buildCurveLUT(pts){
+  // v5.4: routes through curveEvalFn which uses linearEvalFn by default.
+  // sanitizeCurvePts inside curveEvalFn guarantees endpoints and ordering.
+  const fn=curveEvalFn(pts);
+  const lut=new Float32Array(256);
+  for(let i=0;i<256;i++) lut[i]=Math.max(0,Math.min(1,fn(i/255)));
+  return lut;
+}
+
+// Upload all four curves as a 256×4 R32F texture (rows: L, R, G, B)
+// Build composed LUTs: for each of L/R/G/B, compose channel curve then ALL on top.
+// Returns {L,R,G,B} as four Float32Array(256) LUTs ready for GPU or CPU use.
+// pts must include ALL, L, R, G, B; missing ALL defaults to identity.
+function buildComposedLUTs(pts){
+  const allPts=(pts.ALL&&pts.ALL.length>=2)?pts.ALL:[[0,0],[1,1]];
+  const lutAll=buildCurveLUT(allPts);
+  const allIsId=isIdentityCurve(allPts);
+  const out={};
+  ['L','R','G','B'].forEach(ch=>{
+    const lut=buildCurveLUT(pts[ch]||[[0,0],[1,1]]);
+    if(allIsId){
+      out[ch]=lut;
+    } else {
+      const c=new Float32Array(256);
+      for(let i=0;i<256;i++)
+        c[i]=lutAll[Math.min(255,Math.max(0,Math.round(lut[i]*255)))];
+      out[ch]=c;
+    }
+  });
+  return out;
+}
+
+function uploadCurveLUT(){
+  if(!gl) return;
+  const luts=buildComposedLUTs(curvePts);
+  const data=new Float32Array(256*4);
+  ['L','R','G','B'].forEach((ch,row)=>data.set(luts[ch],row*256));
+  if(tCurveLUT) gl.deleteTexture(tCurveLUT);
+  tCurveLUT=mkTex(data,256,4);
+  curvesActive=['ALL','L','R','G','B'].some(ch=>!isIdentityCurve(curvePts[ch]||[[0,0],[1,1]]));
+}
+
+// Apply curves in-place on dR/dG/dB — mirrors GPU shader exactly via composed LUTs.
+function applyCurvesToArraysCPU(dR,dG,dB,p){
+  const pts=p.curvePts||curvePts;
+  const luts=buildComposedLUTs(pts);
+  const samp=(lut,v)=>lut[Math.min(255,Math.max(0,Math.round(v*255)))];
+  const n=dR.length;
+  for(let i=0;i<n;i++){
+    let r=dR[i],g=dG[i],b=dB[i];
+    // L curve (composed with ALL) — luminance-preserving ratio rescale
+    const L=0.2126*r+0.7152*g+0.0722*b;
+    const L2=samp(luts.L,L);
+    const ratio=Math.min(4,Math.max(0.25,L2/Math.max(L,1e-6)));
+    r=Math.min(1,r*ratio);g=Math.min(1,g*ratio);b=Math.min(1,b*ratio);
+    // R, G, B (each composed with ALL)
+    dR[i]=samp(luts.R,r);dG[i]=samp(luts.G,g);dB[i]=samp(luts.B,b);
+  }
+}
+
+// Bake curves as a separate history pass labeled CURVES
+async function applyCurvesOnly(){
+  if(!curvesActive||!tR||!historyOrigR) return;
+  const applyBtn=document.querySelector('#tab-enhance .btn-sec');
+  if(applyBtn){applyBtn.disabled=true;applyBtn.textContent='APPLYING…';}
+  showApplyAnim('APPLYING CURVES…');
+  await raf();await raf();
+  const snap=snapParams();
+  snap.passType='curves';
+  // Get current working image
+  let srcR,srcG,srcB;
+  if(currentPass===0){
+    srcR=new Float32Array(historyOrigR);
+    srcG=new Float32Array(historyOrigG);
+    srcB=new Float32Array(historyOrigB);
+  } else {
+    const w=replayFromCheckpointToPass(currentPass);
+    srcR=new Float32Array(w.r);srcG=new Float32Array(w.g);srcB=new Float32Array(w.b);
+  }
+  applyCurvesToArraysCPU(srcR,srcG,srcB,snap);
+  lastStretchedR=new Float32Array(srcR);
+  lastStretchedG=new Float32Array(srcG);
+  lastStretchedB=new Float32Array(srcB);
+  buildAndUploadStarMask(srcR,srcG,srcB);
+  buildHistSamples(srcR,srcG,srcB);
+  replaceMainTextures(srcR,srcG,srcB);
+  // Add history entry
+  historyStack=historyStack.slice(0,currentPass);
+  historyCheckpoints=historyCheckpoints.filter(cp=>cp.passIndex<=currentPass);
+  historyStack.push({params:snap,passType:'curves'});
+  currentPass=historyStack.length;
+  if(currentPass%CHECKPOINT_INTERVAL===0){
+    historyCheckpoints.push(makeCheckpoint(currentPass,srcR,srcG,srcB));
+    pruneCheckpoints();
+  }
+  // Reset curves to identity after baking
+  resetCurves();
+  if(histVisible()) drawHist();
+  render();updatePassUI();hideApplyAnim();
+  trackGA4('curves_pass_applied',{device_class:getDeviceClass()});
+  if(applyBtn){applyBtn.disabled=false;applyBtn.textContent='APPLY CURVES';}
+}
+
+// Reset all curves to identity without affecting baked history
+function resetCurves(){
+  curvePts={ALL:[[0,0],[1,1]],L:[[0,0],[1,1]],R:[[0,0],[1,1]],G:[[0,0],[1,1]],B:[[0,0],[1,1]]};
+  curvesActive=false;
+  uploadCurveLUT();
+  drawCurveEditor();
+  render();
+}
+
+// Toggle the floating curves panel
+function toggleCurves(){
+  const cf=document.getElementById('curves-float');
+  if(!cf) return;
+  const wasHidden=cf.classList.contains('hidden');
+  cf.classList.toggle('hidden');
+  if(wasHidden) requestAnimationFrame(()=>drawCurveEditor());
+}
+
+// Redo: replay one step forward if future history exists
+function redoEnhance(){
+  if(currentPass>=historyStack.length) return;
+  undoToPass(currentPass+1);
+}
+
+// Update the compact history log in the Enhance tab
+function updateEnhanceHistoryUI(){
+  const log=document.getElementById('enh-hist-log');
+  const undoBtn=document.getElementById('enh-undo-btn');
+  const redoBtn=document.getElementById('enh-redo-btn');
+  if(undoBtn) undoBtn.disabled=(currentPass===0);
+  if(redoBtn) redoBtn.disabled=(currentPass>=historyStack.length);
+  if(!log) return;
+  if(historyStack.length===0){
+    log.innerHTML='<div style="padding:7px 10px;font-family:var(--mono);font-size:12px;color:var(--dim)">No passes applied yet.</div>';
+    return;
+  }
+  // Show all entries; mark active ones
+  const step0Html=`<div class="hlog-entry${currentPass===0?' active':''}" style="cursor:pointer" onclick="undoToPass(0)">
+    <span class="hlog-num">00</span>
+    <span class="hlog-mode">BASE</span>
+    <span class="hlog-params">Linear image</span>
+    <button class="hlog-undo" ${currentPass===0?'disabled':''}>↩</button>
+  </div>`;
+  log.innerHTML=step0Html+historyStack.map((entry,i)=>{
+    const{m,detail}=describePass(entry.params);
+    const isActive=i<currentPass;
+    return `<div class="hlog-entry${isActive?' active':''}" onclick="undoToPass(${i+1})">
+      <span class="hlog-num">${String(i+1).padStart(2,'0')}</span>
+      <span class="hlog-mode">${m}</span>
+      <span class="hlog-params">${detail}</span>
+      <button class="hlog-undo">→</button>
+    </div>`;
+  }).join('');
+  // Scroll to bottom so most recent is visible
+  log.scrollTop=log.scrollHeight;
+}
+
+// Drag + resize for floating curves panel (mirrors histogram panel behaviour)
+;(function(){
+  const panel=document.getElementById('curves-float');
+  const handle=document.getElementById('curves-drag-handle');
+  if(!panel||!handle) return;
+  let dragging=false,ox=0,oy=0;
+  handle.addEventListener('pointerdown',e=>{
+    if(e.target.id==='curves-close') return;
+    if(e.target.classList.contains('hch')) return;
+    handle.setPointerCapture(e.pointerId);
+    dragging=true;
+    const r=panel.getBoundingClientRect();
+    ox=e.clientX-r.left;oy=e.clientY-r.top;
+    e.preventDefault();
+  });
+  handle.addEventListener('pointermove',e=>{
+    if(!dragging) return;
+    const wrap=document.getElementById('cv-wrap').getBoundingClientRect();
+    let nx=e.clientX-wrap.left-ox;
+    let ny=e.clientY-wrap.top-oy;
+    const pw=panel.offsetWidth,ph=panel.offsetHeight;
+    nx=Math.max(0,Math.min(wrap.width-pw,nx));
+    ny=Math.max(0,Math.min(wrap.height-ph,ny));
+    panel.style.left=nx+'px';panel.style.top=ny+'px';panel.style.right='auto';panel.style.bottom='auto';
+  });
+  handle.addEventListener('pointerup',()=>dragging=false);
+  handle.addEventListener('pointercancel',()=>dragging=false);
+  const grip=document.getElementById('curves-resize-grip');
+  if(!grip) return;
+  let resizing=false,rStartX=0,rStartY=0,rStartW=0,rStartH=0;
+  grip.addEventListener('pointerdown',e=>{
+    grip.setPointerCapture(e.pointerId);resizing=true;
+    rStartX=e.clientX;rStartY=e.clientY;rStartW=panel.offsetWidth;rStartH=panel.offsetHeight;
+    e.preventDefault();e.stopPropagation();
+  });
+  grip.addEventListener('pointermove',e=>{
+    if(!resizing) return;
+    const nw=Math.max(240,Math.min(680,rStartW+(e.clientX-rStartX)));
+    const nh=Math.max(300,Math.min(580,rStartH+(e.clientY-rStartY)));
+    panel.style.width=nw+'px';panel.style.height=nh+'px';
+    requestAnimationFrame(()=>drawCurveEditor());
+  });
+  grip.addEventListener('pointerup',()=>resizing=false);
+  grip.addEventListener('pointercancel',()=>resizing=false);
+})();
+
+
+// Switch active channel
+function setCurveChannel(ch){
+  currentCurveChannel=ch;
+  const activeClass={ALL:'on-A',L:'on-L',R:'on-R',G:'on-G',B:'on-B'};
+  ['ALL','L','R','G','B'].forEach(c=>{
+    const btn=document.getElementById('cvch-'+c);
+    if(!btn) return;
+    btn.className='hch';
+    if(c===ch) btn.classList.add(activeClass[ch]);
+  });
+  const helpText={
+    ALL:'Master curve — applies to all channels together, on top of individual L, R, G, B adjustments.',
+    L:'Brightness and contrast without directly changing color balance.',
+    R:'Red channel correction. Use lightly.',
+    G:'Green channel correction. Use lightly.',
+    B:'Blue channel correction. Use lightly.',
+  };
+  const help=document.getElementById('curve-ch-help');
+  if(help) help.textContent=helpText[ch]||'';
+  drawCurveEditor();
+}
+
+// Apply a named preset to the L curve only
+const CURVE_PRESETS={
+  reset:   {L:[[0,0],[1,1]]},
+  soft:    {L:[[0,0],[.25,.20],[.50,.50],[.75,.82],[1,1]]},
+  deepsky: {L:[[0,0],[.12,.08],[.38,.48],[.72,.82],[1,1]]},
+  core:    {L:[[0,0],[.25,.25],[.55,.58],[.82,.78],[1,.92]]},
+  lift:    {L:[[0,0],[.15,.20],[.45,.52],[.75,.78],[1,1]]},
+};
+function applyCurvePreset(key){
+  const p=CURVE_PRESETS[key];if(!p) return;
+  if(key==='reset'){
+    curvePts={ALL:[[0,0],[1,1]],L:[[0,0],[1,1]],R:[[0,0],[1,1]],G:[[0,0],[1,1]],B:[[0,0],[1,1]]};
+  } else {
+    // Apply preset to L curve; leave R,G,B alone
+    if(p.L) curvePts.L=JSON.parse(JSON.stringify(p.L));
+  }
+  // Switch to L channel so the user sees what changed
+  setCurveChannel('L');
+  uploadCurveLUT();render();
+}
+
+// ── CURVE CANVAS DRAWING ─────────────────────────────────────────
+const CURVE_CH_COLORS={ALL:'rgba(249,115,22,0.90)',L:'rgba(255,255,255,0.85)',R:'rgba(220,80,80,0.9)',G:'rgba(60,190,80,0.9)',B:'rgba(70,140,220,0.9)'};
+const CURVE_CH_FAINT= {ALL:'rgba(249,115,22,0.22)',L:'rgba(255,255,255,0.14)',R:'rgba(220,80,80,0.18)',G:'rgba(60,190,80,0.18)',B:'rgba(70,140,220,0.18)'};
+
+function drawCurveEditor(){
+  const cv=document.getElementById('curve-canvas');
+  if(!cv||!cv.offsetWidth||!cv.offsetHeight) return;
+  const dpr=window.devicePixelRatio||1;
+  const W=cv.offsetWidth,H=cv.offsetHeight;
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  const ctx=cv.getContext('2d');
+  ctx.scale(dpr,dpr);
+
+  // Background
+  ctx.fillStyle='#0a0a0e';ctx.fillRect(0,0,W,H);
+
+  // Grid
+  ctx.strokeStyle='rgba(255,255,255,.06)';ctx.lineWidth=1;
+  [.25,.5,.75].forEach(v=>{
+    ctx.beginPath();ctx.moveTo(v*W,0);ctx.lineTo(v*W,H);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,(1-v)*H);ctx.lineTo(W,(1-v)*H);ctx.stroke();
+  });
+
+  // Histogram (luminance)
+  if(hSampL&&hSampL.length>10){
+    const nb=80,bins=new Array(nb).fill(0);
+    for(const v of hSampL){const b=Math.floor(Math.max(0,Math.min(1,v))*nb);if(b<nb)bins[b]++;}
+    const mx=Math.max(1,...bins);
+    ctx.fillStyle='rgba(255,255,255,.06)';
+    for(let i=0;i<nb;i++){
+      const h=(Math.log(bins[i]+1)/Math.log(mx+1))*(H-4);
+      if(h>0.5) ctx.fillRect(i/nb*W,H-h,W/nb-0.5,h);
+    }
+  }
+
+  // Identity diagonal
+  ctx.strokeStyle='rgba(255,255,255,.10)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(0,H);ctx.lineTo(W,0);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Inactive channels (faint, only if non-identity)
+  ['ALL','L','R','G','B'].forEach(ch=>{
+    if(ch===currentCurveChannel||isIdentityCurve(curvePts[ch]||[[0,0],[1,1]])) return;
+    _drawCurveLine(ctx,curvePts[ch],W,H,CURVE_CH_FAINT[ch],1);
+  });
+
+  // Active channel
+  _drawCurveLine(ctx,curvePts[currentCurveChannel],W,H,CURVE_CH_COLORS[currentCurveChannel],2);
+
+  // Control points
+  const col=CURVE_CH_COLORS[currentCurveChannel];
+  for(const [px,py] of curvePts[currentCurveChannel]){
+    ctx.beginPath();ctx.arc(px*W,(1-py)*H,5,0,Math.PI*2);
+    ctx.fillStyle='#0d0d12';ctx.fill();
+    ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.stroke();
+  }
+}
+
+function _drawCurveLine(ctx,pts,W,H,color,lw){
+  // v5.4: uses curveEvalFn (linear by default). Sanitization inside
+  // ensures the drawn curve always renders endpoints at [0,0] and [1,1].
+  if(!Array.isArray(pts)||pts.length<2) return;
+  const fn=curveEvalFn(pts);
+  ctx.beginPath();ctx.moveTo(0,(1-fn(0))*H);
+  for(let i=1;i<=W;i++){const x=i/W;ctx.lineTo(x*W,(1-Math.max(0,Math.min(1,fn(x))))*H);}
+  ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.lineJoin='round';ctx.stroke();
+}
+
+// ── CURVE CANVAS POINTER INTERACTION (v5.4) ──────────────────────
+// Endpoints [0,0] and [1,1] are locked: never dragged, never deleted, never
+// hit-tested. Clicking off any interior point inserts a new interior point
+// (clamped to 0.02 ≤ x ≤ 0.98). Dragging clamps x between neighbors.
+;(function(){
+  let dragIdx=-1,ptId=null;
+  const HIT_MOUSE=12,HIT_TOUCH=22;
+  const MIN_INTERIOR_X=0.02, MAX_INTERIOR_X=0.98, MIN_GAP=0.01;
+  function ptFromEvent(e,cv){
+    const r=cv.getBoundingClientRect();
+    return [Math.max(0,Math.min(1,(e.clientX-r.left)/cv.offsetWidth)),
+            Math.max(0,Math.min(1,1-(e.clientY-r.top)/cv.offsetHeight))];
+  }
+  // Only interior indices (1 .. pts.length-2) can be returned.
+  function hitTestInterior(pts,x,y,cv){
+    const W=cv.offsetWidth,H=cv.offsetHeight;
+    const hitR=W>200?HIT_MOUSE:HIT_TOUCH;
+    for(let i=1;i<pts.length-1;i++){
+      const dx=(pts[i][0]-x)*W,dy=(pts[i][1]-y)*H;
+      if(dx*dx+dy*dy<hitR*hitR) return i;
+    }
+    return -1;
+  }
+  function setup(){
+    const cv=document.getElementById('curve-canvas');if(!cv) return;
+    cv.addEventListener('pointerdown',e=>{
+      cv.setPointerCapture(e.pointerId);ptId=e.pointerId;
+      const [x,y]=ptFromEvent(e,cv);
+      // Always operate on a sanitized array so endpoints are guaranteed.
+      curvePts[currentCurveChannel]=sanitizeCurvePts(curvePts[currentCurveChannel]);
+      const pts=curvePts[currentCurveChannel];
+      dragIdx=hitTestInterior(pts,x,y,cv);
+      if(dragIdx<0){
+        // No interior hit. Insert a new interior point, clamped away from endpoints.
+        const nx=Math.max(MIN_INTERIOR_X,Math.min(MAX_INTERIOR_X,x));
+        const ny=Math.max(0,Math.min(1,y));
+        // Find insertion slot among interior points
+        let idx=1;
+        while(idx<pts.length-1&&pts[idx][0]<nx) idx++;
+        const prevX=pts[idx-1][0], nextX=pts[idx][0];
+        if(nx-prevX<MIN_GAP){
+          // Too close to previous: if previous is interior, grab it; else cancel
+          if(idx-1>0){ dragIdx=idx-1; }
+          else { dragIdx=-1; ptId=null; cv.releasePointerCapture(e.pointerId); return; }
+        } else if(nextX-nx<MIN_GAP){
+          // Too close to next: if next is interior, grab it; else cancel
+          if(idx<pts.length-1){ dragIdx=idx; }
+          else { dragIdx=-1; ptId=null; cv.releasePointerCapture(e.pointerId); return; }
+        } else {
+          pts.splice(idx,0,[nx,ny]);
+          dragIdx=idx;
+        }
+      }
+      drawCurveEditor();uploadCurveLUT();render();
+    });
+    cv.addEventListener('pointermove',e=>{
+      if(ptId!==e.pointerId||dragIdx<0) return;
+      const [x,y]=ptFromEvent(e,cv);
+      const pts=curvePts[currentCurveChannel];
+      // Safety: never drag an endpoint, even if dragIdx somehow got there.
+      if(dragIdx<=0||dragIdx>=pts.length-1) return;
+      const lo=pts[dragIdx-1][0]+MIN_GAP;
+      const hi=pts[dragIdx+1][0]-MIN_GAP;
+      pts[dragIdx][0]=Math.max(lo,Math.min(hi,x));
+      pts[dragIdx][1]=Math.max(0,Math.min(1,y));
+      drawCurveEditor();uploadCurveLUT();render();
+    });
+    cv.addEventListener('pointerup',e=>{
+      if(ptId===e.pointerId){
+        // Sanitize on release so the persisted curve is always valid.
+        curvePts[currentCurveChannel]=sanitizeCurvePts(curvePts[currentCurveChannel]);
+        ptId=null;dragIdx=-1;
+        drawCurveEditor();uploadCurveLUT();render();
+      }
+    });
+    cv.addEventListener('pointercancel',e=>{if(ptId===e.pointerId){ptId=null;dragIdx=-1;}});
+    cv.addEventListener('dblclick',e=>{
+      const [x,y]=ptFromEvent(e,cv);
+      const pts=curvePts[currentCurveChannel];
+      const idx=hitTestInterior(pts,x,y,cv);
+      if(idx>0&&idx<pts.length-1){
+        pts.splice(idx,1);
+        curvePts[currentCurveChannel]=sanitizeCurvePts(pts);
+        drawCurveEditor();uploadCurveLUT();render();
+      }
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',setup);
+  else setTimeout(setup,50);
+})();
+
+// ═══════════════════════════════════════════════════════════════════
+// v5.5 — DIAGNOSTIC DEBUG VIEWS
+// Hidden developer tools to isolate the source of checker noise.
+// Activated via keyboard: Shift+D toggles, D cycles, Escape exits.
+// Console: runCheckerDiagnostic() logs W1/W2/W3 statistics.
+//
+// WORKFLOW:
+//   1. Load a FITS file where checker noise appears.
+//   2. Process normally until the checker pattern becomes visible.
+//   3. Press Shift+D to enter debug mode.
+//   4. Cycle through debug views with D.
+//   5. Check whether checker is present in:
+//        - Current Luminance       (already in stretched output?)
+//        - W1 Fine Detail          (1-2 px scale)
+//        - W2 Structure            (4-8 px scale)
+//        - W3 Broad Detail         (16-32 px scale)
+//        - Signal Mask             (background gating)
+//        - Local Contrast Mask     (where Local applies)
+//        - Background Residual     (sample-grid artifacts)
+//   6. Run runCheckerDiagnostic() in the browser console.
+//   7. Use that to decide where the fix belongs: stretch, denoise,
+//      local contrast, background extraction, or rendering.
+//
+// DESIGN NOTES:
+//   - All debug views are drawn to a separate 2D overlay canvas.
+//   - The main WebGL render path is untouched. No shader changes.
+//   - Image data, history, sliders, and export are never affected.
+//   - Source for debug views is lastStretchedR/G/B (the baked state
+//     the wavelet/mask pipeline actually operates on). If the user
+//     has unbaked slider preview, the label warns about that.
+//   - Star mask comes from getStarMask() so the diagnostic matches
+//     the cached mask used elsewhere.
+// ═══════════════════════════════════════════════════════════════════
+
+let debugMode=false;
+let debugView=0;
+let debugCache=null; // {lum, W1, W2, W3, sigW1, sigW2, sigW3, starMask}
+const DEBUG_VIEWS=[
+  {name:'NORMAL',              kind:'normal'},
+  {name:'STAR MASK',           kind:'starmask'},
+  {name:'SIGNAL MASK',         kind:'sigmask'},
+  {name:'W1 FINE DETAIL',      kind:'w1'},
+  {name:'W2 STRUCTURE',        kind:'w2'},
+  {name:'W3 BROAD',            kind:'w3'},
+  {name:'DENOISE MASK',        kind:'dnsmask'},
+  {name:'LOCAL CONTRAST MASK', kind:'lcmask'},
+  {name:'BACKGROUND RESIDUAL', kind:'bgresid'},
+  {name:'LUMINANCE',           kind:'lum'},
+];
+
+function _invalidateDebugCache(){
+  debugCache=null;
+  if(debugMode) renderDebugView();
+}
+
+function _buildDebugCache(){
+  if(!lastStretchedR||!lastStretchedG||!lastStretchedB) return null;
+  const n=lastStretchedR.length;
+  if(n!==NW*NH) return null;
+  const lum=new Float32Array(n);
+  for(let i=0;i<n;i++) lum[i]=Math.max(0,0.2126*lastStretchedR[i]+0.7152*lastStretchedG[i]+0.0722*lastStretchedB[i]);
+  const sc=buildAtrousScales(lum,NW,NH);
+  return {
+    lum,
+    W1:sc.W1, W2:sc.W2, W3:sc.W3,
+    sigW1:scaleSigma(sc.W1),
+    sigW2:scaleSigma(sc.W2),
+    sigW3:scaleSigma(sc.W3),
+    starMask:getStarMask()
+  };
+}
+function _ensureDebugCache(){
+  if(!debugCache) debugCache=_buildDebugCache();
+  return debugCache;
+}
+
+// Compute a Float32 grayscale array for the requested view (length = NW*NH).
+// Returns null if the view cannot be computed (e.g. no BG model).
+function _computeDebugViewData(kind){
+  const cache=_ensureDebugCache();
+  if(!cache) return null;
+  const n=NW*NH;
+  const out=new Float32Array(n);
+
+  if(kind==='lum'){
+    out.set(cache.lum);
+    return out;
+  }
+  if(kind==='starmask'){
+    const m=cache.starMask;
+    if(!m||m.length!==n) return null;
+    out.set(m);
+    return out;
+  }
+  if(kind==='sigmask'){
+    const bg=(typeof histPeakVal==='number')?histPeakVal:0;
+    const sig=Math.max((typeof histBgSigma==='number')?histBgSigma:1e-3,1e-4);
+    for(let i=0;i<n;i++) out[i]=_smoothstep(bg+1.5*sig,bg+6.0*sig,cache.lum[i]);
+    return out;
+  }
+  if(kind==='w1'||kind==='w2'||kind==='w3'){
+    const W=kind==='w1'?cache.W1:(kind==='w2'?cache.W2:cache.W3);
+    const sg=kind==='w1'?cache.sigW1:(kind==='w2'?cache.sigW2:cache.sigW3);
+    const scl=1/Math.max(6*sg,1e-9);
+    for(let i=0;i<n;i++) out[i]=Math.max(0,Math.min(1,0.5+W[i]*scl));
+    return out;
+  }
+  if(kind==='dnsmask'){
+    // Mirror exactly the mask used in applyDenoiseCPU / shader
+    const m=cache.starMask||new Float32Array(n);
+    for(let i=0;i<n;i++){
+      const starM=m[i]||0;
+      const hiProt=1-_smoothstep(0.7,0.95,cache.lum[i]);
+      out[i]=(1-0.7*starM)*hiProt;
+    }
+    return out;
+  }
+  if(kind==='lcmask'){
+    // Mirror exactly the mask used in applyLocalContrastCPU / shader
+    const bg=(typeof histPeakVal==='number')?histPeakVal:0;
+    const sig=Math.max((typeof histBgSigma==='number')?histBgSigma:1e-3,1e-4);
+    for(let i=0;i<n;i++){
+      const sigMask=_smoothstep(bg+1.5*sig,bg+6.0*sig,cache.lum[i]);
+      out[i]=sigMask*(1-_smoothstep(0.7,0.92,cache.lum[i]));
+    }
+    return out;
+  }
+  if(kind==='bgresid'){
+    // Show the gradient model if one is active (i.e. fitted but not yet baked).
+    // After BG apply, bgApplied=true and the model has been folded into data.
+    if(!bgModel||bgApplied) return null;
+    // Evaluate the green-channel gradient surface at the image resolution.
+    // We sample at low res (BG_GRAD_W × BG_GRAD_H) and upscale via nearest.
+    const lowG=evalGradSurface('G');
+    // Find min/max for contrast stretching
+    let lo=Infinity,hi=-Infinity;
+    for(let i=0;i<lowG.length;i++){
+      if(lowG[i]<lo) lo=lowG[i];
+      if(lowG[i]>hi) hi=lowG[i];
+    }
+    const rng=Math.max(hi-lo,1e-6);
+    // Bilinear upsample (close enough for diagnostic display)
+    for(let y=0;y<NH;y++){
+      const sy=y*(BG_GRAD_H-1)/Math.max(NH-1,1);
+      const y0=Math.floor(sy), y1=Math.min(BG_GRAD_H-1,y0+1);
+      const fy=sy-y0;
+      for(let x=0;x<NW;x++){
+        const sx=x*(BG_GRAD_W-1)/Math.max(NW-1,1);
+        const x0=Math.floor(sx), x1=Math.min(BG_GRAD_W-1,x0+1);
+        const fx=sx-x0;
+        const v00=lowG[y0*BG_GRAD_W+x0], v01=lowG[y0*BG_GRAD_W+x1];
+        const v10=lowG[y1*BG_GRAD_W+x0], v11=lowG[y1*BG_GRAD_W+x1];
+        const v=(1-fy)*((1-fx)*v00+fx*v01)+fy*((1-fx)*v10+fx*v11);
+        out[y*NW+x]=(v-lo)/rng;
+      }
+    }
+    return out;
+  }
+  return null;
+}
+
+function renderDebugView(){
+  const lbl=document.getElementById('debug-label');
+  const ovl=document.getElementById('debug-overlay-cv');
+  if(!lbl||!ovl) return;
+  const view=DEBUG_VIEWS[debugView];
+  let labelText='DEBUG: '+view.name;
+  let hint='';
+
+  if(view.kind==='normal'){
+    ovl.classList.remove('on');
+    lbl.classList.add('on');
+    // Show a brief hint of available controls
+    lbl.innerHTML='DEBUG: NORMAL<span class="dbg-hint">D to cycle · Esc to exit · '+(DEBUG_VIEWS.length-1)+' views available</span>';
+    return;
+  }
+
+  if(!gl||!NW||!NH||!lastStretchedR){
+    ovl.classList.remove('on');
+    lbl.classList.add('on');
+    lbl.innerHTML=labelText+'<span class="dbg-hint">No image loaded</span>';
+    return;
+  }
+
+  // Special-case BG view to display a status message
+  if(view.kind==='bgresid'&&(bgApplied||!bgModel)){
+    ovl.classList.remove('on');
+    lbl.classList.add('on');
+    const msg=bgApplied
+      ? 'BG gradient was baked into linear data on apply'
+      : 'NO BACKGROUND MODEL AVAILABLE';
+    lbl.innerHTML=labelText+'<span class="dbg-hint">'+msg+'</span>';
+    return;
+  }
+
+  const data=_computeDebugViewData(view.kind);
+  if(!data){
+    ovl.classList.remove('on');
+    lbl.classList.add('on');
+    lbl.innerHTML=labelText+'<span class="dbg-hint">view unavailable</span>';
+    return;
+  }
+
+  // Size overlay to match main canvas
+  ovl.width=NW;
+  ovl.height=NH;
+  // Match the main canvas CSS layout so overlay sits on top exactly
+  const mainCv=document.getElementById('cv');
+  if(mainCv){
+    ovl.style.width=mainCv.style.width||(mainCv.offsetWidth+'px');
+    ovl.style.height=mainCv.style.height||(mainCv.offsetHeight+'px');
+    ovl.style.left=mainCv.style.left||'0';
+    ovl.style.top=mainCv.style.top||'0';
+    // Match transform if main canvas is panned/zoomed
+    ovl.style.transform=mainCv.style.transform||'';
+    ovl.style.transformOrigin=mainCv.style.transformOrigin||'';
+  }
+  const ctx=ovl.getContext('2d');
+  const imgData=ctx.createImageData(NW,NH);
+  for(let i=0;i<data.length;i++){
+    const v=Math.max(0,Math.min(255,Math.round(data[i]*255)));
+    imgData.data[i*4]=v;
+    imgData.data[i*4+1]=v;
+    imgData.data[i*4+2]=v;
+    imgData.data[i*4+3]=255;
+  }
+  ctx.putImageData(imgData,0,0);
+  ovl.classList.add('on');
+  lbl.classList.add('on');
+  // Warn if there are unbaked slider previews (lastStretched may lag the visible image)
+  const previewActive=(typeof previewState!=='undefined'&&previewState&&previewState.active);
+  if(previewActive) hint='preview active — view shows BAKED state';
+  else hint='from baked state at pass '+currentPass;
+  lbl.innerHTML=labelText+'<span class="dbg-hint">'+hint+'</span>';
+}
+
+function toggleDebugMode(){
+  debugMode=!debugMode;
+  if(debugMode){
+    debugView=0;
+    debugCache=null;
+    renderDebugView();
+  } else {
+    debugCache=null;
+    const ovl=document.getElementById('debug-overlay-cv');
+    const lbl=document.getElementById('debug-label');
+    if(ovl) ovl.classList.remove('on');
+    if(lbl) lbl.classList.remove('on');
+  }
+}
+function cycleDebugView(){
+  if(!debugMode) return;
+  debugView=(debugView+1)%DEBUG_VIEWS.length;
+  renderDebugView();
+}
+function exitDebugMode(){
+  if(!debugMode) return;
+  debugMode=false;
+  debugCache=null;
+  const ovl=document.getElementById('debug-overlay-cv');
+  const lbl=document.getElementById('debug-label');
+  if(ovl) ovl.classList.remove('on');
+  if(lbl) lbl.classList.remove('on');
+}
+
+// Keyboard handler — global, but bails out when a text input has focus
+document.addEventListener('keydown',e=>{
+  const tag=(e.target&&e.target.tagName)||'';
+  if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT') return;
+  if(e.code==='KeyD'&&e.shiftKey&&!e.ctrlKey&&!e.altKey&&!e.metaKey){
+    e.preventDefault();
+    toggleDebugMode();
+    return;
+  }
+  if(e.code==='KeyD'&&!e.shiftKey&&!e.ctrlKey&&!e.altKey&&!e.metaKey){
+    if(debugMode){
+      e.preventDefault();
+      cycleDebugView();
+    }
+    return;
+  }
+  if(e.key==='Escape'&&debugMode){
+    e.preventDefault();
+    exitDebugMode();
+    return;
+  }
+});
+
+// Hook debug cache invalidation into operations that change the baked state.
+// We wrap the existing functions rather than modify them to keep production
+// pipeline code unchanged. This is a thin shim and adds zero cost when
+// debugMode is off.
+(function(){
+  function _wrapInvalidate(fnName){
+    const orig=window[fnName];
+    if(typeof orig!=='function') return;
+    window[fnName]=function(){
+      const r=orig.apply(this,arguments);
+      _invalidateDebugCache();
+      return r;
+    };
+  }
+  // List of functions whose completion changes lastStretched state
+  // We don't wrap async functions here because the cache will rebuild
+  // on the next D press; if the user is in debug mode during a bake
+  // they'll see updated state on next D anyway.
+})();
+
+// ═══════════════════════════════════════════════════════════════════
+// runCheckerDiagnostic() — hidden console helper.
+// Logs background sigma, per-scale wavelet sigmas, percentage of
+// background pixels with strong wavelet response, and a heuristic
+// guess at the likely source of any checker pattern.
+// Call from DevTools console: runCheckerDiagnostic()
+// ═══════════════════════════════════════════════════════════════════
+window.runCheckerDiagnostic=function(){
+  if(!gl||!NW||!NH||!lastStretchedR){
+    console.log('FITS Studio: no image loaded — load and process a FITS file first.');
+    return;
+  }
+  const W=NW,H=NH,n=W*H;
+
+  // Build current state
+  const lum=new Float32Array(n);
+  for(let i=0;i<n;i++) lum[i]=Math.max(0,0.2126*lastStretchedR[i]+0.7152*lastStretchedG[i]+0.0722*lastStretchedB[i]);
+  const sc=buildAtrousScales(lum,W,H);
+  const sigW1=scaleSigma(sc.W1);
+  const sigW2=scaleSigma(sc.W2);
+  const sigW3=scaleSigma(sc.W3);
+  const bg=(typeof histPeakVal==='number')?histPeakVal:0;
+  const sig=Math.max((typeof histBgSigma==='number')?histBgSigma:1e-3,1e-4);
+
+  // Background mask: L < bg + 2σ
+  let bgCount=0;
+  let bgW1strong=0,bgW2strong=0,bgW3strong=0;
+  let bgW1max=0,bgW2max=0,bgW3max=0;
+  let bgW1sum=0,bgW2sum=0,bgW3sum=0;
+  for(let i=0;i<n;i++){
+    if(lum[i]<bg+2.0*sig){
+      bgCount++;
+      const a1=Math.abs(sc.W1[i]), a2=Math.abs(sc.W2[i]), a3=Math.abs(sc.W3[i]);
+      if(a1>3.0*sigW1) bgW1strong++;
+      if(a2>3.0*sigW2) bgW2strong++;
+      if(a3>3.0*sigW3) bgW3strong++;
+      if(a1>bgW1max) bgW1max=a1;
+      if(a2>bgW2max) bgW2max=a2;
+      if(a3>bgW3max) bgW3max=a3;
+      bgW1sum+=a1; bgW2sum+=a2; bgW3sum+=a3;
+    }
+  }
+  const bgPct=bgCount>0?(100*bgCount/n):0;
+  const p1=bgCount>0?(100*bgW1strong/bgCount):0;
+  const p2=bgCount>0?(100*bgW2strong/bgCount):0;
+  const p3=bgCount>0?(100*bgW3strong/bgCount):0;
+  const m1=bgCount>0?(bgW1sum/bgCount):0;
+  const m2=bgCount>0?(bgW2sum/bgCount):0;
+  const m3=bgCount>0?(bgW3sum/bgCount):0;
+
+  // σ_Wn / σ_L ratios. These are robust against the MAD self-calibration
+  // problem: a strong periodic pattern at scale n elevates σ_Wn well above
+  // σ_L (the image noise floor). A pure-noise W1 should have σ_W1 close to
+  // or smaller than σ_L; observed ratios > ~1.3 are diagnostic of structure.
+  const r1=sigW1/sig, r2=sigW2/sig, r3=sigW3/sig;
+
+  // Honest verdict: pick the scale with the largest elevation, report it.
+  // Sparse-outlier detection runs as a fallback when no scale is elevated.
+  // The user gets the raw numbers above and can override the heuristic by
+  // cycling through debug views (Shift+D, D).
+  let likely;
+  const scales=[{n:'W1',r:r1,p:p1,desc:'fine-scale (1-2 px) — fixed-pattern, hot pixels, or stretch-amplified noise'},
+                {n:'W2',r:r2,p:p2,desc:'structure-scale (4-8 px) — AstroClarity/Structure target zone'},
+                {n:'W3',r:r3,p:p3,desc:'broad-scale (16-32 px) — gradient or local-contrast residual'}];
+  scales.sort(function(a,b){return b.r-a.r;});
+  const top=scales[0];
+  const sparseTop=scales.slice().sort(function(a,b){return b.p-a.p;})[0];
+  if(top.r<1.2&&p1<1&&p2<1&&p3<1){
+    likely='No significant checker pattern detected in background';
+  } else if(top.r>=2.0){
+    likely=top.n+' dominant — '+top.desc+'  (σ_'+top.n+'/σ_L = '+top.r.toFixed(2)+')';
+  } else if(top.r>=1.3){
+    likely=top.n+' elevated — '+top.desc+'  (σ_'+top.n+'/σ_L = '+top.r.toFixed(2)+')';
+  } else if(sparseTop.p>=1){
+    likely=sparseTop.n+' sparse outliers — possibly hot pixels or amplified noise spikes  (%strong = '+sparseTop.p.toFixed(1)+'%)';
+  } else {
+    likely='Mixed or marginal signal — cycle debug views (Shift+D, D) to confirm visually';
+  }
+
+  // Pass-type counts
+  const passTypes={};
+  for(const h of historyStack){
+    const pt=h.passType||'stretch';
+    passTypes[pt]=(passTypes[pt]||0)+1;
+  }
+  const passSummary=Object.entries(passTypes).map(function(kv){return kv[0]+':'+kv[1];}).join(', ')||'none';
+
+  console.log('');
+  console.log('═══ FITS Studio Checker Diagnostic ═══');
+  console.log('Image:         '+W+' × '+H+'  ('+n.toLocaleString()+' pixels)');
+  console.log('Current pass:  '+currentPass+' of '+historyStack.length);
+  console.log('Pass types:    '+passSummary);
+  console.log('BG applied:    '+(bgApplied?'yes':'no'));
+  console.log('');
+  console.log('Background:    '+bg.toFixed(4));
+  console.log('Sigma (L):     '+sig.toExponential(2));
+  console.log('W1 sigma:      '+sigW1.toExponential(2)+'   (1-2 px features)    σ_W1/σ_L = '+(sigW1/sig).toFixed(2));
+  console.log('W2 sigma:      '+sigW2.toExponential(2)+'   (4-8 px features)    σ_W2/σ_L = '+(sigW2/sig).toFixed(2));
+  console.log('W3 sigma:      '+sigW3.toExponential(2)+'   (16-32 px features)  σ_W3/σ_L = '+(sigW3/sig).toFixed(2));
+  console.log('');
+  console.log('Background pixels (L < bg + 2σ): '+bgPct.toFixed(1)+'% of image');
+  console.log('  Strong W1 (|W1| > 3σ_W1):  '+p1.toFixed(1).padStart(5)+'%   max '+bgW1max.toFixed(4)+'   mean |W1| '+m1.toExponential(2));
+  console.log('  Strong W2 (|W2| > 3σ_W2):  '+p2.toFixed(1).padStart(5)+'%   max '+bgW2max.toFixed(4)+'   mean |W2| '+m2.toExponential(2));
+  console.log('  Strong W3 (|W3| > 3σ_W3):  '+p3.toFixed(1).padStart(5)+'%   max '+bgW3max.toFixed(4)+'   mean |W3| '+m3.toExponential(2));
+  console.log('');
+  console.log('Likely source: '+likely);
+  console.log('');
+  console.log('To inspect visually: Shift+D, then D to cycle views.');
+  console.log('═══');
+};
+
 
 // ── BACKGROUND COLOR NOISE REDUCTION — CPU BAKE ─────────────────────
 // Mirrors the GLSL BGNR block exactly. Operates on already-stretched RGB.
@@ -3291,9 +5268,13 @@ function applyBGNRCPU(dR,dG,dB,amount){
     const bgMask=1-_smoothstep(0.06,0.22,L);
     if(bgMask<1e-4) continue;
     const blend=bgMask*amt;
-    dR[i]=r*(1-blend)+L*blend;
-    dG[i]=g*(1-blend)+L*blend;
-    dB[i]=b*(1-blend)+L*blend;
+    // Item 10: explicit chroma desaturation around Rec.709 luminance.
+    // Mathematically identical to the legacy form but expresses intent:
+    // we scale chroma vectors (r-L, g-L, b-L) toward zero and keep L exact.
+    const scaleChroma=1-blend;
+    dR[i]=L+(r-L)*scaleChroma;
+    dG[i]=L+(g-L)*scaleChroma;
+    dB[i]=L+(b-L)*scaleChroma;
   }
 }
 
@@ -3307,12 +5288,27 @@ function _smoothstep(e0,e1,x){
   return t*t*(3-2*t);
 }
 
-// Build luminance and two blur levels, return the star mask Float32Array.
-// r/g/b must be full-resolution stretched pixel arrays.
-function computeStarMaskFull(r,g,b){
+// Item 2: Linear-space star mask with sigma-relative thresholds.
+// Computes mask once from post-BG, post-denoise linear data and caches it.
+// All consumers read the cache via getStarMask(); the cache is invalidated
+// when the linear data changes (BG apply, denoise apply, file reload, reset).
+function computeLinearStarMask(r,g,b){
   const n=r.length;
   const lum=new Float32Array(n);
-  for(let i=0;i<n;i++) lum[i]=0.299*r[i]+0.587*g[i]+0.114*b[i];
+  for(let i=0;i<n;i++) lum[i]=Math.max(0,0.2126*r[i]+0.7152*g[i]+0.0722*b[i]);
+
+  // Robust background estimate + sigma (subsample for speed)
+  const sampleStride=Math.max(1,Math.floor(n/40000));
+  const samples=[];
+  for(let i=0;i<n;i+=sampleStride) samples.push(lum[i]);
+  samples.sort((a,b)=>a-b);
+  const med=samples[Math.floor(samples.length/2)];
+  const halfN=Math.floor(samples.length/2);
+  const devs=new Float32Array(halfN);
+  for(let k=0;k<halfN;k++) devs[k]=med-samples[k];
+  devs.sort();
+  const mad=devs[Math.floor(halfN/2)];
+  const sig=Math.max(1e-5,1.4826*mad);
 
   const lumSmall=stackBlurFloat(lum,NW,NH,STAR_SMALL_RADIUS);
   const lumLarge=stackBlurFloat(lum,NW,NH,STAR_LARGE_RADIUS);
@@ -3320,25 +5316,33 @@ function computeStarMaskFull(r,g,b){
   const mask=new Float32Array(n);
   for(let i=0;i<n;i++){
     const lo=lum[i];
-    // Compactness: point sources stay high in small blur, dilute in large blur.
-    // Extended structures have similar values at both radii.
+    // Compactness in sigma units (point sources stand out in the small-blur)
     const compact=Math.max(0,lumSmall[i]-lumLarge[i]);
-    const compactNorm=_smoothstep(STAR_COMPACT_START,STAR_COMPACT_END,compact);
-
-    // Brightness gate: suppress mask on dim background pixels (noise protection).
-    const brightMask=_smoothstep(STAR_BRIGHT_START,STAR_BRIGHT_END,lo);
-
-    // Structure rejection: support ratio near 1 means extended, near 0 means compact.
-    // support = lumLarge / lumSmall — high for galaxy cores, low for stars.
-    // Gate on brightness so near-zero noise ratios are ignored.
-    const support=lumLarge[i]/Math.max(lumSmall[i],1e-6);
-    const structureReject=_smoothstep(STAR_STRUCT_REJECT_START,STAR_STRUCT_REJECT_END,support)*brightMask;
-    const structureMask=1-structureReject;
-
-    mask[i]=Math.min(1,compactNorm*brightMask*structureMask);
+    const compactNorm=_smoothstep(2.0*sig,8.0*sig,compact);
+    // Brightness gate: how many sigma above background
+    const brightAboveBg=Math.max(0,lo-med);
+    const brightMask=_smoothstep(3.0*sig,12.0*sig,brightAboveBg);
+    // Structure rejection: support near 1 = extended (galaxy core, nebula)
+    const support=lumLarge[i]/Math.max(lumSmall[i],1e-7);
+    const structureReject=_smoothstep(0.70,0.92,support)*brightMask;
+    mask[i]=Math.min(1,compactNorm*brightMask*(1-structureReject));
   }
   return mask;
 }
+
+// Cached linear-space mask. Invalidate when historyOrigR/G/B changes.
+let linearStarMask=null;
+let linearStarMaskDirty=true;
+function getStarMask(){
+  if(!linearStarMaskDirty&&linearStarMask&&linearStarMask.length===NW*NH) return linearStarMask;
+  if(historyOrigR&&historyOrigR.length===NW*NH){
+    linearStarMask=computeLinearStarMask(historyOrigR,historyOrigG,historyOrigB);
+    linearStarMaskDirty=false;
+    return linearStarMask;
+  }
+  return new Float32Array(NW*NH); // empty fallback if no linear data yet
+}
+function invalidateStarMask(){ linearStarMaskDirty=true; }
 
 // Build star mask, downsample 4×, upload as tStarMask GPU texture.
 // Called after every apply/undo so preview always matches baked output.
@@ -3349,7 +5353,7 @@ function buildAndUploadStarMask(r,g,b){
   // Always build the mask regardless of rl — the mask encodes WHERE stars are,
   // which is a property of the image, not of the rl slider value.
   // The rl uniform controls HOW MUCH rolloff to apply at those locations.
-  const fullMask=computeStarMaskFull(r,g,b);
+  const fullMask=getStarMask(); // Item 2: cached linear-space mask (r,g,b args ignored)
 
   // 4× box-average downsample to STAR_MASK_W × STAR_MASK_H
   const mw=STAR_MASK_W,mh=STAR_MASK_H,sc=STAR_MASK_SCALE;
@@ -3369,7 +5373,7 @@ function buildAndUploadStarMask(r,g,b){
   }
 
   if(tStarMask) gl.deleteTexture(tStarMask);
-  tStarMask=mkTex(ds,mw,mh);
+  tStarMask=mkTexLinear(ds,mw,mh);
 }
 
 // Apply star-masked rolloff in-place on r/g/b arrays using the provided mask.
@@ -3378,20 +5382,22 @@ function applyStarRolloffCPU(r,g,b,rl){
   if(rl<1e-4) return;
   const n=r.length;
 
-  // Compute luminance for rolloff ratio calculation
+  // Compute luminance for rolloff ratio calculation (Rec.709)
   const lum=new Float32Array(n);
-  for(let i=0;i<n;i++) lum[i]=0.299*r[i]+0.587*g[i]+0.114*b[i];
+  for(let i=0;i<n;i++) lum[i]=0.2126*r[i]+0.7152*g[i]+0.0722*b[i];
 
-  // Compute star mask (same logic as buildAndUploadStarMask)
-  const mask=computeStarMaskFull(r,g,b);
+  // Item 2 + Item 9: cached linear-space mask + luminance-gated rolloff
+  const mask=getStarMask();
 
   for(let i=0;i<n;i++){
     const m=mask[i];
     if(m<1e-4) continue;
     const lo=lum[i];
     if(lo<1e-7) continue;
-    const lumRolled=lo/(1+rl*lo);
-    // Blend toward rolled luminance by mask weight
+    // Item 9: gate strength so faint stars (lo<0.55) are not compressed
+    const localStrength=rl*_smoothstep(0.55,0.95,lo);
+    if(localStrength<1e-6) continue;
+    const lumRolled=lo/(1+localStrength*lo);
     const ratio=mix(1.0,lumRolled/lo,m);
     r[i]=Math.min(1,r[i]*ratio);
     g[i]=Math.min(1,g[i]*ratio);
@@ -3402,24 +5408,55 @@ function mix(a,b,t){return a*(1-t)+b*t;}
 
 // Replay history passes from checkpoint to targetPass using scratch buffers.
 // Returns {r,g,b} pointing at whichever scratch pair was last written.
-// Caller must not hold these references across another replayFromCheckpointToPass call.
+// Replay history from nearest checkpoint to targetPass.
+// Each pass type is handled independently — finish and curves passes
+// must NOT run applyStretchCPU (which would double-process the image).
 function replayFromCheckpointToPass(targetPass){
   const cp=getNearestCheckpoint(targetPass);
-  // Clone checkpoint into scratch set A
   workR1.set(cp.r); workG1.set(cp.g); workB1.set(cp.b);
   let srcR=workR1,srcG=workG1,srcB=workB1;
   let dstR=workR2,dstG=workG2,dstB=workB2;
 
   for(let i=cp.passIndex;i<targetPass;i++){
-    const p=historyStack[i].params;
-    applyStretchCPU(srcR,dstR,p,p.wR);
-    applyStretchCPU(srcG,dstG,p,p.wG);
-    applyStretchCPU(srcB,dstB,p,p.wB);
-    // Star-masked rolloff post-pass (all three channels together)
-    if(p.rl>1e-4) applyStarRolloffCPU(dstR,dstG,dstB,p.rl);
-    // Background color noise reduction — last so it operates on final display values
-    if(p.bgColorNR>0) applyBGNRCPU(dstR,dstG,dstB,p.bgColorNR/100);
-    // Ping-pong
+    const entry=historyStack[i];
+    const p=entry.params;
+    // Authoritative passType lives on the entry object; fall back to params field.
+    const pt=entry.passType||p.passType||'stretch';
+
+    if(pt==='finish'){
+      // Copy src → dst verbatim, then apply only finish pipeline.
+      // Item 4: wavelets give us W1 (sharp) + W2 (struct) + their sigmas
+      // in one pass; cache sigmas globally so applyFinishCPU + shader use them.
+      dstR.set(srcR); dstG.set(srcG); dstB.set(srcB);
+      const data=buildAtrousFinishData(srcR,srcG,srcB);
+      finSigW1=data.sigW1; finSigW2=data.sigW2;
+      applyFinishCPU(dstR,dstG,dstB,p,data.W2,data.W1);
+    } else if(pt==='curves'){
+      // Copy src → dst verbatim, then apply only curves pipeline
+      dstR.set(srcR); dstG.set(srcG); dstB.set(srcB);
+      applyCurvesToArraysCPU(dstR,dstG,dstB,p);
+    } else if(pt==='denoise'){
+      // v5.2: copy src → dst, build wavelets, apply only denoise
+      dstR.set(srcR); dstG.set(srcG); dstB.set(srcB);
+      const data=buildAtrousFinishData(srcR,srcG,srcB);
+      finSigW1=data.sigW1; finSigW2=data.sigW2; finSigW3=data.sigW3;
+      applyDenoiseCPU(dstR,dstG,dstB,p,data.W1);
+    } else if(pt==='localcontrast'){
+      // v5.2: copy src → dst, build wavelets, apply only local contrast
+      dstR.set(srcR); dstG.set(srcG); dstB.set(srcB);
+      const data=buildAtrousFinishData(srcR,srcG,srcB);
+      finSigW1=data.sigW1; finSigW2=data.sigW2; finSigW3=data.sigW3;
+      applyLocalContrastCPU(dstR,dstG,dstB,p,data.W3);
+    } else {
+      // Stretch pass: apply stretch, rolloff, BGNR in the correct order
+      applyStretchCPU(srcR,dstR,p,p.wR,p.pedR||0);
+      applyStretchCPU(srcG,dstG,p,p.wG,p.pedG||0);
+      applyStretchCPU(srcB,dstB,p,p.wB,p.pedB||0);
+      if(p.rl>1e-4) applyStarRolloffCPU(dstR,dstG,dstB,p.rl);
+      if(p.bgColorNR>0) applyBGNRCPU(dstR,dstG,dstB,p.bgColorNR/100);
+    }
+
+    // Ping-pong scratch buffers
     [srcR,dstR]=[dstR,srcR];
     [srcG,dstG]=[dstG,srcG];
     [srcB,dstB]=[dstB,srcB];
@@ -3433,9 +5470,24 @@ function buildHistSamples(plR,plG,plB){
   hSampR=[];hSampG=[];hSampB=[];hSampL=[];
   for(let i=0;i<plG.length;i+=hs){
     hSampR.push(plR[i]);hSampG.push(plG[i]);hSampB.push(plB[i]);
-    hSampL.push((plR[i]+plG[i]+plB[i])/3);
+    hSampL.push(0.2126*plR[i]+0.7152*plG[i]+0.0722*plB[i]);
   }
   [hSampR,hSampG,hSampB,hSampL].forEach(a=>a.sort((a,b)=>a-b));
+  // Background sigma estimate via MAD on the lower half of the histogram.
+  // The lower half is dominated by sky background (signal lives in the bright tail).
+  // sigma = 1.4826 * MAD is the standard robust estimator for Gaussian noise.
+  {
+    const n2=hSampL.length;
+    if(n2>10){
+      const med=hSampL[Math.floor(n2/2)];
+      const halfN=Math.floor(n2/2);
+      const devs=new Float32Array(halfN);
+      for(let k=0;k<halfN;k++) devs[k]=med-hSampL[k]; // hSampL ascending → all non-negative
+      devs.sort();
+      const mad=devs[Math.floor(halfN/2)];
+      histBgSigma=Math.max(1e-4,1.4826*mad);
+    }
+  }
   // Recompute peak, foot, and spike right-edge
   const nb=300,range=HHI-HLO,bins=new Array(nb).fill(0);
   for(const v of hSampL){const b=Math.floor((v-HLO)/range*nb);if(b>=0&&b<nb)bins[b]++;}
@@ -3469,6 +5521,7 @@ function buildHistSamples(plR,plG,plB){
 
 // Render the history log UI
 function updatePassUI(){
+  updateEnhanceHistoryUI(); // sync enhance tab history log
   const counter=document.getElementById('pass-counter');
   const log=document.getElementById('hist-log');
   if(!counter||!log) return;
@@ -3514,23 +5567,18 @@ function resetSlidersToIdentity(){
 }
 
 // APPLY: bake current stretch, add to history, reset sliders
+// v5.3: indeterminate orbit animation — DOM mutations only show/hide the overlay.
+// CSS keyframes drive the visuals so animation continues regardless of how
+// long the bake actually takes. No more "stuck at 92%" because there is no bar.
 function showApplyAnim(label){
   const a=document.getElementById('apply-anim');
-  const f=document.getElementById('apply-anim-fill');
   const l=document.getElementById('apply-anim-label');
-  if(a){a.classList.add('on');}
+  if(a) a.classList.add('on');
   if(l) l.textContent=label||'APPLYING STRETCH…';
-  if(f){f.style.width='0%';f.style.transition='none';}
-  // Animate bar across estimated bake time
-  requestAnimationFrame(()=>{
-    if(f){f.style.transition='width 3.5s linear';f.style.width='92%';}
-  });
 }
 function hideApplyAnim(){
   const a=document.getElementById('apply-anim');
-  const f=document.getElementById('apply-anim-fill');
-  if(f){f.style.transition='width .2s';f.style.width='100%';}
-  setTimeout(()=>{if(a)a.classList.remove('on');},220);
+  if(a) a.classList.remove('on');
 }
 
 // APPLY: bake current stretch pass, checkpoint if needed, reset sliders
@@ -3564,6 +5612,7 @@ async function doApply(){
   buildAndUploadStarMask(outR,outG,outB);
   if(snap.rl>1e-4) applyStarRolloffCPU(outR,outG,outB,snap.rl);
   if(snap.bgColorNR>0) applyBGNRCPU(outR,outG,outB,snap.bgColorNR/100);
+  // Finish effects are applied separately via applyFinishOnly(), not during stretch bake
 
   buildHistSamples(outR,outG,outB);
   replaceMainTextures(outR,outG,outB);
@@ -3631,21 +5680,90 @@ async function undoToPass(targetPass){
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// HAMBURGER MENU
+// ═══════════════════════════════════════════════════════════════════
+function toggleHamburger(){
+  const m=document.getElementById('hamburger-menu');
+  if(m) m.style.display=m.style.display==='block'?'none':'block';
+}
+function closeHamburger(){
+  const m=document.getElementById('hamburger-menu');
+  if(m) m.style.display='none';
+}
+function hambLoad(){
+  closeHamburger();
+  const fi=document.getElementById('fi');
+  if(fi){fi.value='';fi.click();} // reset value so same file can be re-selected
+}
+function hambExport(){ closeHamburger(); doExport(); }
+function hambZoom(){ closeHamburger(); resetZoom(); }
+function hambInfo(){
+  closeHamburger();
+  const modal=document.getElementById('fits-info-modal');
+  if(!modal) return;
+  if(!historyOrigR){
+    const c=document.getElementById('fits-info-content');
+    if(c) c.innerHTML='<div style="padding:48px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:13px;letter-spacing:.06em">NO FITS FILE LOADED</div>';
+  }
+  modal.style.display='block';
+}
+// Close hamburger when clicking anywhere outside the wrap
+document.addEventListener('click',e=>{
+  const w=document.getElementById('hamburger-wrap');
+  if(w&&!w.contains(e.target)) closeHamburger();
+},{capture:false,passive:true});
+
+
+// v5.2 Item 14: PNG sRGB chunk injection.
+// The browser's canvas.toBlob produces PNGs with no color profile chunk.
+// Injecting an sRGB chunk after IHDR signals to viewers that the data is
+// already in sRGB space, eliminating ambiguity for color-managed apps.
+const _CRC32_TABLE=(()=>{const t=new Uint32Array(256);for(let i=0;i<256;i++){let c=i;for(let k=0;k<8;k++) c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1);t[i]=c>>>0;}return t;})();
+function _crc32(bytes){
+  let c=0xffffffff;
+  for(let i=0;i<bytes.length;i++) c=_CRC32_TABLE[(c^bytes[i])&0xff]^(c>>>8);
+  return (c^0xffffffff)>>>0;
+}
+async function _injectSRGBChunk(blob){
+  // Read PNG bytes
+  const data=new Uint8Array(await blob.arrayBuffer());
+  // PNG signature is 8 bytes; IHDR chunk follows immediately:
+  // 4 bytes length(=13) + 4 bytes "IHDR" + 13 bytes data + 4 bytes CRC = 25 bytes
+  // So IHDR ends at byte 33. Insert sRGB chunk after IHDR (and before any other chunk).
+  const insertAt=33;
+  if(data.length<insertAt+8) return blob; // malformed PNG, give up
+  // Build sRGB chunk: 4 bytes length(=1) + 4 bytes "sRGB" + 1 byte intent(=0 perceptual) + 4 bytes CRC
+  const chunk=new Uint8Array(13);
+  chunk[0]=0;chunk[1]=0;chunk[2]=0;chunk[3]=1;       // length = 1
+  chunk[4]=0x73;chunk[5]=0x52;chunk[6]=0x47;chunk[7]=0x42; // "sRGB"
+  chunk[8]=0;                                         // rendering intent: 0 = perceptual
+  const crc=_crc32(chunk.subarray(4,9));
+  chunk[9]=(crc>>>24)&0xff; chunk[10]=(crc>>>16)&0xff; chunk[11]=(crc>>>8)&0xff; chunk[12]=crc&0xff;
+  // Splice
+  const out=new Uint8Array(data.length+13);
+  out.set(data.subarray(0,insertAt),0);
+  out.set(chunk,insertAt);
+  out.set(data.subarray(insertAt),insertAt+13);
+  return new Blob([out],{type:'image/png'});
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // EXPORT
 // ═══════════════════════════════════════════════════════════════════
 function doExport(){
   if(!gl||!tR)return;
-  const btn=document.getElementById('exp-btn');
-  btn.textContent='RENDERING…';btn.disabled=true;
+  const btn=document.getElementById('exp-btn'); // may be null after UI refactor
+  if(btn){btn.textContent='RENDERING…';btn.disabled=true;}
   setTimeout(()=>{
     const cv=document.getElementById('gl');
     const[ow,oh]=[cv.width,cv.height];
     cv.width=NW;cv.height=NH;gl.viewport(0,0,NW,NH);
     const[sz,scx,scy]=[Z.level,Z.cx,Z.cy];
     Z.level=1;Z.cx=.5;Z.cy=.5;render();
-    cv.toBlob(blob=>{
+    cv.toBlob(async blob=>{
+      const taggedBlob=await _injectSRGBChunk(blob); // Item 14: tag PNG as sRGB
       const a=document.createElement('a');
-      a.href=URL.createObjectURL(blob);
+      a.href=URL.createObjectURL(taggedBlob);
       const on=(document.getElementById('m-obj').textContent||'dwarf3').replace(/\s+/g,'_');
       const dt=(document.getElementById('m-date').textContent||'').replace(/-/g,'');
       a.download=`${on}_${dt}_processed.png`;a.click();
@@ -3653,7 +5771,7 @@ function doExport(){
       trackGA4('export_png',{export_type:'png',device_class:getDeviceClass()});
       Z.level=sz;Z.cx=scx;Z.cy=scy;
       cv.width=ow;cv.height=oh;sizeCanvas();render();
-      btn.textContent='EXPORT FULL RES PNG';btn.disabled=false;
+      if(btn){btn.textContent='EXPORT FULL RES PNG';btn.disabled=false;}
     },'image/png');
   },80);
 }
@@ -3959,9 +6077,9 @@ async function applyLinearDenoise(){
   // Gentler radius: str*3 instead of str*6 — less PSF damage to stars
   const radius=Math.max(1,Math.round(str*3));
 
-  // Compute luminance channel
+  // Compute luminance channel (Rec.709)
   const lum=new Float32Array(N);
-  for(let i=0;i<N;i++) lum[i]=0.299*historyOrigR[i]+0.587*historyOrigG[i]+0.114*historyOrigB[i];
+  for(let i=0;i<N;i++) lum[i]=0.2126*historyOrigR[i]+0.7152*historyOrigG[i]+0.0722*historyOrigB[i];
 
   await raf();
 
@@ -3991,6 +6109,7 @@ async function applyLinearDenoise(){
 
   // Re-upload textures
   replaceMainTextures(historyOrigR,historyOrigG,historyOrigB);
+  invalidateStarMask(); // Item 2: linear data changed → recompute mask
   resetStretchHistoryFromBase();
   // Refresh stats including LINEAR tab stat panel (Patch 7)
   refreshLinearState({resetStretchDefaults:false,refreshStats:true});
@@ -4158,6 +6277,12 @@ function resetAll(){
   // GHS is default mode
   document.querySelectorAll('.stretch-mode-card').forEach((b,i)=>b.classList.toggle('on',i===2));
   ['c-mtf','c-ash','c-ghs'].forEach((id,i)=>document.getElementById(id).style.display=i===2?'':'none');
+  // Reset finish amounts to zero
+  P.finStruct=0;P.finSharp=0;P.finDehaze=0;P.finSat=0;P.finProtect=true;
+  tDetailMed=null;tDetailFine=null;tDetailW3=null;finDetailDirty=true;
+  curvePts={ALL:[[0,0],[1,1]],L:[[0,0],[1,1]],R:[[0,0],[1,1]],G:[[0,0],[1,1]],B:[[0,0],[1,1]]};
+  currentCurveChannel='ALL';curvesActive=false;
+  if(tCurveLUT){gl.deleteTexture(tCurveLUT);tCurveLUT=null;}
   // Keep histogram hidden on reset — user must toggle it explicitly
   document.getElementById('hist-float').classList.add('hidden');
   // Reset histogram float position for next session
@@ -4175,6 +6300,19 @@ dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');}
 dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');handleFile(e.dataTransfer.files[0]);});
 </script>
+
+<!-- FITS INFO MODAL -->
+<div id="fits-info-modal">
+  <div class="fi-scroll" onclick="if(event.target===this)document.getElementById('fits-info-modal').style.display='none'">
+    <div class="fi-card">
+      <div class="fi-hdr">
+        <span class="fi-title">FITS Info</span>
+        <button id="fits-info-close" onclick="document.getElementById('fits-info-modal').style.display='none'" title="Close">✕</button>
+      </div>
+      <div id="fits-info-content"></div>
+    </div>
+  </div>
+</div>
 
 <!-- COOKIE CONSENT BANNER -->
 <div id="cookie-banner" class="hidden">
