@@ -173,7 +173,21 @@ body{background:var(--bg);color:var(--txt);display:flex;flex-direction:column}
 #lbl-a{top:13px;left:14px;color:rgba(255,255,255,.28)}
 #lbl-b{top:13px;right:14px;color:rgba(249,115,22,.55)}
 #lbl-tip{bottom:12px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.18);white-space:nowrap;padding:4px 12px;background:rgba(0,0,0,.45);border-radius:10px}
-#lbl-zoom{bottom:12px;right:14px;color:rgba(249,115,22,.7);display:none}
+#lbl-zoom{bottom:12px;right:14px;color:rgba(249,115,22,.7);display:none;text-align:right;line-height:1.5}
+#lbl-zoom .zoom-note{display:block;font-size:9px;color:rgba(249,115,22,.55);letter-spacing:.05em}
+/* v5.16: update-available banner */
+#update-banner{position:fixed;bottom:0;left:0;right:0;z-index:9999;display:none;align-items:center;justify-content:space-between;gap:12px;padding:10px 18px;background:#131318;border-top:1px solid rgba(122,200,240,.35);font-family:var(--mono);font-size:11px;color:#7ac8f0;letter-spacing:.04em;box-shadow:0 -2px 12px rgba(0,0,0,.5)}
+#update-banner span{flex:1}
+#update-banner-reload{background:rgba(122,200,240,.14);border:1px solid rgba(122,200,240,.45);color:#7ac8f0;font-family:var(--mono);font-size:11px;letter-spacing:.07em;padding:5px 14px;border-radius:4px;cursor:pointer;transition:.13s;white-space:nowrap}
+#update-banner-reload:hover{background:rgba(122,200,240,.28);border-color:rgba(122,200,240,.7)}
+#update-banner-dismiss{background:transparent;border:none;color:rgba(122,200,240,.45);font-size:16px;line-height:1;cursor:pointer;padding:0 2px;transition:color .13s}
+#update-banner-dismiss:hover{color:#7ac8f0}
+/* v5.13: Smooth View / Pixel View toggle */
+#view-toggle{position:absolute;top:12px;right:14px;z-index:6;display:none;gap:3px;flex-direction:column;align-items:flex-end}
+#view-toggle.on{display:flex}
+.vtbtn{font-family:var(--mono);font-size:9px;padding:4px 8px;border-radius:3px;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.35);cursor:pointer;letter-spacing:.07em;transition:background .13s,color .13s,border-color .13s;white-space:nowrap}
+.vtbtn:hover{color:rgba(255,255,255,.65);border-color:rgba(255,255,255,.25)}
+.vtbtn.on{background:rgba(122,200,240,.16);border-color:rgba(122,200,240,.45);color:#7ac8f0}
 
 /* FLOATING HISTOGRAM */
 #hist-float{
@@ -253,23 +267,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .stf-btn:hover{background:rgba(249,115,22,.18);border-color:var(--acc)}
 
 /* AUTO PREVIEW */
-#preview-bar{display:none;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.4);border-radius:6px;margin-bottom:10px}
-#preview-bar.on{display:flex}
-#preview-label{font-family:var(--mono);font-size:14px;color:var(--acc);letter-spacing:.05em}
-#preview-exit{background:none;border:1px solid rgba(249,115,22,.4);border-radius:4px;color:var(--acc);font-family:var(--mono);font-size:14px;cursor:pointer;padding:5px 12px;transition:.12s}
-#preview-exit:hover{background:rgba(249,115,22,.2)}
+
+
+
+
+
 /* Preview lock — dims and blocks all panel controls except EXIT PREVIEW */
-#panel.preview-lock *:not(#preview-bar):not(#preview-bar *):not(#preview-label){
-  pointer-events:none!important;
-}
-#panel.preview-lock{position:relative}
-#panel.preview-lock::after{
-  content:'';position:absolute;inset:0;z-index:10;
-  background:rgba(8,12,20,.55);pointer-events:all;
-}
-#panel.preview-lock #preview-bar{
-  position:relative;z-index:20;pointer-events:all;
-}
+
+
+
+
 .mode-row{display:flex;gap:6px;margin-bottom:14px}
 .stretch-mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
 .stretch-mode-card{background:var(--card);border:1px solid var(--bdr);border-radius:6px;padding:9px 8px;text-align:left;cursor:pointer;transition:.13s;width:100%}
@@ -359,6 +366,52 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 #apply-btn{width:100%;padding:13px;background:rgba(249,115,22,.18);border:2px solid var(--acc);border-radius:6px;color:var(--acc);font-family:var(--mono);font-size:16px;letter-spacing:.07em;cursor:pointer;transition:.15s;margin-bottom:10px;display:block;text-align:center;font-weight:700}
 #apply-btn:hover{background:rgba(249,115,22,.3)}
 #apply-btn:disabled{opacity:.35;cursor:not-allowed}
+/* v5.8: stretch mode dropdown */
+.mode-select{width:100%;background:var(--card);border:1px solid var(--bdr);color:var(--txt);font-family:var(--mono);font-size:13px;padding:9px 10px;border-radius:5px;cursor:pointer;outline:none;letter-spacing:.04em;transition:.13s}
+.mode-select:hover{border-color:var(--acc)}
+.mode-select:focus{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+.mode-select option{background:#1a1a1f;color:var(--txt)}
+/* v5.8: ? help icons next to slider titles */
+.help-icon{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:6px;border-radius:50%;background:rgba(122,200,240,.18);border:1px solid rgba(122,200,240,.45);color:#7ac8f0;font-family:var(--mono);font-size:9px;font-weight:700;cursor:pointer;line-height:1;user-select:none;vertical-align:middle;transition:.12s}
+.help-icon:hover{background:rgba(122,200,240,.32);transform:scale(1.1)}
+/* v5.8: centered help modal */
+.help-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.help-modal.hidden{display:none}
+.help-modal-content{background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:18px 22px;max-width:380px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+.help-modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bdr)}
+.help-modal-title{font-family:var(--mono);font-size:11px;color:var(--acc);letter-spacing:.1em;text-transform:uppercase}
+.help-modal-close{background:transparent;border:none;color:var(--dim);font-size:18px;cursor:pointer;padding:0 4px;line-height:1}
+.help-modal-close:hover{color:var(--txt)}
+.help-modal-body{font-family:var(--sans);font-size:13px;color:var(--txt);line-height:1.55}
+/* v5.10: sticky stretch toolbar with chips */
+#stretch-toolbar{position:sticky;top:0;z-index:9;background:var(--card);border:1px solid var(--bdr);border-radius:6px;padding:10px 12px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+#stretch-toolbar #apply-btn{width:100%;margin:0 0 8px}
+#stretch-toolbar .sq-chips{display:flex;gap:6px;flex-wrap:wrap}
+.sq-chip{display:inline-flex;align-items:center;gap:8px;padding:5px 10px;border-radius:14px;font-family:var(--mono);font-size:10px;letter-spacing:.05em;border:1px solid;flex:1;min-width:90px;justify-content:space-between;transition:background-color .18s ease,color .18s ease,border-color .18s ease,box-shadow .18s ease}
+.sq-chip .sq-chip-label{color:var(--dim);text-transform:uppercase;font-size:9px;letter-spacing:.08em}
+.sq-chip .sq-chip-value{font-weight:600;font-size:11px;letter-spacing:.03em}
+.sq-chip-low{background:rgba(126,217,87,.12);border-color:rgba(126,217,87,.4);color:#7ed957}
+.sq-chip-low .sq-chip-value{color:#9ee76c}
+.sq-chip-medium{background:rgba(251,191,36,.14);border-color:rgba(251,191,36,.45);color:#fbbf24}
+.sq-chip-medium .sq-chip-value{color:#ffd042}
+.sq-chip-high{background:rgba(255,138,77,.16);border-color:rgba(255,138,77,.5);color:#ff8a4d}
+.sq-chip-high .sq-chip-value{color:#ff9966}
+.sq-chip-extreme{background:rgba(248,113,113,.20);border-color:rgba(248,113,113,.6);color:#f87171;animation:chipPulse 1.6s ease-in-out infinite}
+.sq-chip-extreme .sq-chip-value{color:#fb8585}
+@keyframes chipPulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,0)}50%{box-shadow:0 0 0 3px rgba(248,113,113,.22)}}
+#sq-toolbar-msg{font-family:var(--sans);font-size:11px;color:var(--dim);margin-top:9px;padding-top:8px;border-top:1px solid var(--bdr);line-height:1.4;transition:color .2s ease;min-height:1.2em}
+
+/* v5.6: stretch quality advisory */
+#stretch-quality{margin:8px 0 12px;padding:9px 11px 10px;border-radius:5px;border:1px solid var(--bdr);background:rgba(255,255,255,.02);font-family:var(--mono);font-size:11px;line-height:1.7}
+#stretch-quality .sq-head{font-size:10px;color:var(--dim);letter-spacing:.1em;margin-bottom:5px;text-transform:uppercase}
+#stretch-quality .sq-row{display:flex;justify-content:space-between;align-items:center}
+#stretch-quality .sq-row .sq-label{color:var(--dim)}
+#stretch-quality .sq-msg{margin-top:7px;padding-top:7px;border-top:1px solid var(--bdr);font-family:var(--sans);font-size:11px;color:var(--dim);line-height:1.45;display:none}
+#stretch-quality .sq-msg.on{display:block}
+#stretch-quality .sq-low{color:#7ed957}
+#stretch-quality .sq-medium{color:#fbbf24}
+#stretch-quality .sq-high{color:#ff8a4d}
+#stretch-quality .sq-extreme{color:#f87171}
 #pass-counter{font-family:var(--mono);font-size:13px;color:var(--dim);text-align:center;margin-bottom:12px;letter-spacing:.06em}
 #hist-log{max-height:160px;overflow-y:auto;border:1px solid var(--bdr);border-radius:5px;background:var(--card);margin-top:8px}
 #hist-log::-webkit-scrollbar{width:3px}
@@ -675,8 +728,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     </div>
   </section>
 
-  <div style="font-size:13px;color:var(--dim);text-align:center;line-height:1.8">
-    FITS Studio v5.5 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
+  <div id="app-version-label" style="font-size:13px;color:var(--dim);text-align:center;line-height:1.8">
+    FITS Studio v5.16.0 · <a href="https://dwarfastro.com" style="color:var(--acc);text-decoration:none">dwarfastro.com</a> · Free to use
   </div>
 </div>
 </div>
@@ -705,6 +758,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     <div id="debug-label">DEBUG: STAR MASK</div>
     <div class="ov" id="lbl-tip">SCROLL TO ZOOM  ·  DRAG TO PAN</div>
     <div class="ov" id="lbl-zoom"></div>
+    <!-- v5.13: viewer filter toggle (shown only when float-linear extension available) -->
+    <div id="view-toggle">
+      <button class="vtbtn on" id="vt-smooth" onclick="setDisplayMode('smooth')" title="LINEAR filter — reduces blockiness at high zoom. Display only; does not change image data.">SMOOTH</button>
+      <button class="vtbtn"    id="vt-pixel"  onclick="setDisplayMode('pixel')"  title="NEAREST filter — shows individual source pixels. Use for pixel-level inspection.">PIXEL</button>
+    </div>
 
     <!-- FLOATING HISTOGRAM -->
     <div id="hist-float" class="hidden">
@@ -926,96 +984,83 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
       <div class="pb">
         <div class="pl">Stretch</div>
         <!-- Auto Preview bar — shown when preview is active -->
-        <div id="preview-bar">
-          <span id="preview-label">⚡ AUTO PREVIEW ACTIVE</span>
-          <button id="preview-exit" onclick="exitPreview()">EXIT PREVIEW</button>
+        <!-- v5.10: sticky toolbar with apply + live risk chips -->
+        <!-- v5.11: AUTO STRETCH added to toolbar; PREVIEW STF removed -->
+        <div id="stretch-toolbar">
+          <button id="apply-btn" onclick="doApply()">⊕  APPLY STRETCH</button>
+          <div class="sq-chips">
+            <span class="sq-chip sq-chip-low">
+              <span class="sq-chip-label">Risk</span><span class="sq-chip-value" id="sq-bg-risk">Low</span>
+            </span>
+            <span class="sq-chip sq-chip-low">
+              <span class="sq-chip-label">Lift</span><span class="sq-chip-value" id="sq-lift">Normal</span>
+            </span>
+            <span class="sq-chip sq-chip-low">
+              <span class="sq-chip-label">Clip</span><span class="sq-chip-value" id="sq-clip">None</span>
+            </span>
+          </div>
+          <div id="sq-toolbar-msg">Stretch looks controlled.</div>
         </div>
 
-        <div style="display:flex;gap:6px;margin-bottom:12px">
-          <button class="stf-btn" style="margin-bottom:0;flex:1" onclick="doAutoSTF()">AUTO STRETCH</button>
-          <input type="number" id="stf-target" min="0.05" max="0.40" step="0.01" value="0.15" onchange="P.stfTarget=Math.max(0.05,Math.min(0.40,parseFloat(this.value)||0.15))" style="width:62px;background:var(--card);border:1px solid var(--bdr);color:var(--txt);font-family:var(--mono);font-size:11px;padding:6px 4px;border-radius:3px;text-align:center" title="Target post-stretch median brightness (0.05-0.40). Default 0.15.">
-          <button id="preview-stf-btn" class="stf-btn" style="margin-bottom:0;flex:1;background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.3);color:#7ac8f0" onclick="doAutoPreview()" title="Temporary Auto Stretch preview — not baked. Any slider move or action exits preview automatically.">PREVIEW STF</button>
-        </div>
-        <div class="stretch-mode-grid">
-          <button class="stretch-mode-card" id="m-mtf" onclick="setMode(0,this)" title="MTF is a simple midtone stretch. Use it for small finishing contrast moves after the image is already close.">
-            <span class="mode-title">MTF</span>
-            <span class="mode-desc">Fast finishing contrast</span>
-          </button>
-          <button class="stretch-mode-card" id="m-ash" onclick="setMode(1,this)" title="Asinh lifts faint signal smoothly and can preserve star colour better than a harsh contrast stretch. Use it for a gentle first stretch.">
-            <span class="mode-title">Asinh</span>
-            <span class="mode-desc">Smooth colour-friendly lift</span>
-          </button>
-          <button class="stretch-mode-card on" id="m-ghs" onclick="setMode(2,this)" title="GHS gives the most control over faint detail, background, and highlights. Recommended for noisy galaxy data and most serious stretching.">
-            <span class="mode-title">GHS</span>
-            <span class="mode-desc">Best control for faint detail</span>
-          </button>
-
+        <!-- v5.11: HISTOGRAM only; AUTO STRETCH moved to sticky toolbar -->
+        <button class="stf-btn" style="margin-bottom:12px;width:100%" onclick="toggleHistogram()">HISTOGRAM</button>
+        <!-- v5.8: stretch mode dropdown replaces the three mode cards -->
+        <div class="ctrl" style="margin-bottom:10px">
+          <div class="cr"><span class="cn">Stretch Mode</span></div>
+          <select id="stretch-mode-select" class="mode-select" onchange="setMode(parseInt(this.value,10),null)">
+            <option value="0">MTF — fast finishing contrast</option>
+            <option value="1">Asinh — smooth colour-friendly lift</option>
+            <option value="2" selected>GHS — best control for faint detail</option>
+          </select>
         </div>
 
         <!-- Target presets — GHS only, hidden in MTF/Asinh -->
-        <div class="preset-row" id="ghs-presets">
-          <button class="pre-btn" onclick="applyPreset('nebula')">NEBULA<span>Orion · Rosette</span></button>
-          <button class="pre-btn" onclick="applyPreset('galaxy')">GALAXY<span>M31 · M81</span></button>
-          <button class="pre-btn" onclick="applyPreset('faint')">FAINT<span>M78 · IFN</span></button>
-        </div>
-
-        <div class="ctrl" style="margin-bottom:10px">
-          <button class="stf-btn" style="margin-bottom:0" onclick="toggleHistogram()">HISTOGRAM</button>
-        </div>
-
-        <!-- Confetti guidance -->
-        <div class="ch" style="padding:8px 10px;background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:4px;margin-bottom:10px;font-size:12px;line-height:1.6;color:var(--dim)">
-          <b style="color:var(--sub)">Background colour speckle?</b> Red/green/blue speckle in the background usually means the stretch is lifting RGB noise. Raise Background Clip slightly, reduce stretch strength, or use GHS with a conservative first pass.
-        </div>
-
         <div class="ctrl">
-          <div class="cr"><span class="cn">Background Clip</span><span class="cv" id="v-bp">0.000</span></div>
+          <div class="cr"><span class="cn">Background Clip<span class="help-icon" onclick="showHelp('Background Clip','Drag the orange marker on the histogram. Raise until background turns clean black.')">?</span></span><span class="cv" id="v-bp">0.000</span></div>
           <div class="pm-row"><button class="pm-btn" onclick="stepSlider('bp',-1)">−</button><input type="range" id="i-bp" min="0" max="600" value="0" oninput="onBP(this.value)"><button class="pm-btn" onclick="stepSlider('bp',1)">+</button></div>
-          <div class="ch">Drag the orange marker on the histogram. Raise until background turns clean black.</div>
+          
         </div>
 
         <!-- Background Color Noise Reduction -->
         <div class="ctrl">
-          <div class="cr"><span class="cn">BG Color Noise Reduction</span><span class="cv" id="v-bgnr">0%</span></div>
+          <div class="cr"><span class="cn">BG Color Noise Reduction<span class="help-icon" onclick="showHelp('BG Color Noise Reduction','Desaturates only the darkest background pixels to reduce RGB speckle. Start at 10 to 20 if the background shows coloured speckle after stretching. High values can make the sky look grey.')">?</span></span><span class="cv" id="v-bgnr">0%</span></div>
           <div class="pm-row"><button class="pm-btn" onclick="stepSlider('bgnr',-5)">−</button><input type="range" id="i-bgnr" min="0" max="100" value="0" oninput="onBGNR(this.value)"><button class="pm-btn" onclick="stepSlider('bgnr',5)">+</button></div>
-          <div class="ch" title="Reduces red/green/blue speckle only in the darkest background. Use lightly; high values can make the sky look unnaturally grey.">Desaturates only the darkest background pixels to reduce RGB speckle. Start at 10–20 if the background shows coloured speckle after stretching. High values can make the sky look grey.</div>
+          
         </div>
         <div id="c-mtf">
           <div class="ctrl">
-            <div class="cr"><span class="cn">Midtone (m)</span><span class="cv" id="v-mt">0.490</span></div>
+            <div class="cr"><span class="cn">Midtone (m)<span class="help-icon" onclick="showHelp('Midtone (m)','Left = no stretch (m=0.490). Right = very aggressive (m=0.010).')">?</span></span><span class="cv" id="v-mt">0.490</span></div>
             <div class="pm-row"><button class="pm-btn" onclick="stepSlider('mt',-1)">−</button><input type="range" id="i-mt" min="0" max="480" value="0" oninput="onMT(this.value)"><button class="pm-btn" onclick="stepSlider('mt',1)">+</button></div>
-            <div class="ch">Left = no stretch (m=0.490). Right = very aggressive (m=0.010).</div>
+            
           </div>
           <div class="ctrl">
-            <div class="cr"><span class="cn">White Point</span><span class="cv" id="v-mwp">1.000</span></div>
+            <div class="cr"><span class="cn">White Point<span class="help-icon" onclick="showHelp('White Point','Drag the red histogram marker. Clips highlights. Right = no clipping.')">?</span></span><span class="cv" id="v-mwp">1.000</span></div>
             <div class="pm-row"><button class="pm-btn" onclick="stepSlider('mwp',-1)">−</button><input type="range" id="i-mwp" min="100" max="1000" value="1000" oninput="onMWP(this.value)"><button class="pm-btn" onclick="stepSlider('mwp',1)">+</button></div>
-            <div class="ch">Drag the red histogram marker. Clips highlights. Right = no clipping.</div>
+            
           </div>
         </div>
         <div id="c-ash" style="display:none">
           <div class="ctrl">
-            <div class="cr"><span class="cn">Stretch D</span><span class="cv" id="v-ash">0.00</span></div>
+            <div class="cr"><span class="cn">Stretch D<span class="help-icon" onclick="showHelp('Stretch D (Asinh)','Logarithmic. Left = no stretch. Right = very aggressive.')">?</span></span><span class="cv" id="v-ash">0.00</span></div>
             <div class="pm-row"><button class="pm-btn" onclick="stepSlider('ash',-1)">−</button><input type="range" id="i-ash" min="0" max="200" value="0" oninput="onAsh(this.value)"><button class="pm-btn" onclick="stepSlider('ash',1)">+</button></div>
-            <div class="ch">Logarithmic. Left = no stretch. Right = very aggressive.</div>
+            
           </div>
-          <button onclick="doApply()" style="width:100%;padding:8px 0;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.5);border-radius:5px;color:var(--acc);font-family:var(--mono);font-size:10px;letter-spacing:.1em;cursor:pointer;margin-bottom:12px;transition:.15s" onmouseover="this.style.background='rgba(249,115,22,.28)'" onmouseout="this.style.background='rgba(249,115,22,.15)'">⊕  APPLY THIS PASS</button>
         </div>
         <div id="c-ghs" style="display:none">
           <div class="ctrl">
-            <div class="cr"><span class="cn">Stretch Point SP</span><span class="cv" id="v-gsp">0.005</span></div>
+            <div class="cr"><span class="cn">Stretch Point SP<span class="help-icon" onclick="showHelp('Stretch Point SP','Place just left of where the histogram data begins to rise. Green marker shows recommended position. Drag the blue marker on the histogram.')">?</span></span><span class="cv" id="v-gsp">0.005</span></div>
             <div class="pm-row"><button class="pm-btn" onclick="stepSlider('gsp',-1)">−</button><input type="range" id="i-gsp" min="1" max="200" value="5" oninput="onGSP(this.value)" title="0.001 to 0.200"><button class="pm-btn" onclick="stepSlider('gsp',1)">+</button></div>
-            <div class="ch">Place just left of where the histogram data begins to rise. Green marker shows recommended position. Drag the blue marker on the histogram.</div>
+            
           </div>
           <div class="ctrl">
-            <div class="cr"><span class="cn">Stretch D</span><span class="cv" id="v-gd">0.00</span></div>
+            <div class="cr"><span class="cn">Stretch D<span class="help-icon" onclick="showHelp('Stretch D (GHS)','Overall stretch strength. Increase until you can see your target. Stop before stars bloat.')">?</span></span><span class="cv" id="v-gd">0.00</span></div>
             <div class="pm-row"><button class="pm-btn" onclick="stepSlider('gd',-1)">−</button><input type="range" id="i-gd" min="0" max="200" value="0" oninput="onGD(this.value)" title="0 to 30, log-mapped"><button class="pm-btn" onclick="stepSlider('gd',1)">+</button></div>
-            <div class="ch">Overall stretch strength. Increase until you can see your target. Stop before stars bloat.</div>
+            
           </div>
-          <button onclick="doApply()" style="width:100%;padding:8px 0;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.5);border-radius:5px;color:var(--acc);font-family:var(--mono);font-size:10px;letter-spacing:.1em;cursor:pointer;margin-bottom:12px;transition:.15s" onmouseover="this.style.background='rgba(249,115,22,.28)'" onmouseout="this.style.background='rgba(249,115,22,.15)'">⊕  APPLY THIS PASS</button>
           <div class="ctrl">
-            <div class="cr"><span class="cn">Local Intensity b</span><span class="cv" id="v-gb">0.0</span></div>
+            <div class="cr"><span class="cn">Local Intensity b<span class="help-icon" onclick="showHelp('Local Intensity b','Negative = log/Asinh behaviour. 0 = pure GHS. 1 to 6 = contrast focused at SP. 8 to 15 = very concentrated at SP for initial linear stretches.')">?</span></span><span class="cv" id="v-gb">0.0</span></div>
             <div class="pm-row"><button class="pm-btn" onclick="stepSlider('gb',-1)">−</button><input type="range" id="i-gb" min="-100" max="100" value="0" oninput="onGB(this.value)" title="-10 to +10, symmetric"><button class="pm-btn" onclick="stepSlider('gb',1)">+</button></div>
-            <div class="ch">Negative = log/Asinh behaviour. 0 = pure GHS. 1–6 = contrast focused at SP. 8–15 = very concentrated at SP for initial linear stretches.</div>
+            
           </div>
           <div class="ctrl">
             <div class="cr"><span class="cn">Lower Protection LP</span><span class="cv" id="v-glp">0.000</span></div>
@@ -1028,6 +1073,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
             <div class="ch">Pixels above HP are returned toward identity — protects galaxy cores and star colours. Drag yellow HP marker on histogram. Lower = more protection.</div>
           </div>
         </div>
+
+      <div class="pb">
+        <div class="pl">Pass History</div>
+        <!-- v5.10: apply button + advisory moved to sticky toolbar at top of tab -->
+        <div id="pass-counter">PASS 0 OF 0</div>
+        <div id="hist-log"></div>
+        <div class="ch" style="margin-top:8px">Bakes current stretch into pixel data and resets sliders to identity. Click any pass in the log to undo back to that point.</div>
+      </div>
 
         <div class="sep"></div>
         <div class="ctrl">
@@ -1074,13 +1127,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         </div>
       </div>
 
-      <div class="pb">
-        <div class="pl">Multi-Pass Stretch</div>
-        <button id="apply-btn" onclick="doApply()">⊕  APPLY STRETCH  —  BAKE &amp; CONTINUE</button>
-        <div id="pass-counter">PASS 0 OF 0</div>
-        <div id="hist-log"></div>
-        <div class="ch" style="margin-top:8px">Bakes current stretch into pixel data and resets sliders to identity. Click any pass in the log to undo back to that point.</div>
-      </div>
+
 
 
     </div>
@@ -1201,7 +1248,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
           2) Go to <code>LINEAR</code> and run <b>Background Extraction</b>.<br>
           3) Let <b>Channel Neutralization</b> and <b>Statistics Refresh</b> complete automatically.<br>
           4) Optionally apply <b>Gentle Linear Denoise</b>.<br>
-          5) Switch to <code>STRETCH</code> and use <b>Preview STF</b> or <b>Auto Stretch</b> for a starting point.<br>
+          5) Switch to <code>STRETCH</code>. Open the <b>HISTOGRAM</b>, set the Stretch Point just left of where the data rises, and raise Stretch D until your target becomes visible.<br>
           6) Refine with <b>MTF</b>, <b>Asinh</b>, or <b>GHS</b>.<br>
           7) Protect bright stars with <b>Highlights</b> or <b>HP</b> in GHS.<br>
           8) Finish with <b>White Balance</b>.<br>
@@ -1255,31 +1302,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         </div>
         <div class="step-note">The goal is not to blur the image. The goal is to smooth background noise while preserving colour balance and keeping stars under control.</div>
       </div>
+
       <div class="guide-step">
-        <div class="step-num">08 — PREVIEW STF</div>
-        <div class="step-title">Scout the image before committing to a real stretch</div>
-        <div class="step-body">
-          <b>Preview STF</b> is a temporary preview mode. Use it to see where the image wants to go before you start making real manual decisions.<br><br>
-          A good workflow is:<br>
-          • Open the histogram<br>
-          • Click <b>PREVIEW STF</b><br>
-          • Study the result<br>
-          • Exit preview<br>
-          • Choose your real stretch mode and refine from there
-        </div>
-        <div class="step-note">Think of Preview STF as a scouting tool, not a finished result. It is there to help you choose the next step more intelligently.</div>
-      </div>
-      <div class="guide-step">
-        <div class="step-num">09 — AUTO STRETCH</div>
-        <div class="step-title">A starting point, not the final answer</div>
-        <div class="step-body">
-          <b>Auto Stretch</b> uses per-channel statistics — with green as the reference — to place the stretch controls automatically. The black point is placed conservatively to preserve faint signal, especially in targets with dim outer structure.<br><br>
-          That means the black point marker may still appear partly inside the histogram data. This is often normal. It does <b>not</b> mean the stretch is wrong. It usually means the app is protecting faint signal instead of forcing an artificially black background too early.
-        </div>
-        <div class="step-note">If you want a darker cosmetic background, raise the black point manually after Auto Stretch. For galaxies and faint nebulosity, conservative placement is often the better choice.</div>
-      </div>
-      <div class="guide-step">
-        <div class="step-num">10 — UNDERSTANDING THE HISTOGRAM</div>
+        <div class="step-num">08 — UNDERSTANDING THE HISTOGRAM</div>
         <div class="step-title">Use it as a control surface, not just a graph</div>
         <div class="step-body">
           The histogram shows the tonal distribution of the image.<br><br>
@@ -1296,7 +1321,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         <div class="step-note">Do not assume the BP marker must always sit fully outside the histogram data. In a conservative stretch, it may sit near the left shoulder of the data to preserve faint structure.</div>
       </div>
       <div class="guide-step">
-        <div class="step-num">11 — CHOOSING A STRETCH MODE</div>
+        <div class="step-num">09 — CHOOSING A STRETCH MODE</div>
         <div class="step-title">MTF, Asinh, and GHS are different tools</div>
         <div class="step-body">
           <b>MTF</b><br>
@@ -1309,7 +1334,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         <div class="step-note">A useful rule: start with <b>Asinh</b> if bright stars are your main concern, and use <b>GHS</b> when you want more fine-grained control.</div>
       </div>
       <div class="guide-step">
-        <div class="step-num">12 — A SIMPLE M42 WORKFLOW IN ASINH</div>
+        <div class="step-num">10 — A SIMPLE M42 WORKFLOW IN ASINH</div>
         <div class="step-title">Great for star colour and a bright core</div>
         <div class="step-body">
           Recommended sequence for the built-in M42 sample:<br>
@@ -1326,7 +1351,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         <div class="step-note">The goal is not to make Orion as bright as possible immediately. The goal is to build the image in stages without blowing out the core or whitening the stars too early.</div>
       </div>
       <div class="guide-step">
-        <div class="step-num">13 — A SIMPLE M42 WORKFLOW IN GHS</div>
+        <div class="step-num">11 — A SIMPLE M42 WORKFLOW IN GHS</div>
         <div class="step-title">Best when you want more control</div>
         <div class="step-body">
           Recommended sequence:<br>
@@ -1342,7 +1367,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         <div class="step-note">In GHS, build the stretch slowly. If the image starts to look harsh, add protection before adding more stretch.</div>
       </div>
       <div class="guide-step">
-        <div class="step-num">14 — STAR COLOUR AND BRIGHT STARS</div>
+        <div class="step-num">12 — STAR COLOUR AND BRIGHT STARS</div>
         <div class="step-title">Protect highlights before forcing more stretch</div>
         <div class="step-body">
           Star colour is usually lost because of aggressive highlight handling, not because of a conservative black point.<br><br>
@@ -1356,7 +1381,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         <div class="step-note">If stars are turning white, do not solve that by pushing BP harder. Reduce the stretch or add more highlight protection instead.</div>
       </div>
       <div class="guide-step">
-        <div class="step-num">15 — WHITE BALANCE</div>
+        <div class="step-num">13 — WHITE BALANCE</div>
         <div class="step-title">Do this after the main stretch is close</div>
         <div class="step-body">
           Use White Balance near the end of the workflow, after the structure and brightness are mostly where you want them.<br><br>
@@ -1368,13 +1393,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         <div class="step-note">White Balance is a finishing tool. It should not need to rescue a poorly stretched image.</div>
       </div>
       <div class="guide-step">
-        <div class="step-num">16 — EXPORT</div>
+        <div class="step-num">14 — EXPORT</div>
         <div class="step-title">Finish with a full-resolution PNG</div>
         <div class="step-body">When the image looks right, click <b>EXPORT FULL RES PNG</b>. This saves your current processed result as a full-resolution PNG for sharing, archiving, or finishing in another editor.</div>
         <div class="step-note">A good export point is: the structure is visible, the background is clean enough, the stars are controlled, and the colour balance looks believable.</div>
       </div>
       <div class="guide-step">
-        <div class="step-num">17 — TROUBLESHOOTING</div>
+        <div class="step-num">15 — TROUBLESHOOTING</div>
         <div class="step-title">Common issues and what to try next</div>
         <div class="step-body">
           <b>The image still looks flat</b><br>
@@ -1735,6 +1760,7 @@ void main(){
 // ═══════════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════════
+window.FITS_STUDIO_VERSION='5.16.0'; // set before any UI reads it
 const P={bp:0,mwp:1.0,mmt:.490,aD:0,gD:0,gB:0,gSP:.005,gLP:0,gHP:1.0,ht:0,rl:0,wR:1,wG:1,wB:1,pal:0,mode:2,bgColorNR:0,pedR:0,pedG:0,pedB:0,
   // ── AstroClarity Finish — default 0 / true ──
   finStruct:0, finSharp:0, finDehaze:0, finSat:0, finProtect:true,
@@ -1836,7 +1862,7 @@ function initGL(){
   const cv=document.getElementById('gl');
   gl=cv.getContext('webgl2');
   if(!gl){alert('WebGL2 required — use Chrome or Firefox on desktop.');return false;}
-  gl.getExtension('OES_texture_float_linear');
+  extFloatLinear=gl.getExtension('OES_texture_float_linear'); // v5.13: store for filter toggle
   const p=gl.createProgram();
   gl.attachShader(p,mkS(gl.VERTEX_SHADER,VS));
   gl.attachShader(p,mkS(gl.FRAGMENT_SHADER,FS));
@@ -1920,6 +1946,8 @@ function render(){
   gl.uniform1f(locs.u_finAny,_finAny);
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
   if(bgSamples.length) drawSampleOverlay();
+  // v5.6: refresh stretch-quality advisory after every render
+  if(typeof updateStretchQuality==='function') updateStretchQuality();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2051,7 +2079,7 @@ async function loadFITS(buf){
   P.finDns=0;P.finLocal=0;
   P.stfTarget=0.15;
   // Also sync STF target input if present
-  const stfIn=document.getElementById('stf-target');if(stfIn) stfIn.value='0.15';
+  // v5.8: stf-target input removed; P.stfTarget kept at 0.15 internally
   // Sync SP slider
   const spSliderVal=Math.min(500,Math.max(1,Math.round(P.gSP*1000)));
   syncSlider('i-gsp',spSliderVal,'v-gsp',P.gSP.toFixed(3));
@@ -2065,6 +2093,8 @@ async function loadFITS(buf){
   document.getElementById('c-ash').style.display='none';
   document.getElementById('c-ghs').style.display='';
   document.querySelectorAll('.stretch-mode-card').forEach((b,i)=>b.classList.toggle('on',i===2));
+  // v5.8: also sync the dropdown
+  {const sel=document.getElementById('stretch-mode-select');if(sel) sel.value='2';}
 
   setLoad('Uploading to GPU…',80);await raf();
   if(!initGL())return;
@@ -2072,11 +2102,15 @@ async function loadFITS(buf){
   historyOrigR=new Float32Array(plR);
   historyOrigG=new Float32Array(plG);
   historyOrigB=new Float32Array(plB);
+  // v5.7: populate the linear-bg cache eagerly on initial load
+  if(typeof _recomputeLinearBgStats==='function') _recomputeLinearBgStats();
   historyStack=[];
   currentPass=0;
   tR=mkTex(plR,naxis1,naxis2);
   tG=mkTex(plG,naxis1,naxis2);
   tB=mkTex(plB,naxis1,naxis2);
+  // v5.13: apply current display filter to freshly created textures
+  setMainImageTextureFiltering(displayFilterMode);
   // Build 1/8 downsampled arrays for background sample analysis
   buildBGDownsampled(plR,plG,plB,naxis1,naxis2);
   // Init zero gradient textures (subtract nothing until model is fitted)
@@ -2634,76 +2668,38 @@ function stepSlider(key,dir){
   }
 }
 function setMode(m,btn){
-  resolvePreviewBeforeAction();
   P.mode=m;
+  // v5.8: dropdown replaces the cards. Sync select value; null-check btn.
+  const sel=document.getElementById('stretch-mode-select');
+  if(sel) sel.value=String(m);
   document.querySelectorAll('.stretch-mode-card').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
+  if(btn&&btn.classList) btn.classList.add('on');
   document.getElementById('c-mtf').style.display=m===0?'':'none';
   document.getElementById('c-ash').style.display=m===1?'':'none';
   document.getElementById('c-ghs').style.display=m===2?'':'none';
   document.getElementById('ghs-presets').style.display=m===2?'':'none';
 
-  // Do NOT call render() here — switching mode must not change the image preview.
-  // The canvas updates only when the user interacts with a slider in the new mode.
+  // v5.9: render on mode switch. The previous "do not render" rule made the
+  // dropdown feel dead because the canvas only updated on the next slider
+  // touch. Each mode reads different sliders from P, so rendering immediately
+  // shows the user what the new mode looks like with its current slider values.
   if(histVisible()) drawHist();
+  render();
 }
 // ── TARGET PRESETS ───────────────────────────────────────────────
-function applyPreset(type){
-  resolvePreviewBeforeAction();
-  if(!hSampL.length)return;
-  // All presets use GHS mode and set SP to histogram foot
-  const sp=Math.max(.001,Math.min(.4,histFootVal));
-  // Switch to GHS if not already
-  if(P.mode!==2){
-    P.mode=2;
-    document.querySelectorAll('.stretch-mode-card').forEach((b,i)=>b.classList.toggle('on',i===2));
-    document.getElementById('c-mtf').style.display='none';
-    document.getElementById('c-ash').style.display='none';
-    document.getElementById('c-ghs').style.display='';
-  }
-  if(type==='nebula'){
-    // Bright emission nebulae: high b concentrates stretch at foot, D moderate
-    // Good for Orion, Rosette, Lagoon — strong signal, just need to lift background
-    P.gSP=sp; P.gB=8; P.gD=sToD(110); P.gLP=0; P.gHP=1.0; // clamped to new -10..10 range
-    syncSlider('i-gsp',Math.round(sp*1000),'v-gsp',sp.toFixed(3));
-    syncSlider('i-gb',80,'v-gb','8.0');
-    syncSlider('i-gd',60,'v-gd',dFmt(P.gD));
-    syncSlider('i-glp',0,'v-glp','0.000');
-    syncSlider('i-ghp',1000,'v-ghp','1.000');
-  } else if(type==='galaxy'){
-    // Galaxies: lower b spreads stretch across broad brightness range
-    // HP at 0.65 protects bright core; SP at foot lifts outer disk
-    P.gSP=sp; P.gB=3; P.gD=sToD(50); P.gLP=0; P.gHP=0.65;
-    syncSlider('i-gsp',Math.round(sp*1000),'v-gsp',sp.toFixed(3));
-    syncSlider('i-gb',30,'v-gb','3.0');
-    syncSlider('i-gd',50,'v-gd',dFmt(P.gD));
-    syncSlider('i-glp',0,'v-glp','0.000');
-    syncSlider('i-ghp',650,'v-ghp','0.650');
-  } else if(type==='faint'){
-    // Faint/IFN targets: conservative D for first pass, very high b focuses on foot
-    // Expect to run multiple passes — each stretches a small amount further
-    P.gSP=sp; P.gB=10; P.gD=sToD(60); P.gLP=0; P.gHP=1.0; // clamped to new -10..10 range
-    syncSlider('i-gsp',Math.round(sp*1000),'v-gsp',sp.toFixed(3));
-    syncSlider('i-gb',100,'v-gb','10.0');
-    syncSlider('i-gd',35,'v-gd',dFmt(P.gD));
-    syncSlider('i-glp',0,'v-glp','0.000');
-    syncSlider('i-ghp',1000,'v-ghp','1.000');
-  }
-  if(histVisible()) drawHist();render();
-}
 
-function onBP(v){exitPreviewIfActive();P.bp=v/1000;document.getElementById('v-bp').textContent=P.bp.toFixed(3);scheduleHistDraw();render();}
-function onMT(v){exitPreviewIfActive();P.mmt=0.490-v*(0.480/480);document.getElementById('v-mt').textContent=P.mmt.toFixed(3);render();}
-function onMWP(v){exitPreviewIfActive();P.mwp=v/1000;document.getElementById('v-mwp').textContent=P.mwp.toFixed(3);scheduleHistDraw();render();}
-function onAsh(v){exitPreviewIfActive();P.aD=sToD(parseFloat(v));document.getElementById('v-ash').textContent=dFmt(P.aD);render();}
-function onGSP(v){exitPreviewIfActive();P.gSP=v/1000;document.getElementById('v-gsp').textContent=P.gSP.toFixed(3);scheduleHistDraw();render();}
-function onGD(v){exitPreviewIfActive();P.gD=sToD(parseFloat(v));document.getElementById('v-gd').textContent=dFmt(P.gD);render();}
-function onGB(v){exitPreviewIfActive();P.gB=parseFloat(v)/10;document.getElementById('v-gb').textContent=P.gB.toFixed(1);render();} // Item 19: slider -100..100 → b -10..10
-function onGLP(v){exitPreviewIfActive();P.gLP=parseFloat(v)/1000;document.getElementById('v-glp').textContent=P.gLP.toFixed(3);scheduleHistDraw();render();}
-function onGHP(v){exitPreviewIfActive();P.gHP=parseFloat(v)/1000;document.getElementById('v-ghp').textContent=P.gHP.toFixed(3);scheduleHistDraw();render();}
-function onHT(v){exitPreviewIfActive();P.ht=v/100;document.getElementById('v-ht').textContent=P.ht.toFixed(2);render();}
-function onRL(v){exitPreviewIfActive();P.rl=v/100;document.getElementById('v-rl').textContent=P.rl.toFixed(2);render();}
-function onBGNR(v){exitPreviewIfActive();P.bgColorNR=+v;document.getElementById('v-bgnr').textContent=Math.round(v)+'%';render();}
+function onBP(v){P.bp=v/1000;document.getElementById('v-bp').textContent=P.bp.toFixed(3);scheduleHistDraw();render();}
+function onMT(v){P.mmt=0.490-v*(0.480/480);document.getElementById('v-mt').textContent=P.mmt.toFixed(3);render();}
+function onMWP(v){P.mwp=v/1000;document.getElementById('v-mwp').textContent=P.mwp.toFixed(3);scheduleHistDraw();render();}
+function onAsh(v){P.aD=sToD(parseFloat(v));document.getElementById('v-ash').textContent=dFmt(P.aD);render();}
+function onGSP(v){P.gSP=v/1000;document.getElementById('v-gsp').textContent=P.gSP.toFixed(3);scheduleHistDraw();render();}
+function onGD(v){P.gD=sToD(parseFloat(v));document.getElementById('v-gd').textContent=dFmt(P.gD);render();}
+function onGB(v){P.gB=parseFloat(v)/10;document.getElementById('v-gb').textContent=P.gB.toFixed(1);render();} // Item 19: slider -100..100 → b -10..10
+function onGLP(v){P.gLP=parseFloat(v)/1000;document.getElementById('v-glp').textContent=P.gLP.toFixed(3);scheduleHistDraw();render();}
+function onGHP(v){P.gHP=parseFloat(v)/1000;document.getElementById('v-ghp').textContent=P.gHP.toFixed(3);scheduleHistDraw();render();}
+function onHT(v){P.ht=v/100;document.getElementById('v-ht').textContent=P.ht.toFixed(2);render();}
+function onRL(v){P.rl=v/100;document.getElementById('v-rl').textContent=P.rl.toFixed(2);render();}
+function onBGNR(v){P.bgColorNR=+v;document.getElementById('v-bgnr').textContent=Math.round(v)+'%';render();}
 // On slider release: rebuild star mask from last stretched data so preview updates.
 // This is the key wiring that makes the rl slider actually show an effect.
 function onRLRelease(v){
@@ -2712,7 +2708,7 @@ function onRLRelease(v){
   render();
 }
 
-function onWB(){exitPreviewIfActive();
+function onWB(){
   P.wR=document.getElementById('i-wr').value/100;
   P.wG=document.getElementById('i-wg').value/100;
   P.wB=document.getElementById('i-wb').value/100;
@@ -2722,228 +2718,11 @@ function onWB(){exitPreviewIfActive();
 function setPal(i,btn){P.pal=i;document.querySelectorAll('.pb2').forEach(b=>b.classList.remove('on'));btn.classList.add('on');render();}
 
 // ── AUTO STF ─────────────────────────────────────────────────────
-// _computeAutoSTF: pure STF compute — no preview guard, no render.
-// Called by both doAutoSTF (after resolving preview) and doAutoPreview
-// (which must NOT resolve preview before computing).
-function _computeAutoSTF(){
-  if(!hSampL.length) return;
-
-  // ── Per-channel pedestal subtraction (Item 6) ─────────────────────
-  // Each channel may have a different sky floor due to LP gradients
-  // or filter response. Subtracting per-channel pedestals BEFORE the
-  // stretch ensures all three channels enter the stretch with the
-  // same effective floor — eliminating residual deep-shadow colour
-  // cast that the old single-BP-plus-WB approach could not remove.
-  const nR=hSampR.length, nG=hSampG.length, nB=hSampB.length;
-  const medR=hSampR[Math.floor(nR/2)], medG=hSampG[Math.floor(nG/2)], medB=hSampB[Math.floor(nB/2)];
-
-  function channelMAD(samp,med){
-    const devs=new Float32Array(samp.length);
-    for(let i=0;i<samp.length;i++) devs[i]=Math.abs(samp[i]-med);
-    devs.sort(); return devs[Math.floor(devs.length/2)];
-  }
-  const madR=channelMAD(hSampR,medR);
-  const madG=channelMAD(hSampG,medG);
-  const madB=channelMAD(hSampB,medB);
-
-  // Per-channel pedestal: median − 1.5×MAD per channel, clamped
-  const pedR=Math.max(0,Math.min(.45,medR-1.5*madR));
-  const pedG=Math.max(0,Math.min(.45,medG-1.5*madG));
-  const pedB=Math.max(0,Math.min(.45,medB-1.5*madB));
-  P.pedR=pedR; P.pedG=pedG; P.pedB=pedB;
-
-  // Single BP slider remains for user override; auto-STF leaves it at 0
-  // because the pedestals already removed the per-channel offsets.
-  P.bp=0;
-  syncSlider('i-bp',0,'v-bp','0.000');
-
-  // White balance scalars: now that pedestals align floors, WB only
-  // needs to balance the sky NOISE level (tighter than the old approach).
-  const skyR=Math.max(medR-pedR,1e-6);
-  const skyG=Math.max(medG-pedG,1e-6);
-  const skyB=Math.max(medB-pedB,1e-6);
-  P.wR=Math.max(0.5,Math.min(2.0,skyG/skyR));
-  P.wG=1.0;
-  P.wB=Math.max(0.5,Math.min(2.0,skyG/skyB));
-  syncSlider('i-wr',Math.round(P.wR*100),'v-wr',P.wR.toFixed(2));
-  syncSlider('i-wg',100,'v-wg','1.00');
-  syncSlider('i-wb',Math.round(P.wB*100),'v-wb',P.wB.toFixed(2));
-
-  // Reuse names below so existing code following this block continues to work
-  const bpG=pedG;
-
-  // ── Stretch solve — driven by green channel (reference) ───────────
-  const mNorm=Math.max((medG-bpG)/Math.max(1-bpG,1e-4),0.001), tgt=P.stfTarget||0.15; // Item 15
-
-  if(P.mode===0){
-    const m=mNorm*(1-tgt)/(mNorm+tgt-2*mNorm*tgt);
-    P.mmt=Math.max(.010,Math.min(.489,m));P.mwp=1.0;
-    syncSlider('i-mt',Math.max(0,Math.min(480,Math.round((0.490-P.mmt)*(480/0.480)))),'v-mt',P.mmt.toFixed(3));
-    syncSlider('i-mwp',1000,'v-mwp','1.000');
-  }else if(P.mode===1){
-    let lo=0.1,hi=2000,D=10;
-    for(let i=0;i<80;i++){D=(lo+hi)/2;(Math.asinh(D*mNorm)/Math.asinh(D)<tgt)?lo=D:hi=D;}
-    P.aD=D;syncSlider('i-ash',dToSlider(D),'v-ash',dFmt(D));
-  }else{
-    // Item 18: joint (D, b) auto-solver. Search D first by bisection on
-    // post-stretch median = tgt, then refine b by coordinate descent.
-    // Constrains D to [0,30] (Item 19's recalibrated working range).
-    P.gSP=Math.max(.001,Math.min(.2,histFootVal>0?histFootVal:mNorm));
-    const sp=P.gSP, lp=0, hp=1.0;
-    function _evalGhsAt(xc,D,b){return _ghsCPU(xc,D,b,sp,lp,hp);}
-    function _solveDForB(b){
-      // Bisect D so that ghs(median_input)=tgt. median_input = mNorm*(1-bp)+bp = mNorm
-      // here is the channel-space normalised median that maps to tgt post-stretch.
-      let lo=0.01, hi=30;
-      for(let i=0;i<60;i++){
-        const D=(lo+hi)/2;
-        if(_evalGhsAt(mNorm,D,b)<tgt) lo=D; else hi=D;
-      }
-      return (lo+hi)/2;
-    }
-    function _residualForB(b){
-      const D=_solveDForB(b);
-      // Target: tgt at median, but also try to keep histFoot near sp post-stretch.
-      // Score = |y(median) - tgt| + 0.3*|y(footInput) - sp|
-      const yM=_evalGhsAt(mNorm,D,b);
-      const fIn=Math.max(0,(histFootVal-bpG)/Math.max(1-bpG,1e-4));
-      const yF=_evalGhsAt(fIn,D,b);
-      return Math.abs(yM-tgt)+0.3*Math.abs(yF-sp);
-    }
-    // Coordinate descent on b in [-2, 8] (sane working range)
-    let bestB=0, bestR=_residualForB(0);
-    for(const bTry of [-1,-0.5,0,0.5,1,2,3,4,6,8]){
-      const r=_residualForB(bTry);
-      if(r<bestR){bestR=r;bestB=bTry;}
-    }
-    // Refine bestB with one bisection-like step
-    for(const dB of [0.5,0.25,0.1]){
-      for(const bTry of [bestB-dB,bestB+dB]){
-        if(bTry>=-2&&bTry<=8){
-          const r=_residualForB(bTry);
-          if(r<bestR){bestR=r;bestB=bTry;}
-        }
-      }
-    }
-    P.gB=bestB;
-    P.gD=_solveDForB(bestB);
-    P.gLP=0; P.gHP=1.0;
-    syncSlider('i-gsp',Math.min(200,Math.round(P.gSP*1000)),'v-gsp',P.gSP.toFixed(3));
-    syncSlider('i-gb',Math.round(P.gB*10),'v-gb',P.gB.toFixed(1));
-    syncSlider('i-gd',dToSlider(P.gD),'v-gd',dFmt(P.gD));
-    syncSlider('i-glp',0,'v-glp','0.000');
-    syncSlider('i-ghp',1000,'v-ghp','1.000');
-  }
-}
-
-function doAutoSTF(){
-  resolvePreviewBeforeAction();  // exits preview first if active
-  _computeAutoSTF();
-  trackGA4('auto_stretch_used',{stretch_mode:getCurrentStretchModeName(),device_class:getDeviceClass()});
-  if(histVisible()) drawHist();render();
-}
-
-// ── AUTO PREVIEW ─────────────────────────────────────────────────
-// Stores manual slider state so we can restore it on EXIT.
-// Preview is a true modal state — repeated entry is a no-op.
-let previewActive=false;
-let previewSnapshot=null;
-
-// Requirement 2: call at top of any action that mutates stretch state
-function resolvePreviewBeforeAction(){
-  if(previewActive) exitPreview();
-}
-// Alias kept for slider handlers
-function exitPreviewIfActive(){ resolvePreviewBeforeAction(); }
-
-// IDs/selectors of every interactive element to disable during preview lock.
-// Sliders already handled by exitPreviewIfActive; these are the button/tab controls.
-const PREVIEW_LOCK_SELECTORS=[
-  '#tb-bg','#tb-proc','#tb-guide',   // tab buttons
-  '#apply-btn',                         // apply
-  '#m-mtf','#m-ash','#m-ghs',                    // mode buttons
-  '.pre-btn','.stf-btn',                          // preset + AUTO STRETCH + PREVIEW STF
-  'input[type=range]',                            // all sliders
-];
-function _setPreviewLock(locked){
-  const panel=document.getElementById('panel');
-  if(!panel) return;
-  if(locked){
-    panel.classList.add('preview-lock');
-    // Also explicitly disable focusable controls so keyboard nav is blocked
-    PREVIEW_LOCK_SELECTORS.forEach(sel=>
-      panel.querySelectorAll(sel).forEach(el=>el.disabled=true)
-    );
-    // Disable any history undo buttons (dynamically generated)
-    panel.querySelectorAll('.hlog-undo').forEach(el=>el.disabled=true);
-  } else {
-    panel.classList.remove('preview-lock');
-    PREVIEW_LOCK_SELECTORS.forEach(sel=>
-      panel.querySelectorAll(sel).forEach(el=>el.disabled=false)
-    );
-    panel.querySelectorAll('.hlog-undo').forEach(el=>el.disabled=false);
-    // preview-stf-btn re-enable is handled inside exitPreview
-  }
-}
-
-function doAutoPreview(){
-  if(!hSampL.length) return;
-  if(previewActive) return;          // already in preview — ignore repeated clicks
-  previewSnapshot=snapParams();
-  previewActive=true;
-  document.getElementById('preview-bar').classList.add('on');
-  // Lock the entire panel — only EXIT PREVIEW is reachable
-  _setPreviewLock(true);
-  const pb=document.getElementById('preview-stf-btn');
-  if(pb){ pb.disabled=true; pb.title='Already previewing — click EXIT PREVIEW to return'; }
-  // Compute STF directly — must NOT call doAutoSTF() here because
-  // doAutoSTF() starts with resolvePreviewBeforeAction() which would
-  // immediately exit the preview we just entered.
-  _computeAutoSTF();
-  trackGA4('preview_stf_used',{stretch_mode:getCurrentStretchModeName(),device_class:getDeviceClass()});
-  if(histVisible()) drawHist();
-  render();
-}
-
-// Idempotent exit: safe to call even when not in preview
-function exitPreview(){
-  if(!previewActive||!previewSnapshot) return;   // already exited — no-op
-  previewActive=false;
-  document.getElementById('preview-bar').classList.remove('on');
-  // Unlock the panel
-  _setPreviewLock(false);
-  const pb=document.getElementById('preview-stf-btn');
-  if(pb){ pb.disabled=false; pb.title='Temporary Auto Stretch preview — not baked. Any slider move or action exits preview automatically.'; }
-  // Restore exact pre-preview manual state
-  const p=previewSnapshot;
-  previewSnapshot=null;              // clear first so any re-entrant call is a no-op
-  P.bp=p.bp;P.mwp=p.mwp;P.mmt=p.mmt;P.aD=p.aD;
-  P.gD=p.gD;P.gB=p.gB;P.gSP=p.gSP;P.gLP=p.gLP;P.gHP=p.gHP;
-  P.ht=p.ht;P.rl=p.rl;P.wR=p.wR;P.wG=p.wG;P.wB=p.wB;
-  syncSlider('i-bp',Math.round(p.bp*1000),'v-bp',p.bp.toFixed(3));
-  syncSlider('i-mt',Math.max(0,Math.min(480,Math.round((0.490-p.mmt)*(480/0.480)))),'v-mt',p.mmt.toFixed(3));
-  syncSlider('i-mwp',Math.round(p.mwp*1000),'v-mwp',p.mwp.toFixed(3));
-  syncSlider('i-ash',dToSlider(p.aD),'v-ash',dFmt(p.aD));
-  syncSlider('i-gd',dToSlider(p.gD),'v-gd',dFmt(p.gD));
-  syncSlider('i-gb',Math.round(p.gB*10),'v-gb',p.gB.toFixed(1));
-  syncSlider('i-gsp',Math.round(p.gSP*1000),'v-gsp',p.gSP.toFixed(3));
-  syncSlider('i-glp',Math.round(p.gLP*1000),'v-glp',p.gLP.toFixed(3));
-  syncSlider('i-ghp',Math.round(p.gHP*1000),'v-ghp',p.gHP.toFixed(3));
-  syncSlider('i-ht',Math.round(p.ht*100),'v-ht',p.ht.toFixed(2));
-  syncSlider('i-rl',Math.round(p.rl*100),'v-rl',p.rl.toFixed(2));
-  ['r','g','b'].forEach((ch,i)=>{
-    const v=[p.wR,p.wG,p.wB][i];
-    syncSlider('i-w'+ch,Math.round(v*100),'v-w'+ch,v.toFixed(2));
-  });
-  if(histVisible()) drawHist();
-  render();
-}
 
 // ═══════════════════════════════════════════════════════════════════
 // TAB SWITCHING
 // ═══════════════════════════════════════════════════════════════════
 function showTab(id){
-  resolvePreviewBeforeAction();
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('on'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));
   document.getElementById('tab-'+id).classList.add('on');
@@ -2983,7 +2762,17 @@ function showTab(id){
 // ZOOM & PAN
 // ═══════════════════════════════════════════════════════════════════
 function clampZ(){const hw=.5/Z.level;Z.cx=Math.max(hw,Math.min(1-hw,Z.cx));Z.cy=Math.max(hw,Math.min(1-hw,Z.cy));}
-function updZlbl(){const l=document.getElementById('lbl-zoom');if(Z.level<=1){l.style.display='none';return;}l.style.display='block';l.textContent=`${Z.level.toFixed(1)}×`;}
+function updZlbl(){
+  const l=document.getElementById('lbl-zoom');
+  if(Z.level<=1){l.style.display='none';return;}
+  l.style.display='block';
+  // v5.13: warn at 4x+ that individual source pixels become visible
+  if(Z.level>=4){
+    l.innerHTML=Z.level.toFixed(1)+'×<span class="zoom-note">individual source pixels</span>';
+  } else {
+    l.textContent=Z.level.toFixed(1)+'×';
+  }
+}
 function resetZoom(){Z.level=1;Z.cx=.5;Z.cy=.5;updZlbl();render();}
 
 
@@ -3787,6 +3576,8 @@ function replaceMainTextures(r,g,b){
   tG=mkTex(g,NW,NH);
   tB=mkTex(b,NW,NH);
   finDetailDirty=true; // detail maps stale after image changes
+  // v5.13: re-apply display filter (mkTex always creates NEAREST)
+  setMainImageTextureFiltering(displayFilterMode);
 }
 
 // Checkpoint helpers
@@ -4255,8 +4046,8 @@ function resetLocalContrast(){
 }
 
 // Slider input handlers
-function onDnsAmt(v){exitPreviewIfActive();P.finDns=parseFloat(v);document.getElementById('v-fin-dns').textContent=Math.round(P.finDns);render();}
-function onLcAmt(v){exitPreviewIfActive();P.finLocal=parseFloat(v);document.getElementById('v-fin-local').textContent=Math.round(P.finLocal);render();}
+function onDnsAmt(v){P.finDns=parseFloat(v);document.getElementById('v-fin-dns').textContent=Math.round(P.finDns);render();}
+function onLcAmt(v){P.finLocal=parseFloat(v);document.getElementById('v-fin-local').textContent=Math.round(P.finLocal);render();}
 
 // Reset all four finish sliders to zero
 function resetFinish(){
@@ -4323,7 +4114,7 @@ function onEnhanceReady(){
 // ── Curve interpolation (v5.4) ────────────────────────────────────
 // Default is linear. Monotone cubic is retained below under the
 // 'smooth' mode so callers can opt in later without re-deriving the math.
-let curveInterpolationMode='linear';
+const CURVE_LUT_SIZE=1024; // v5.14: was 256 — finer LUT for smooth interp
 
 // Sanitize a curve point array. Always returns a valid array containing
 // at least [[0,0],[1,1]]; sorts by x; clamps x/y to [0,1]; removes
@@ -4383,12 +4174,10 @@ function linearEvalFn(pts){
   };
 }
 
-// Choose interpolation based on curveInterpolationMode. Both branches
-// sanitize input. Used by drawCurve and buildCurveLUT so preview and
-// bake stay byte-identical.
+// v5.16: smooth-only — linearEvalFn retained for internal use but monoCubic
+// is the sole user-facing interpolation path.
 function curveEvalFn(pts){
-  if(curveInterpolationMode==='smooth') return monoCubic(sanitizeCurvePts(pts));
-  return linearEvalFn(pts);
+  return monoCubic(sanitizeCurvePts(pts));
 }
 
 function monoCubic(pts){
@@ -4412,7 +4201,7 @@ function monoCubic(pts){
     if(x<=pts[0][0]) return pts[0][1];
     if(x>=pts[n-1][0]) return pts[n-1][1];
     let lo=0,hi=n-2;
-    while(lo<hi-1){const mid=(lo+hi)>>1;pts[mid][0]<=x?lo=mid:hi=mid;}
+    while(lo<hi){const mid=(lo+hi+1)>>1;pts[mid][0]<=x?lo=mid:hi=mid-1;} // v5.15: fixed (was lo<hi-1 with lower-mid — skipped last segment)
     const h=dx[lo],s=(x-pts[lo][0])/h,s2=s*s,s3=s2*s;
     return (2*s3-3*s2+1)*pts[lo][1]+(s3-2*s2+s)*h*t[lo]+(-2*s3+3*s2)*pts[lo+1][1]+(s3-s2)*h*t[lo+1];
   };
@@ -4423,20 +4212,15 @@ function isIdentityCurve(pts){
   return pts.length===2&&pts[0][0]===0&&pts[0][1]===0&&pts[1][0]===1&&pts[1][1]===1;
 }
 
-// Build a 256-entry Float32Array LUT from control points
+// v5.16: smooth-only; CURVE_LUT_SIZE entries for finer approximation
 function buildCurveLUT(pts){
-  // v5.4: routes through curveEvalFn which uses linearEvalFn by default.
-  // sanitizeCurvePts inside curveEvalFn guarantees endpoints and ordering.
   const fn=curveEvalFn(pts);
-  const lut=new Float32Array(256);
-  for(let i=0;i<256;i++) lut[i]=Math.max(0,Math.min(1,fn(i/255)));
+  const lut=new Float32Array(CURVE_LUT_SIZE);
+  for(let i=0;i<CURVE_LUT_SIZE;i++) lut[i]=Math.max(0,Math.min(1,fn(i/(CURVE_LUT_SIZE-1))));
   return lut;
 }
 
-// Upload all four curves as a 256×4 R32F texture (rows: L, R, G, B)
-// Build composed LUTs: for each of L/R/G/B, compose channel curve then ALL on top.
-// Returns {L,R,G,B} as four Float32Array(256) LUTs ready for GPU or CPU use.
-// pts must include ALL, L, R, G, B; missing ALL defaults to identity.
+// v5.16: smooth-only; CURVE_LUT_SIZE indices.
 function buildComposedLUTs(pts){
   const allPts=(pts.ALL&&pts.ALL.length>=2)?pts.ALL:[[0,0],[1,1]];
   const lutAll=buildCurveLUT(allPts);
@@ -4447,9 +4231,9 @@ function buildComposedLUTs(pts){
     if(allIsId){
       out[ch]=lut;
     } else {
-      const c=new Float32Array(256);
-      for(let i=0;i<256;i++)
-        c[i]=lutAll[Math.min(255,Math.max(0,Math.round(lut[i]*255)))];
+      const c=new Float32Array(CURVE_LUT_SIZE);
+      for(let i=0;i<CURVE_LUT_SIZE;i++)
+        c[i]=lutAll[Math.min(CURVE_LUT_SIZE-1,Math.max(0,Math.round(lut[i]*(CURVE_LUT_SIZE-1))))];
       out[ch]=c;
     }
   });
@@ -4459,10 +4243,10 @@ function buildComposedLUTs(pts){
 function uploadCurveLUT(){
   if(!gl) return;
   const luts=buildComposedLUTs(curvePts);
-  const data=new Float32Array(256*4);
-  ['L','R','G','B'].forEach((ch,row)=>data.set(luts[ch],row*256));
+  const data=new Float32Array(CURVE_LUT_SIZE*4);
+  ['L','R','G','B'].forEach((ch,row)=>data.set(luts[ch],row*CURVE_LUT_SIZE));
   if(tCurveLUT) gl.deleteTexture(tCurveLUT);
-  tCurveLUT=mkTex(data,256,4);
+  tCurveLUT=mkTex(data,CURVE_LUT_SIZE,4);
   curvesActive=['ALL','L','R','G','B'].some(ch=>!isIdentityCurve(curvePts[ch]||[[0,0],[1,1]]));
 }
 
@@ -4470,7 +4254,7 @@ function uploadCurveLUT(){
 function applyCurvesToArraysCPU(dR,dG,dB,p){
   const pts=p.curvePts||curvePts;
   const luts=buildComposedLUTs(pts);
-  const samp=(lut,v)=>lut[Math.min(255,Math.max(0,Math.round(v*255)))];
+  const samp=(lut,v)=>lut[Math.min(CURVE_LUT_SIZE-1,Math.max(0,Math.round(v*(CURVE_LUT_SIZE-1))))];
   const n=dR.length;
   for(let i=0;i<n;i++){
     let r=dR[i],g=dG[i],b=dB[i];
@@ -4733,8 +4517,7 @@ function drawCurveEditor(){
 }
 
 function _drawCurveLine(ctx,pts,W,H,color,lw){
-  // v5.4: uses curveEvalFn (linear by default). Sanitization inside
-  // ensures the drawn curve always renders endpoints at [0,0] and [1,1].
+  // v5.14: mode passed explicitly so the drawn curve matches the active LUT.
   if(!Array.isArray(pts)||pts.length<2) return;
   const fn=curveEvalFn(pts);
   ctx.beginPath();ctx.moveTo(0,(1-fn(0))*H);
@@ -4806,7 +4589,10 @@ function _drawCurveLine(ctx,pts,W,H,color,lw){
       const lo=pts[dragIdx-1][0]+MIN_GAP;
       const hi=pts[dragIdx+1][0]-MIN_GAP;
       pts[dragIdx][0]=Math.max(lo,Math.min(hi,x));
-      pts[dragIdx][1]=Math.max(0,Math.min(1,y));
+      // v5.14: monotonic y — interior points cannot create a dip or rise that
+      // reverses direction. Keeps curves well-behaved for astro data.
+      const yLo=pts[dragIdx-1][1],yHi=pts[dragIdx+1][1];
+      pts[dragIdx][1]=Math.max(yLo,Math.min(yHi,y));
       drawCurveEditor();uploadCurveLUT();render();
     });
     cv.addEventListener('pointerup',e=>{
@@ -4832,6 +4618,306 @@ function _drawCurveLine(ctx,pts,W,H,color,lw){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',setup);
   else setTimeout(setup,50);
 })();
+
+
+// ═══════════════════════════════════════════════════════════════════
+// v5.6 — STRETCH QUALITY / BACKGROUND RISK ADVISORY
+// Live indicator that tells the user when a stretch is starting to pull
+// background noise above the floor. Advisory only — does not block.
+//
+// Approach:
+//   - linearBgPeak and linearBgSigma are cached from historyOrigR/G/B
+//     (post-BG, post-denoise, pre-stretch). Recomputed when those arrays
+//     change (load, BG apply, denoise apply, reset).
+//   - evaluateStretchQuality applies the CURRENT stretch math to the
+//     cached linear background peak to predict where it lands and how
+//     wide the noise floor becomes. This gives live feedback as the
+//     user moves sliders, without waiting for a bake.
+//   - Risk score combines: post-stretch bg position, post-stretch
+//     bg sigma, multi-pass count, and stretch strength bands.
+// ═══════════════════════════════════════════════════════════════════
+
+let linearBgPeak=0;
+let linearBgSigma=0;
+
+function _recomputeLinearBgStats(){
+  if(!historyOrigR||!historyOrigG||!historyOrigB){
+    linearBgPeak=0; linearBgSigma=0;
+    return;
+  }
+  const n=historyOrigR.length;
+  if(n===0){ linearBgPeak=0; linearBgSigma=0; return; }
+  // Subsample for speed — 30k samples is more than enough for a robust median
+  const stride=Math.max(1,Math.floor(n/30000));
+  const samples=[];
+  for(let i=0;i<n;i+=stride){
+    const l=0.2126*historyOrigR[i]+0.7152*historyOrigG[i]+0.0722*historyOrigB[i];
+    samples.push(Math.max(0,l));
+  }
+  samples.sort(function(a,b){return a-b;});
+  linearBgPeak=samples[Math.floor(samples.length/2)];
+  // Lower-half MAD for sigma estimate (Item 3 style)
+  const halfN=Math.floor(samples.length/2);
+  let mad=0;
+  if(halfN>0){
+    const devs=new Float32Array(halfN);
+    for(let k=0;k<halfN;k++) devs[k]=linearBgPeak-samples[k];
+    devs.sort();
+    mad=devs[Math.floor(halfN/2)];
+  }
+  linearBgSigma=Math.max(1e-6,1.4826*mad);
+}
+
+// Evaluate the current stretch math on a single luminance value.
+// Mirrors applyStretchCPU's per-pixel logic for the active mode.
+// Pedestals and WB scaling are folded into the linear bg estimate so we
+// only model the stretch curve here.
+function _evalStretchOnLuminance(x){
+  // Approximate channel pedestal as the weighted average
+  const ped=0.2126*(P.pedR||0)+0.7152*(P.pedG||0)+0.0722*(P.pedB||0);
+  const adj=Math.max(0,x-ped);
+  if(P.mode===0){
+    // MTF
+    const v=Math.max(0,(adj-P.bp)/Math.max(P.mwp-P.bp,1e-6));
+    if(v>=1) return 1;
+    const m=Math.max(P.mmt,1e-6);
+    return Math.max(0,Math.min(1,((m-1)*v)/((2*m-1)*v-m)));
+  }
+  if(P.mode===1){
+    // Asinh
+    if(P.aD<0.001) return Math.max(0,Math.min(1,adj-P.bp));
+    const xc=Math.max(adj-P.bp,0)/Math.max(1-P.bp,1e-4);
+    return Math.max(0,Math.min(1,Math.asinh(P.aD*xc)/Math.max(Math.asinh(P.aD),1e-9)));
+  }
+  // GHS — delegate to the shared _ghsCPU helper (v5.1)
+  if(P.gD<0.001) return Math.max(0,Math.min(1,adj-P.bp));
+  const xc=Math.max(adj-P.bp,0)/Math.max(1-P.bp,1e-4);
+  const sp=Math.max(P.gSP,1e-5);
+  return _ghsCPU(xc,P.gD,P.gB,sp,Math.min(P.gLP,sp),Math.max(P.gHP,sp));
+}
+
+function evaluateStretchQuality(){
+  if(!historyOrigR){
+    return { backgroundRisk:'low', signalLift:'normal', clipping:'none', message:'' };
+  }
+  // v5.7: lazy recompute if the cache wasn't populated yet (initial FITS
+  // load path does not always pass through refreshLinearState before the
+  // user starts moving sliders).
+  if(linearBgPeak<=0){
+    _recomputeLinearBgStats();
+  }
+  if(linearBgPeak<=0){
+    return { backgroundRisk:'low', signalLift:'normal', clipping:'none', message:'' };
+  }
+
+  // Where does the linear background peak land after the current stretch?
+  // Sample at +2σ to get a stable post-stretch sigma estimate. Sampling at
+  // just +1σ can miss the local slope when SP sits near the bg peak (where
+  // the GHS curve flattens) but the 2σ sample still has measurable lift.
+  const bgPost=_evalStretchOnLuminance(linearBgPeak);
+  const bgPostTwo=_evalStretchOnLuminance(linearBgPeak+2*linearBgSigma);
+  const sigPost=Math.max(0,(bgPostTwo-bgPost)/2);
+
+  // Lift score: how high did the background peak end up?
+  // Linear bg of 0.01 to 0.05 with a strong stretch typically lands at
+  // 0.05 to 0.25 in display space; that range is where texture starts.
+  let liftScore=0;
+  if(bgPost>0.06) liftScore=1;
+  if(bgPost>0.12) liftScore=2;
+  if(bgPost>0.22) liftScore=3;
+  if(bgPost>0.35) liftScore=4;
+
+  // Spread score: post-stretch sigma per σ of input. Visible noise floor
+  // starts around 1% of display range.
+  let spreadScore=0;
+  if(sigPost>0.008) spreadScore=1;
+  if(sigPost>0.020) spreadScore=2;
+  if(sigPost>0.040) spreadScore=3;
+  if(sigPost>0.070) spreadScore=4;
+
+  // Multi-pass score: each successive stretch pass compounds amplification
+  const passes=(typeof historyStack!=='undefined'&&historyStack)?
+    historyStack.filter(function(h){return !h.passType||h.passType==='stretch';}).length : 0;
+  let passScore=0;
+  if(passes>=2) passScore=1;
+  if(passes>=3) passScore=2;
+  if(passes>=5) passScore=3;
+
+  // Strength score: heavy stretches add risk on top of bg metrics because
+  // they amplify everything across the curve. Bands chosen to match the
+  // recalibrated v5.1 GHS range (0..30) and the legacy Asinh range.
+  let strengthScore=0;
+  if(P.mode===1){
+    if(P.aD>50)  strengthScore=1;
+    if(P.aD>200) strengthScore=2;
+    if(P.aD>800) strengthScore=3;
+  } else if(P.mode===2){
+    if(P.gD>5)   strengthScore=1;
+    if(P.gD>10)  strengthScore=2;
+    if(P.gD>16)  strengthScore=3;
+    if(P.gD>22)  strengthScore=4;
+    if(P.gD>26)  strengthScore=5;
+  }
+
+  // Composite — bg evidence (max of lift/spread) plus passes plus strength
+  const total=Math.max(liftScore,spreadScore)+passScore+strengthScore;
+  let backgroundRisk;
+  if(total<=1) backgroundRisk='low';
+  else if(total<=3) backgroundRisk='medium';
+  else if(total<=5) backgroundRisk='high';
+  else backgroundRisk='extreme';
+
+  // Signal lift label (independent of risk score — just where bg sits)
+  let signalLift;
+  if(bgPost<0.08) signalLift='normal';
+  else if(bgPost<0.20) signalLift='strong';
+  else signalLift='extreme';
+
+  // Clipping
+  let clipping='none';
+  if(P.bp>linearBgPeak-0.5*linearBgSigma&&P.bp>0.001) clipping='shadow';
+  // Highlight risk: post-stretch bg already past 0.6 implies almost all
+  // signal compresses into the top of the range
+  if(bgPost>0.6) clipping='highlight';
+
+  // Message
+  let message;
+  if(backgroundRisk==='low') message='Stretch looks controlled.';
+  else if(backgroundRisk==='medium') message='Background texture may become visible. Consider smaller stretch steps.';
+  else if(backgroundRisk==='high') message='Aggressive stretch. Likely revealing background noise or pattern texture.';
+  else message='Very aggressive stretch. Back off the stretch and use Curves for final contrast.';
+
+  // Enhancement advisory — append when Structure / Sharpness / Local Contrast
+  // are non-trivial AND we already have elevated background risk
+  const enhanceActive=((P.finStruct||0)>30)||((P.finSharp||0)>30)||((P.finLocal||0)>30);
+  if(enhanceActive&&(backgroundRisk==='high'||backgroundRisk==='extreme')){
+    message+=' Local Contrast / Structure can amplify background texture at this stretch level.';
+  }
+
+  return { backgroundRisk:backgroundRisk, signalLift:signalLift, clipping:clipping, message:message };
+}
+
+function updateStretchQuality(){
+  // v5.10: target chip parents via .closest('.sq-chip') so the colored
+  // background updates on the whole pill. Always show the message line.
+  const bgEl=document.getElementById('sq-bg-risk');
+  const liftEl=document.getElementById('sq-lift');
+  const clipEl=document.getElementById('sq-clip');
+  const msgEl=document.getElementById('sq-toolbar-msg');
+  if(!bgEl||!liftEl||!clipEl||!msgEl) return; // DOM not ready yet
+
+  const q=evaluateStretchQuality();
+  const titleCase=function(s){return s.charAt(0).toUpperCase()+s.slice(1);};
+  const setChip=function(valEl,cls){
+    const chip=valEl.closest('.sq-chip');
+    if(chip) chip.className='sq-chip sq-chip-'+cls;
+  };
+
+  bgEl.textContent=titleCase(q.backgroundRisk);
+  setChip(bgEl,q.backgroundRisk);
+
+  liftEl.textContent=titleCase(q.signalLift);
+  setChip(liftEl,q.signalLift==='normal'?'low':(q.signalLift==='strong'?'medium':'extreme'));
+
+  if(q.clipping==='none'){
+    clipEl.textContent='None';
+    setChip(clipEl,'low');
+  } else if(q.clipping==='shadow'){
+    clipEl.textContent='Shadow';
+    setChip(clipEl,'high');
+  } else {
+    clipEl.textContent='Highlight';
+    setChip(clipEl,'high');
+  }
+
+  // Always populated. Empty advisory ("") becomes the controlled-state
+  // baseline message so the chip area never feels static.
+  msgEl.textContent=q.message||'Stretch looks controlled.';
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+// v5.8 — ? HELP MODAL
+// Clicking a ? icon next to a slider title opens this modal with the
+// help text. Replaces the under-slider .ch help blocks for the stretch
+// sliders. Pure UI; no processing impact.
+// ═══════════════════════════════════════════════════════════════════
+function showHelp(title,text){
+  const m=document.getElementById('help-modal');
+  const tEl=document.getElementById('help-modal-title');
+  const bEl=document.getElementById('help-modal-body');
+  if(!m||!tEl||!bEl) return;
+  tEl.textContent=title;
+  bEl.textContent=text;
+  m.classList.remove('hidden');
+}
+function closeHelpModal(){
+  const m=document.getElementById('help-modal');
+  if(m) m.classList.add('hidden');
+}
+// Escape closes the modal (alongside the debug-mode Escape from v5.5)
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){
+    const m=document.getElementById('help-modal');
+    if(m&&!m.classList.contains('hidden')){
+      e.preventDefault();
+      closeHelpModal();
+    }
+  }
+});
+
+
+// ═══════════════════════════════════════════════════════════════════
+// v5.13 — SMOOTH VIEW / PIXEL VIEW
+// Display-only toggle. Changes only tR/tG/tB texture filtering.
+// Does not affect: stretch math, bake, export, masks, gradients,
+// detail maps, curve LUT, or any other texture.
+//
+// OES_texture_float_linear is stored at WebGL init time.
+// If the extension is unavailable, setMainImageTextureFiltering()
+// falls back to NEAREST silently and the toggle is hidden.
+// ═══════════════════════════════════════════════════════════════════
+
+let extFloatLinear=null;       // set at GL init; null = extension unavailable
+let displayFilterMode='smooth'; // 'smooth' | 'pixel'
+
+// Apply LINEAR or NEAREST filter to the three main image textures only.
+// Called after every texture creation and on toggle. Safe to call
+// before any image is loaded (tR/tG/tB are null-checked).
+function setMainImageTextureFiltering(mode){
+  if(!gl) return;
+  const filter=(mode==='smooth'&&extFloatLinear)?gl.LINEAR:gl.NEAREST;
+  for(const tex of [tR,tG,tB]){
+    if(!tex) continue;
+    gl.bindTexture(gl.TEXTURE_2D,tex);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,filter);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,filter);
+  }
+}
+
+// Toggle display mode. Shows/hides the toggle once we know extension support.
+function setDisplayMode(mode){
+  displayFilterMode=mode;
+  setMainImageTextureFiltering(mode);
+  const s=document.getElementById('vt-smooth');
+  const p=document.getElementById('vt-pixel');
+  if(s) s.classList.toggle('on',mode==='smooth');
+  if(p) p.classList.toggle('on',mode==='pixel');
+  render();
+}
+
+// Called once after GL context is created. Show the toggle only when
+// the float-linear extension is available — if it isn't, smooth=nearest
+// anyway so the toggle would be misleading.
+function initViewToggle(){
+  const vt=document.getElementById('view-toggle');
+  if(!vt) return;
+  if(extFloatLinear){
+    vt.classList.add('on');
+    setDisplayMode('smooth'); // default to smooth when supported
+  }
+  // When extension unavailable: leave toggle hidden, NEAREST is the display.
+}
 
 // ═══════════════════════════════════════════════════════════════════
 // v5.5 — DIAGNOSTIC DEBUG VIEWS
@@ -5554,6 +5640,8 @@ function resetSlidersToIdentity(){
   P.bp=0;P.mwp=1;P.mmt=.490;P.aD=0;
   P.gD=0;P.gB=0;P.gHP=1.0;P.gLP=0;
   P.ht=0;P.rl=0;P.wR=1;P.wG=1;P.wB=1;P.bgColorNR=0;
+  // v5.9: clear pedestals so the next stretch starts from a clean linear state
+  P.pedR=0;P.pedG=0;P.pedB=0;
   const sp=Math.max(.001,Math.min(.5,histFootVal));
   P.gSP=sp;
   [['i-bp',0],['i-mt',0],['i-mwp',1000],['i-ash',0],['i-gd',0],['i-gb',0],
@@ -5583,7 +5671,6 @@ function hideApplyAnim(){
 
 // APPLY: bake current stretch pass, checkpoint if needed, reset sliders
 async function doApply(){
-  resolvePreviewBeforeAction();
   if(!tR||!historyOrigR) return;
   const btn=document.getElementById('apply-btn');
   btn.disabled=true;
@@ -5601,9 +5688,12 @@ async function doApply(){
   const outR=isSrcSet1?workR2:workR1;
   const outG=isSrcSet1?workG2:workG1;
   const outB=isSrcSet1?workB2:workB1;
-  applyStretchCPU(working.r,outR,snap,snap.wR);
-  applyStretchCPU(working.g,outG,snap,snap.wG);
-  applyStretchCPU(working.b,outB,snap,snap.wB);
+  // v5.9: pass per-channel pedestals so the CPU bake matches the shader.
+  // Without this, the previewed image and the baked image differ whenever
+  // pedestals are non-zero (e.g. just after Preview STF).
+  applyStretchCPU(working.r,outR,snap,snap.wR,snap.pedR||0);
+  applyStretchCPU(working.g,outG,snap,snap.wG,snap.pedG||0);
+  applyStretchCPU(working.b,outB,snap,snap.wB,snap.pedB||0);
   // Store pre-rolloff data so rl slider can rebuild mask without re-applying.
   // Then build the star mask, apply rolloff, upload mask texture.
   lastStretchedR=new Float32Array(outR);
@@ -5637,12 +5727,11 @@ async function doApply(){
 
   trackGA4('stretch_pass_applied',{stretch_mode:getCurrentStretchModeName(),pass_index:currentPass,device_class:getDeviceClass()});
   btn.disabled=false;
-  btn.textContent='⊕  APPLY STRETCH  —  BAKE & CONTINUE';
+  btn.textContent='⊕  APPLY STRETCH';
 }
 
 // UNDO: replay from nearest checkpoint to targetPass
 async function undoToPass(targetPass){
-  resolvePreviewBeforeAction();
   if(!historyOrigR) return;
   const btn=document.getElementById('apply-btn');
   btn.disabled=true;
@@ -5676,7 +5765,7 @@ async function undoToPass(targetPass){
 
   trackGA4('stretch_undo_used',{stretch_mode:getCurrentStretchModeName(),pass_index:currentPass,device_class:getDeviceClass()});
   btn.disabled=false;
-  btn.textContent='⊕  APPLY STRETCH  —  BAKE & CONTINUE';
+  btn.textContent='⊕  APPLY STRETCH';
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -6153,6 +6242,8 @@ async function undoLinearDenoise(){
 // display so all pipeline transitions stay in sync.
 // ═══════════════════════════════════════════════════════════════════
 function refreshLinearState({resetStretchDefaults=false,refreshStats=true}={}){
+  // v5.6: recompute cached linear background stats whenever historyOrig changes
+  if(typeof _recomputeLinearBgStats==='function') _recomputeLinearBgStats();
   // Always rebuild sorted samples and histogram stats from current linear arrays
   buildHistSamples(historyOrigR,historyOrigG,historyOrigB);
 
@@ -6243,7 +6334,6 @@ function handleFile(f){
   r.readAsArrayBuffer(f);
 }
 function resetAll(){
-  resolvePreviewBeforeAction();
   if(gl)[tR,tG,tB].forEach(t=>{if(t)gl.deleteTexture(t);});
   tR=tG=tB=null;hSampR=[];hSampG=[];hSampB=[];hSampL=[];
   document.getElementById('app').style.display='none';
@@ -6251,11 +6341,12 @@ function resetAll(){
   document.getElementById('meta').style.display='none';
   document.getElementById('drop-screen').style.display='flex';
   document.getElementById('fi').value='';
-  Object.assign(P,{bp:0,mwp:1,mmt:.49,aD:0,gD:0,gB:0,gSP:.005,gLP:0,gHP:1.0,ht:0,rl:0,wR:1,wG:1,wB:1,pal:0,mode:2});
+  Object.assign(P,{bp:0,mwp:1,mmt:.49,aD:0,gD:0,gB:0,gSP:.005,gLP:0,gHP:1.0,ht:0,rl:0,wR:1,wG:1,wB:1,pal:0,mode:2,pedR:0,pedG:0,pedB:0});
   Object.assign(Z,{level:1,cx:.5,cy:.5});
   histPeakVal=0;histFootVal=0;histSpikeEdgeVal=0;
   historyStack=[];historyOrigR=null;historyOrigG=null;historyOrigB=null;currentPass=0;
-  previewActive=false;previewSnapshot=null;if(document.getElementById('preview-bar'))document.getElementById('preview-bar').classList.remove('on');
+  // v5.6: reset linear bg cache
+  if(typeof _recomputeLinearBgStats==='function') _recomputeLinearBgStats();
   if(gl&&tStarMask){gl.deleteTexture(tStarMask);tStarMask=mkTex(new Float32Array([0]),1,1);}
   updatePassUI();
   bgSamples=[];bgModel=null;bgApplied=false;bgSnapshot=null;bgStrength=1.0;bgGammaVal=0;
@@ -6276,6 +6367,8 @@ function resetAll(){
   document.querySelectorAll('.pb2').forEach((b,i)=>b.classList.toggle('on',i===0));
   // GHS is default mode
   document.querySelectorAll('.stretch-mode-card').forEach((b,i)=>b.classList.toggle('on',i===2));
+  // v5.8: also sync the dropdown
+  {const sel=document.getElementById('stretch-mode-select');if(sel) sel.value='2';}
   ['c-mtf','c-ash','c-ghs'].forEach((id,i)=>document.getElementById(id).style.display=i===2?'':'none');
   // Reset finish amounts to zero
   P.finStruct=0;P.finSharp=0;P.finDehaze=0;P.finSat=0;P.finProtect=true;
@@ -6415,6 +6508,42 @@ function cookieDecline(){
   if(stored==='declined') return;
   // No decision yet — show banner after short delay so page renders first
   setTimeout(()=>document.getElementById('cookie-banner').classList.remove('hidden'),800);
+})();
+</script>
+<!-- v5.8: ? help modal -->
+<div id="help-modal" class="help-modal hidden" onclick="if(event.target===this)closeHelpModal()">
+  <div class="help-modal-content">
+    <div class="help-modal-header">
+      <span class="help-modal-title" id="help-modal-title">HELP</span>
+      <button class="help-modal-close" onclick="closeHelpModal()" aria-label="Close">×</button>
+    </div>
+    <div class="help-modal-body" id="help-modal-body"></div>
+  </div>
+</div>
+
+<!-- v5.16: update-available banner -->
+<div id="update-banner">
+  <span>New FITS Studio version available. Reload to use the latest release.</span>
+  <button id="update-banner-reload" onclick="window.location.reload()">RELOAD</button>
+  <button id="update-banner-dismiss" onclick="document.getElementById('update-banner').style.display='none'" title="Dismiss">×</button>
+</div>
+
+<!-- v5.16: version-check system — polls ./version.json every 10 minutes -->
+<script>
+;(function(){
+  var CURRENT=window.FITS_STUDIO_VERSION;
+  function showBanner(){
+    var b=document.getElementById('update-banner');
+    if(b) b.style.display='flex';
+  }
+  function check(){
+    fetch('./version.json?v='+Date.now(),{cache:'no-store'})
+      .then(function(r){return r.ok?r.json():Promise.reject();})
+      .then(function(d){if(d&&d.version&&d.version!==CURRENT) showBanner();})
+      .catch(function(){}); // silently ignore network errors
+  }
+  check();
+  setInterval(check,10*60*1000); // re-check every 10 minutes
 })();
 </script>
 </body>
